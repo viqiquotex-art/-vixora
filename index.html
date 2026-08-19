@@ -1,160 +1,597 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vixora — Your AI. Your Way.</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0b0f">
 
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+<title>VIXORA</title>
 
-        body {
-            font-family: Arial, sans-serif;
-            background: #0d0d0f;
-            color: white;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-        header {
-            padding: 18px 20px;
-            border-bottom: 1px solid #29292d;
-            font-size: 20px;
-            font-weight: bold;
-        }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0b0b0f;
+    color: #ffffff;
+    height: 100vh;
+    overflow: hidden;
+}
 
-        header span {
-            color: #8b5cf6;
-        }
+/* APP */
 
-        #chat {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
+.app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
 
-        .message {
-            margin-bottom: 18px;
-            line-height: 1.5;
-        }
+/* HEADER */
 
-        .user {
-            text-align: right;
-        }
+.header {
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 18px;
+    border-bottom: 1px solid #222228;
+    background: rgba(11,11,15,0.95);
+}
 
-        .user span {
-            background: #8b5cf6;
-            padding: 10px 14px;
-            border-radius: 15px;
-            display: inline-block;
-            max-width: 80%;
-        }
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
 
-        .bot span {
-            background: #1b1b1f;
-            padding: 10px 14px;
-            border-radius: 15px;
-            display: inline-block;
-            max-width: 80%;
-        }
+.logo-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg,#8b5cf6,#6366f1);
+    font-weight: bold;
+}
 
-        .input-area {
-            display: flex;
-            padding: 15px;
-            border-top: 1px solid #29292d;
-            gap: 10px;
-        }
+.logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
 
-        input {
-            flex: 1;
-            padding: 14px;
-            border-radius: 12px;
-            border: 1px solid #333;
-            background: #18181b;
-            color: white;
-            outline: none;
-        }
+.status {
+    font-size: 12px;
+    color: #8f8f9a;
+}
 
-        button {
-            padding: 14px 18px;
-            border: none;
-            border-radius: 12px;
-            background: #8b5cf6;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-        }
+/* CHAT */
 
-        button:hover {
-            opacity: 0.85;
-        }
-    </style>
+.chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 18px 110px;
+    scroll-behavior: smooth;
+}
+
+.welcome {
+    max-width: 700px;
+    margin: 70px auto 30px;
+    text-align: center;
+}
+
+.welcome-icon {
+    width: 64px;
+    height: 64px;
+    margin: auto;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    background: linear-gradient(135deg,#8b5cf6,#6366f1);
+    box-shadow: 0 0 35px rgba(139,92,246,.25);
+}
+
+.welcome h1 {
+    margin-top: 20px;
+    font-size: 30px;
+}
+
+.welcome p {
+    margin-top: 10px;
+    color: #888894;
+}
+
+/* MESSAGE */
+
+.message {
+    max-width: 760px;
+    margin: 0 auto 20px;
+    display: flex;
+}
+
+.message.user {
+    justify-content: flex-end;
+}
+
+.bubble {
+    max-width: 82%;
+    padding: 13px 16px;
+    border-radius: 18px;
+    line-height: 1.55;
+    font-size: 15px;
+    white-space: pre-wrap;
+}
+
+.user .bubble {
+    background: linear-gradient(135deg,#7c3aed,#6366f1);
+    border-bottom-right-radius: 5px;
+}
+
+.bot .bubble {
+    background: #17171d;
+    border: 1px solid #25252d;
+    border-bottom-left-radius: 5px;
+}
+
+/* INPUT */
+
+.input-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 12px 15px 18px;
+    background: linear-gradient(
+        transparent,
+        #0b0b0f 30%
+    );
+}
+
+.input-box {
+    max-width: 760px;
+    margin: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px;
+    background: #17171d;
+    border: 1px solid #292932;
+    border-radius: 18px;
+    box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+
+.input-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: white;
+    padding: 12px;
+    font-size: 15px;
+}
+
+.input-box input::placeholder {
+    color: #686873;
+}
+
+.send {
+    width: 42px;
+    height: 42px;
+    border: none;
+    border-radius: 13px;
+    background: linear-gradient(135deg,#8b5cf6,#6366f1);
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+.send:active {
+    transform: scale(.94);
+}
+
+/* NEW CHAT */
+
+.new-chat {
+    border: 1px solid #292932;
+    background: #17171d;
+    color: #aaaab5;
+    padding: 8px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.new-chat:hover {
+    background: #202027;
+}
+
+/* THINKING */
+
+.thinking {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.dot {
+    width: 5px;
+    height: 5px;
+    background: #888;
+    border-radius: 50%;
+    animation: blink 1.2s infinite;
+}
+
+.dot:nth-child(2) {
+    animation-delay: .2s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: .4s;
+}
+
+@keyframes blink {
+    0%,100% {
+        opacity: .2;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* MOBILE */
+
+@media(max-width:600px) {
+
+    .welcome {
+        margin-top: 50px;
+    }
+
+    .welcome h1 {
+        font-size: 26px;
+    }
+
+    .bubble {
+        max-width: 88%;
+    }
+
+    .status {
+        display: none;
+    }
+}
+</style>
 </head>
 
 <body>
 
-    <header>
-        ✦ <span>VIXORA</span>
+<div class="app">
+
+    <!-- HEADER -->
+
+    <header class="header">
+
+        <div class="logo">
+
+            <div class="logo-icon">
+                V
+            </div>
+
+            <div class="logo-text">
+                VIXORA
+            </div>
+
+        </div>
+
+        <div class="status">
+            ● AI Online
+        </div>
+
+        <button class="new-chat" onclick="newChat()">
+            + New Chat
+        </button>
+
     </header>
 
-    <div id="chat">
-        <div class="message bot">
-            <span>Halo 👋 Aku Vixora. Ada yang bisa aku bantu?</span>
+
+    <!-- CHAT -->
+
+    <main class="chat" id="chat">
+
+        <div class="welcome" id="welcome">
+
+            <div class="welcome-icon">
+                ✦
+            </div>
+
+            <h1>
+                Halo, aku Vixora 👋
+            </h1>
+
+            <p>
+                Your AI. Your Way.
+            </p>
+
         </div>
+
+    </main>
+
+
+    <!-- INPUT -->
+
+    <div class="input-container">
+
+        <div class="input-box">
+
+            <input
+                id="messageInput"
+                type="text"
+                placeholder="Tanya sesuatu ke Vixora..."
+                autocomplete="off"
+            >
+
+            <button
+                class="send"
+                onclick="sendMessage()"
+            >
+                ↑
+            </button>
+
+        </div>
+
     </div>
 
-    <div class="input-area">
-        <input 
-            type="text" 
-            id="messageInput" 
-            placeholder="Tulis pesan..."
-            onkeydown="handleEnter(event)"
-        >
+</div>
 
-        <button onclick="sendMessage()">Kirim</button>
-    </div>
 
-    <script>
-        function sendMessage() {
-            const input = document.getElementById("messageInput");
-            const message = input.value.trim();
+<script>
 
-            if (message === "") return;
+/* =========================
+   VIXORA API
+========================= */
 
-            const chat = document.getElementById("chat");
+const VIXORA_API =
+"https://black-limit-8938.viqiquotex.workers.dev/";
 
-            chat.innerHTML += `
-                <div class="message user">
-                    <span>${message}</span>
-                </div>
-            `;
 
-            input.value = "";
+/* =========================
+   SEND MESSAGE
+========================= */
 
-            setTimeout(() => {
-                chat.innerHTML += `
-                    <div class="message bot">
-                        <span>Aku masih belajar 🧠. Nanti kita sambungkan aku dengan AI sungguhan!</span>
-                    </div>
-                `;
+async function sendMessage() {
 
-                chat.scrollTop = chat.scrollHeight;
-            }, 500);
+    const input =
+        document.getElementById("messageInput");
 
-            chat.scrollTop = chat.scrollHeight;
-        }
+    const chat =
+        document.getElementById("chat");
 
-        function handleEnter(event) {
-            if (event.key === "Enter") {
+    const welcome =
+        document.getElementById("welcome");
+
+    const message =
+        input.value.trim();
+
+    if (!message) return;
+
+
+    /* HIDE WELCOME */
+
+    if (welcome) {
+        welcome.style.display = "none";
+    }
+
+
+    /* USER MESSAGE */
+
+    addMessage(
+        message,
+        "user"
+    );
+
+    input.value = "";
+
+
+    /* THINKING */
+
+    const thinking =
+        document.createElement("div");
+
+    thinking.className =
+        "message bot";
+
+    thinking.id =
+        "thinking";
+
+    thinking.innerHTML = `
+
+        <div class="bubble thinking">
+
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+
+        </div>
+
+    `;
+
+    chat.appendChild(thinking);
+
+    scrollBottom();
+
+
+    try {
+
+        const response =
+            await fetch(
+                VIXORA_API,
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        message: message
+                    })
+                }
+            );
+
+
+        const data =
+            await response.json();
+
+
+        /* REMOVE THINKING */
+
+        thinking.remove();
+
+
+        /* AI RESPONSE */
+
+        addMessage(
+            data.reply ||
+            data.error ||
+            "Vixora belum bisa menjawab.",
+            "bot"
+        );
+
+
+    } catch (error) {
+
+        thinking.remove();
+
+        addMessage(
+            "Aku sedang mengalami masalah koneksi 😭",
+            "bot"
+        );
+
+    }
+
+
+    scrollBottom();
+
+}
+
+
+/* =========================
+   ADD MESSAGE
+========================= */
+
+function addMessage(
+    text,
+    type
+) {
+
+    const chat =
+        document.getElementById("chat");
+
+
+    const message =
+        document.createElement("div");
+
+    message.className =
+        "message " + type;
+
+
+    const bubble =
+        document.createElement("div");
+
+    bubble.className =
+        "bubble";
+
+    bubble.textContent =
+        text;
+
+
+    message.appendChild(
+        bubble
+    );
+
+    chat.appendChild(
+        message
+    );
+
+}
+
+
+/* =========================
+   NEW CHAT
+========================= */
+
+function newChat() {
+
+    const chat =
+        document.getElementById("chat");
+
+    chat.innerHTML = `
+
+        <div class="welcome" id="welcome">
+
+            <div class="welcome-icon">
+                ✦
+            </div>
+
+            <h1>
+                Halo, aku Vixora 👋
+            </h1>
+
+            <p>
+                Your AI. Your Way.
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+
+/* =========================
+   ENTER TO SEND
+========================= */
+
+document
+    .getElementById("messageInput")
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter"
+            ) {
+
                 sendMessage();
+
             }
+
         }
-    </script>
+    );
+
+
+/* =========================
+   SCROLL
+========================= */
+
+function scrollBottom() {
+
+    const chat =
+        document.getElementById("chat");
+
+    chat.scrollTop =
+        chat.scrollHeight;
+
+}
+
+</script>
 
 </body>
 </html>
