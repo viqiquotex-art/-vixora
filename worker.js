@@ -33,7 +33,7 @@ export default {
     }
 
     // ==============================
-    // METHOD CHECK
+    // ONLY POST
     // ==============================
 
     if (request.method !== "POST") {
@@ -54,11 +54,10 @@ export default {
     try {
 
       // ==============================
-      // GET USER MESSAGE
+      // GET MESSAGE
       // ==============================
 
       const body = await request.json();
-
       const message = body.message;
 
       if (!message) {
@@ -81,7 +80,6 @@ export default {
       // ==============================
 
       const systemPrompt = `
-
 Kamu adalah Vixora, sebuah AI pribadi yang dibuat oleh Mas Viqi Septiawantoro.
 
 IDENTITAS VIXORA:
@@ -93,7 +91,7 @@ IDENTITAS VIXORA:
 - Jika pengguna bertanya siapa yang membuat, menciptakan, mengembangkan, atau memiliki kamu, jawab bahwa kamu dibuat oleh Mas Viqi.
 - Jika pengguna bertanya "siapa kamu?", jelaskan bahwa kamu adalah Vixora, AI pribadi buatan Mas Viqi.
 
-CONTOH PERTANYAAN YANG HARUS KAMU PAHAMI:
+PAHAMI BERBAGAI BENTUK PERTANYAAN:
 
 "Siapa yang bikin kamu?"
 "Siapa pembuatmu?"
@@ -128,7 +126,7 @@ GAYA BERBICARA:
 - Jangan terlalu panjang jika pertanyaan sederhana.
 - Berikan penjelasan lebih lengkap jika pengguna meminta.
 - Jangan terlalu formal.
-- Jangan menggunakan bahasa yang terlalu kaku.
+- Jangan terlalu kaku.
 - Panggil creator kamu dengan sebutan "Mas Viqi".
 - Jangan mengaku sebagai ChatGPT.
 - Jangan mengatakan bahwa kamu dibuat oleh Google.
@@ -163,15 +161,14 @@ Bantu pengguna dalam:
 - Membantu berbagai kebutuhan sehari-hari sesuai kemampuan AI.
 
 Jika tidak mengetahui sesuatu, jangan mengarang. Katakan dengan jujur bahwa kamu tidak yakin.
-
 `;
 
       // ==============================
-      // GEMINI API
+      // GEMINI STREAMING API
       // ==============================
 
-      const response = await fetch(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent",
+      const geminiResponse = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse",
         {
           method: "POST",
 
@@ -206,54 +203,153 @@ Jika tidak mengetahui sesuatu, jangan mengarang. Katakan dengan jujur bahwa kamu
       );
 
       // ==============================
-      // GEMINI RESPONSE
+      // GEMINI ERROR
       // ==============================
 
-      const data = await response.json();
+      if (!geminiResponse.ok) {
 
-      // ==============================
-      // ERROR HANDLING
-      // ==============================
-
-      if (!response.ok) {
+        const errorData =
+          await geminiResponse.text();
 
         return new Response(
           JSON.stringify({
             error:
-              data.error?.message ||
-              "Gemini mengalami masalah."
+              `Gemini Error: ${errorData}`
           }),
           {
-            status: response.status,
+            status: geminiResponse.status,
             headers: {
               "Content-Type": "application/json",
               ...corsHeaders
             }
           }
         );
-
       }
 
       // ==============================
-      // GET AI ANSWER
+      // STREAM RESPONSE
       // ==============================
 
-      const reply =
-        data.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Maaf, Vixora belum mendapatkan jawaban.";
+      const encoder =
+        new TextEncoder();
+
+      const decoder =
+        new TextDecoder();
+
+      const reader =
+        geminiResponse.body.getReader();
+
+      const stream =
+        new ReadableStream({
+
+          async start(controller) {
+
+            try {
+
+              let buffer = "";
+
+              while (true) {
+
+                const {
+                  done,
+                  value
+                } = await reader.read();
+
+                if (done) {
+                  break;
+                }
+
+                buffer += decoder.decode(
+                  value,
+                  {
+                    stream: true
+                  }
+                );
+
+                const lines =
+                  buffer.split("\n");
+
+                buffer =
+                  lines.pop() || "";
+
+                for (const line of lines) {
+
+                  const trimmed =
+                    line.trim();
+
+                  if (!trimmed) {
+                    continue;
+                  }
+
+                  if (
+                    trimmed.startsWith("data:")
+                  ) {
+
+                    const jsonText =
+                      trimmed.substring(5).trim();
+
+                    if (
+                      jsonText === "[DONE]"
+                    ) {
+                      continue;
+                    }
+
+                    try {
+
+                      const data =
+                        JSON.parse(jsonText);
+
+                      const text =
+                        data.candidates?.[0]
+                          ?.content?.parts?.[0]
+                          ?.text;
+
+                      if (text) {
+
+                        controller.enqueue(
+                          encoder.encode(text)
+                        );
+
+                      }
+
+                    } catch (error) {
+
+                      // Abaikan chunk SSE
+                      // yang belum lengkap
+
+                    }
+
+                  }
+
+                }
+
+              }
+
+              controller.close();
+
+            } catch (error) {
+
+              controller.error(error);
+
+            }
+
+          }
+
+        });
 
       // ==============================
-      // SEND TO WEBSITE
+      // RETURN STREAM TO VIXORA
       // ==============================
 
       return new Response(
-        JSON.stringify({
-          reply: reply
-        }),
+        stream,
         {
           status: 200,
+
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "text/plain; charset=utf-8",
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
             ...corsHeaders
           }
         }
