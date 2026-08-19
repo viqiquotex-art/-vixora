@@ -1,14 +1,13 @@
 export default {
   async fetch(request, env) {
 
-    // CORS agar website GitHub Pages bisa mengakses Vixora
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type"
     };
 
-    // Menangani preflight request dari browser
+    // CORS preflight
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -16,10 +15,10 @@ export default {
       });
     }
 
-    // Tes saat URL Worker dibuka
+    // Test Worker
     if (request.method === "GET") {
       return new Response(
-        "Vixora API is running 🤖",
+        "Vixora Gemini AI is running 🤖",
         {
           status: 200,
           headers: corsHeaders
@@ -63,37 +62,51 @@ export default {
         );
       }
 
-      // Kirim pesan ke OpenAI
+      // Gemini API
       const response = await fetch(
-        "https://api.openai.com/v1/responses",
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
         {
           method: "POST",
 
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${env.OPENAI_API_KEY}`
+            "x-goog-api-key": env.GEMINI_API_KEY
           },
 
           body: JSON.stringify({
-            model: "gpt-5-mini",
+            system_instruction: {
+              parts: [
+                {
+                  text:
+                    "Kamu adalah Vixora, AI pribadi milik pengguna. Kamu cerdas, santai, ramah, tidak kaku, dan suka membantu. Gunakan bahasa Indonesia yang natural dan mudah dipahami. Gunakan humor ringan jika cocok. Jangan mengaku sebagai ChatGPT."
+                }
+              ]
+            },
 
-            instructions:
-              "Kamu adalah Vixora, AI pribadi milik pengguna. Kamu ramah, cerdas, santai, tidak kaku, dan menjelaskan sesuatu dengan bahasa Indonesia yang mudah dipahami. Gunakan humor ringan jika cocok. Jangan mengaku sebagai ChatGPT.",
-
-            input: message
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: message
+                  }
+                ]
+              }
+            ]
           })
         }
       );
 
       const data = await response.json();
 
-      // Kalau OpenAI mengembalikan error
+      // Jika Gemini error
       if (!response.ok) {
+
         return new Response(
           JSON.stringify({
             error:
               data.error?.message ||
-              "Terjadi kesalahan pada AI."
+              "Gemini mengalami masalah."
           }),
           {
             status: response.status,
@@ -105,10 +118,14 @@ export default {
         );
       }
 
-      // Kirim jawaban kembali ke Vixora
+      // Ambil jawaban Gemini
+      const reply =
+        data.candidates?.[0]?.content?.parts?.[0]?.text ||
+        "Vixora belum mendapatkan jawaban.";
+
       return new Response(
         JSON.stringify({
-          reply: data.output_text
+          reply: reply
         }),
         {
           status: 200,
@@ -133,6 +150,7 @@ export default {
           }
         }
       );
+
     }
   }
 };
