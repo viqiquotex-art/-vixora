@@ -8,6 +8,7 @@
 <title>VIXORA</title>
 
 <style>
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -38,6 +39,7 @@ body {
 
 .header {
   height: 64px;
+
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -45,7 +47,8 @@ body {
   padding: 0 18px;
 
   border-bottom: 1px solid #222228;
-  background: rgba(11,11,15,.96);
+
+  background: #0b0b0f;
 
   flex-shrink: 0;
 }
@@ -66,11 +69,12 @@ body {
   align-items: center;
   justify-content: center;
 
-  background: linear-gradient(
-    135deg,
-    #8b5cf6,
-    #6366f1
-  );
+  background:
+    linear-gradient(
+      135deg,
+      #8b5cf6,
+      #6366f1
+    );
 
   font-weight: 800;
 }
@@ -98,7 +102,9 @@ body {
 
 .new-chat {
   border: 1px solid #292932;
+
   background: #17171d;
+
   color: #aaaab5;
 
   padding: 8px 12px;
@@ -110,31 +116,130 @@ body {
   font-size: 12px;
 }
 
-.new-chat:hover {
-  background: #202027;
-}
-
 /* CHAT */
 
 .chat {
   flex: 1;
+
   overflow-y: auto;
 
   padding:
-    24px
+    25px
     18px
     120px;
-
-  scroll-behavior: smooth;
 }
 
-.chat::-webkit-scrollbar {
-  width: 5px;
+.message {
+  max-width: 760px;
+
+  margin:
+    0 auto
+    20px;
+
+  display: flex;
 }
 
-.chat::-webkit-scrollbar-thumb {
-  background: #292932;
+.message.user {
+  justify-content: flex-end;
+}
+
+.message.bot {
+  justify-content: flex-start;
+}
+
+.bubble {
+  max-width: 85%;
+
+  padding:
+    13px
+    16px;
+
+  border-radius: 18px;
+
+  font-size: 15px;
+
+  line-height: 1.65;
+
+  overflow-wrap: break-word;
+}
+
+.user .bubble {
+  background:
+    linear-gradient(
+      135deg,
+      #7c3aed,
+      #6366f1
+    );
+
+  border-bottom-right-radius: 5px;
+
+  white-space: pre-wrap;
+}
+
+.bot .bubble {
+  background: #17171d;
+
+  border: 1px solid #25252d;
+
+  border-bottom-left-radius: 5px;
+}
+
+/* MARKDOWN */
+
+.bot .bubble strong {
+  font-weight: 700;
+}
+
+.bot .bubble em {
+  font-style: italic;
+}
+
+.bot .bubble code {
+  background: #0d0d12;
+
+  border: 1px solid #292932;
+
+  border-radius: 6px;
+
+  padding: 2px 5px;
+
+  font-family: monospace;
+
+  font-size: 13px;
+}
+
+.bot .bubble pre {
+  background: #0d0d12;
+
+  border: 1px solid #292932;
+
   border-radius: 10px;
+
+  padding: 12px;
+
+  margin: 10px 0;
+
+  overflow-x: auto;
+}
+
+.bot .bubble pre code {
+  border: none;
+
+  padding: 0;
+
+  background: transparent;
+
+  color: #eeeeee;
+}
+
+.bot .bubble ul {
+  margin-left: 20px;
+
+  margin-top: 7px;
+}
+
+.bot .bubble li {
+  margin-bottom: 5px;
 }
 
 /* WELCOME */
@@ -164,24 +269,23 @@ body {
 
   font-size: 28px;
 
-  background: linear-gradient(
-    135deg,
-    #8b5cf6,
-    #6366f1
-  );
-
-  box-shadow:
-    0 0 35px
-    rgba(139,92,246,.25);
+  background:
+    linear-gradient(
+      135deg,
+      #8b5cf6,
+      #6366f1
+    );
 }
 
 .welcome h1 {
   margin-top: 20px;
+
   font-size: 30px;
 }
 
 .welcome p {
   margin-top: 10px;
+
   color: #888894;
 }
 
@@ -191,200 +295,6 @@ body {
   font-size: 12px;
 
   color: #666673;
-
-  letter-spacing: .5px;
-}
-
-/* MESSAGE */
-
-.message {
-  max-width: 760px;
-
-  margin:
-    0 auto
-    20px;
-
-  display: flex;
-}
-
-.message.user {
-  justify-content: flex-end;
-}
-
-.message.bot {
-  justify-content: flex-start;
-}
-
-.bubble {
-  max-width: 82%;
-
-  padding:
-    13px
-    16px;
-
-  border-radius: 18px;
-
-  line-height: 1.65;
-
-  font-size: 15px;
-
-  overflow-wrap: break-word;
-}
-
-.user .bubble {
-  background: linear-gradient(
-    135deg,
-    #7c3aed,
-    #6366f1
-  );
-
-  border-bottom-right-radius: 5px;
-
-  white-space: pre-wrap;
-}
-
-.bot .bubble {
-  background: #17171d;
-
-  border: 1px solid #25252d;
-
-  border-bottom-left-radius: 5px;
-}
-
-/* MARKDOWN */
-
-.bot .bubble p {
-  margin-bottom: 10px;
-}
-
-.bot .bubble p:last-child {
-  margin-bottom: 0;
-}
-
-.bot .bubble strong {
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.bot .bubble em {
-  font-style: italic;
-  color: #d5d5df;
-}
-
-.bot .bubble h1,
-.bot .bubble h2,
-.bot .bubble h3 {
-  margin:
-    8px
-    0
-    10px;
-
-  line-height: 1.3;
-}
-
-.bot .bubble h1 {
-  font-size: 21px;
-}
-
-.bot .bubble h2 {
-  font-size: 19px;
-}
-
-.bot .bubble h3 {
-  font-size: 17px;
-}
-
-.bot .bubble ul,
-.bot .bubble ol {
-  margin:
-    8px
-    0
-    10px
-    20px;
-}
-
-.bot .bubble li {
-  margin-bottom: 5px;
-}
-
-.bot .bubble code {
-  background: #0d0d12;
-
-  border: 1px solid #292932;
-
-  padding:
-    2px
-    6px;
-
-  border-radius: 6px;
-
-  font-family:
-    SFMono-Regular,
-    Consolas,
-    monospace;
-
-  font-size: 13px;
-
-  color: #d8b4fe;
-}
-
-.bot .bubble pre {
-  background: #0d0d12;
-
-  border: 1px solid #292932;
-
-  border-radius: 10px;
-
-  padding: 13px;
-
-  margin:
-    10px
-    0;
-
-  overflow-x: auto;
-}
-
-.bot .bubble pre code {
-  background: transparent;
-  border: none;
-  padding: 0;
-
-  color: #e5e7eb;
-
-  white-space: pre;
-}
-
-.bot .bubble a {
-  color: #a78bfa;
-  text-decoration: none;
-}
-
-.bot .bubble a:hover {
-  text-decoration: underline;
-}
-
-/* STREAMING CURSOR */
-
-.streaming-cursor::after {
-  content: "▋";
-
-  display: inline-block;
-
-  margin-left: 2px;
-
-  animation:
-    cursorBlink
-    .8s infinite;
-}
-
-@keyframes cursorBlink {
-  0%, 50% {
-    opacity: 1;
-  }
-
-  51%, 100% {
-    opacity: 0;
-  }
 }
 
 /* THINKING */
@@ -393,8 +303,6 @@ body {
   display: flex;
 
   gap: 4px;
-
-  align-items: center;
 }
 
 .dot {
@@ -406,8 +314,7 @@ body {
   border-radius: 50%;
 
   animation:
-    blink
-    1.2s infinite;
+    blink 1.2s infinite;
 }
 
 .dot:nth-child(2) {
@@ -419,6 +326,7 @@ body {
 }
 
 @keyframes blink {
+
   0%, 100% {
     opacity: .2;
   }
@@ -426,6 +334,28 @@ body {
   50% {
     opacity: 1;
   }
+
+}
+
+/* STREAM CURSOR */
+
+.streaming::after {
+  content: "▋";
+
+  animation:
+    cursorBlink .8s infinite;
+}
+
+@keyframes cursorBlink {
+
+  0%, 50% {
+    opacity: 1;
+  }
+
+  51%, 100% {
+    opacity: 0;
+  }
+
 }
 
 /* INPUT */
@@ -457,8 +387,6 @@ body {
 
   display: flex;
 
-  align-items: center;
-
   gap: 8px;
 
   padding: 7px;
@@ -468,16 +396,13 @@ body {
   border: 1px solid #292932;
 
   border-radius: 18px;
-
-  box-shadow:
-    0 10px 40px
-    rgba(0,0,0,.35);
 }
 
 .input-box input {
   flex: 1;
 
   border: none;
+
   outline: none;
 
   background: transparent;
@@ -515,16 +440,9 @@ body {
   cursor: pointer;
 }
 
-.send:active {
-  transform: scale(.94);
-}
-
 .send:disabled {
   opacity: .5;
-  cursor: not-allowed;
 }
-
-/* MOBILE */
 
 @media (max-width: 600px) {
 
@@ -536,29 +454,19 @@ body {
     font-size: 26px;
   }
 
-  .bubble {
-    max-width: 88%;
-  }
-
   .status {
     display: none;
   }
 
-  .header {
-    padding: 0 12px;
-  }
-}
-
-@media (min-width: 601px) {
-
-  .input-container {
-    padding-bottom: 22px;
+  .bubble {
+    max-width: 88%;
   }
 
 }
+
 </style>
-
 </head>
+
 
 <body>
 
@@ -594,7 +502,7 @@ body {
 
       <button
         class="new-chat"
-        onclick="newChat()"
+        id="newChatButton"
       >
         + New Chat
       </button>
@@ -653,7 +561,6 @@ body {
       <button
         class="send"
         id="sendButton"
-        onclick="sendMessage()"
       >
         ↑
       </button>
@@ -668,7 +575,7 @@ body {
 <script>
 
 /* =========================
-   VIXORA API
+   API
 ========================= */
 
 const VIXORA_API =
@@ -676,174 +583,185 @@ const VIXORA_API =
 
 
 /* =========================
-   MARKDOWN RENDERER
+   ELEMENTS
 ========================= */
 
-function renderMarkdown(text) {
-
-  let html = text;
-
-  // Escape HTML
-  html = html
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-
-  // Code blocks
-  html = html.replace(
-    /```([\s\S]*?)```/g,
-    function(match, code) {
-
-      return "<pre><code>" +
-        code.trim() +
-        "</code></pre>";
-
-    }
+const chat =
+  document.getElementById(
+    "chat"
   );
 
-  // Inline code
-  html = html.replace(
-    /`([^`]+)`/g,
-    "<code>$1</code>"
+const input =
+  document.getElementById(
+    "messageInput"
   );
 
-  // Headings
-  html = html.replace(
-    /^### (.*)$/gm,
-    "<h3>$1</h3>"
+const sendButton =
+  document.getElementById(
+    "sendButton"
   );
 
-  html = html.replace(
-    /^## (.*)$/gm,
-    "<h2>$1</h2>"
+const newChatButton =
+  document.getElementById(
+    "newChatButton"
   );
 
-  html = html.replace(
-    /^# (.*)$/gm,
-    "<h1>$1</h1>"
-  );
 
-  // Bold
-  html = html.replace(
-    /\*\*(.*?)\*\*/g,
-    "<strong>$1</strong>"
-  );
+/* =========================
+   MARKDOWN
+========================= */
 
-  // Italic
-  html = html.replace(
-    /(?<!\*)\*([^*]+)\*(?!\*)/g,
-    "<em>$1</em>"
-  );
+function markdown(text) {
 
-  // Links
-  html = html.replace(
-    /$begin:math:display$\(\[\^$end:math:display$]+)\]$begin:math:text$\(https\?\:\\\/\\\/\[\^\\s\)\]\+\)$end:math:text$/g,
-    '<a href="$2" target="_blank" rel="noopener">$1</a>'
-  );
+  let value = text;
 
-  // Bullet list
-  html = html.replace(
-    /(?:^|\n)((?:[-*] .+(?:\n|$))+)/g,
-    function(match, list) {
+  /*
+    Escape HTML
+  */
 
-      const items =
-        list
-          .trim()
-          .split("\n")
-          .map(
-            item =>
-              "<li>" +
-              item.replace(/^[-*] /, "") +
-              "</li>"
-          )
-          .join("");
+  value =
+    value
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
 
-      return "\n<ul>" +
-        items +
-        "</ul>\n";
 
-    }
-  );
+  /*
+    Code block
+  */
 
-  // Numbered list
-  html = html.replace(
-    /(?:^|\n)((?:\d+\. .+(?:\n|$))+)/g,
-    function(match, list) {
+  value =
+    value.replace(
+      /```([\s\S]*?)```/g,
+      function(_, code) {
 
-      const items =
-        list
-          .trim()
-          .split("\n")
-          .map(
-            item =>
-              "<li>" +
-              item.replace(/^\d+\. /, "") +
-              "</li>"
-          )
-          .join("");
-
-      return "\n<ol>" +
-        items +
-        "</ol>\n";
-
-    }
-  );
-
-  // Paragraphs
-  html = html
-    .split(/\n{2,}/)
-    .map(
-      block => {
-
-        if (
-          block.startsWith("<h1>") ||
-          block.startsWith("<h2>") ||
-          block.startsWith("<h3>") ||
-          block.startsWith("<ul>") ||
-          block.startsWith("<ol>") ||
-          block.startsWith("<pre>")
-        ) {
-          return block;
-        }
-
-        return "<p>" +
-          block.replace(/\n/g, "<br>") +
-          "</p>";
+        return (
+          "<pre><code>" +
+          code.trim() +
+          "</code></pre>"
+        );
 
       }
-    )
-    .join("");
+    );
 
-  return html;
+
+  /*
+    Inline code
+  */
+
+  value =
+    value.replace(
+      /`([^`]+)`/g,
+      "<code>$1</code>"
+    );
+
+
+  /*
+    Bold
+  */
+
+  value =
+    value.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+
+  /*
+    Italic
+  */
+
+  value =
+    value.replace(
+      /(^|[^*])\*([^*]+)\*(?!\*)/g,
+      "$1<em>$2</em>"
+    );
+
+
+  /*
+    Bullet
+  */
+
+  value =
+    value.replace(
+      /(^|\n)[-*] (.*)/g,
+      "$1• $2"
+    );
+
+
+  /*
+    New line
+  */
+
+  value =
+    value.replace(
+      /\n/g,
+      "<br>"
+    );
+
+
+  return value;
 }
 
 
 /* =========================
-   SEND MESSAGE
+   ADD MESSAGE
+========================= */
+
+function addMessage(
+  text,
+  type
+) {
+
+  const message =
+    document.createElement(
+      "div"
+    );
+
+  message.className =
+    "message " + type;
+
+
+  const bubble =
+    document.createElement(
+      "div"
+    );
+
+  bubble.className =
+    "bubble";
+
+
+  if (type === "bot") {
+
+    bubble.innerHTML =
+      markdown(text);
+
+  } else {
+
+    bubble.textContent =
+      text;
+
+  }
+
+
+  message.appendChild(
+    bubble
+  );
+
+  chat.appendChild(
+    message
+  );
+
+
+  scrollBottom();
+}
+
+
+/* =========================
+   SEND
 ========================= */
 
 async function sendMessage() {
-
-  const input =
-    document.getElementById(
-      "messageInput"
-    );
-
-  const sendButton =
-    document.getElementById(
-      "sendButton"
-    );
-
-  const chat =
-    document.getElementById(
-      "chat"
-    );
-
-  const welcome =
-    document.getElementById(
-      "welcome"
-    );
-
 
   const message =
     input.value.trim();
@@ -854,11 +772,23 @@ async function sendMessage() {
   }
 
 
+  /*
+    Hide welcome
+  */
+
+  const welcome =
+    document.getElementById(
+      "welcome"
+    );
+
   if (welcome) {
-    welcome.style.display =
-      "none";
+    welcome.remove();
   }
 
+
+  /*
+    User message
+  */
 
   addMessage(
     message,
@@ -868,10 +798,13 @@ async function sendMessage() {
 
   input.value = "";
 
-  sendButton.disabled = true;
+  sendButton.disabled =
+    true;
 
 
-  /* THINKING */
+  /*
+    Thinking
+  */
 
   const thinking =
     document.createElement(
@@ -880,9 +813,6 @@ async function sendMessage() {
 
   thinking.className =
     "message bot";
-
-  thinking.id =
-    "thinking";
 
 
   thinking.innerHTML = `
@@ -908,6 +838,10 @@ async function sendMessage() {
 
   try {
 
+    /*
+      Request Worker
+    */
+
     const response =
       await fetch(
         VIXORA_API,
@@ -929,21 +863,27 @@ async function sendMessage() {
 
     if (!response.ok) {
 
-      const errorText =
+      const error =
         await response.text();
 
       throw new Error(
-        errorText ||
+        error ||
         "Server error"
       );
 
     }
 
 
+    /*
+      Remove thinking
+    */
+
     thinking.remove();
 
 
-    /* BOT MESSAGE */
+    /*
+      Bot bubble
+    */
 
     const botMessage =
       document.createElement(
@@ -960,7 +900,7 @@ async function sendMessage() {
       );
 
     botBubble.className =
-      "bubble streaming-cursor";
+      "bubble streaming";
 
 
     botMessage.appendChild(
@@ -973,7 +913,9 @@ async function sendMessage() {
     );
 
 
-    /* STREAM */
+    /*
+      Streaming reader
+    */
 
     const reader =
       response.body.getReader();
@@ -990,32 +932,34 @@ async function sendMessage() {
 
     while (true) {
 
-      const {
-        done,
-        value
-      } =
+      const result =
         await reader.read();
 
 
-      if (done) {
+      if (result.done) {
         break;
       }
 
 
       const chunk =
         decoder.decode(
-          value,
+          result.value,
           {
             stream: true
           }
         );
 
 
-      fullText += chunk;
+      fullText +=
+        chunk;
 
+
+      /*
+        Render
+      */
 
       botBubble.innerHTML =
-        renderMarkdown(
+        markdown(
           fullText
         );
 
@@ -1025,31 +969,32 @@ async function sendMessage() {
     }
 
 
-    /* FINAL RENDER */
+    /*
+      Final
+    */
 
     botBubble.innerHTML =
-      renderMarkdown(
+      markdown(
         fullText
       );
 
 
     botBubble.classList.remove(
-      "streaming-cursor"
+      "streaming"
     );
-
-
-    scrollBottom();
 
 
   } catch (error) {
 
     console.error(
-      "Vixora Error:",
+      "Vixora:",
       error
     );
 
 
-    if (thinking) {
+    if (
+      thinking.parentNode
+    ) {
       thinking.remove();
     }
 
@@ -1071,130 +1016,66 @@ async function sendMessage() {
 
 
 /* =========================
-   ADD MESSAGE
+   ENTER
 ========================= */
 
-function addMessage(
-  text,
-  type
-) {
+input.addEventListener(
+  "keydown",
+  function(event) {
 
-  const chat =
-    document.getElementById(
-      "chat"
-    );
+    if (
+      event.key === "Enter"
+    ) {
 
+      event.preventDefault();
 
-  const message =
-    document.createElement(
-      "div"
-    );
+      sendMessage();
 
-  message.className =
-    "message " + type;
+    }
 
-
-  const bubble =
-    document.createElement(
-      "div"
-    );
-
-  bubble.className =
-    "bubble";
-
-
-  bubble.textContent =
-    text;
-
-
-  message.appendChild(
-    bubble
-  );
-
-
-  chat.appendChild(
-    message
-  );
-
-
-  scrollBottom();
-
-}
+  }
+);
 
 
 /* =========================
    NEW CHAT
 ========================= */
 
-function newChat() {
+newChatButton.addEventListener(
+  "click",
+  function() {
 
-  const chat =
-    document.getElementById(
-      "chat"
-    );
+    chat.innerHTML = `
 
+      <div
+        class="welcome"
+        id="welcome"
+      >
 
-  chat.innerHTML = `
+        <div class="welcome-icon">
+          ✦
+        </div>
 
-    <div
-      class="welcome"
-      id="welcome"
-    >
+        <h1>
+          Halo, aku Vixora 👋
+        </h1>
 
-      <div class="welcome-icon">
-        ✦
+        <p>
+          Your AI. Your Way.
+        </p>
+
+        <div class="creator">
+          Crafted by Viqi
+        </div>
+
       </div>
 
-      <h1>
-        Halo, aku Vixora 👋
-      </h1>
+    `;
 
-      <p>
-        Your AI. Your Way.
-      </p>
+    input.focus();
 
-      <div class="creator">
-        Crafted by Viqi
-      </div>
-
-    </div>
-
-  `;
-
-
-  document
-    .getElementById(
-      "messageInput"
-    )
-    .focus();
-
-}
-
-
-/* =========================
-   ENTER
-========================= */
-
-document
-  .getElementById(
-    "messageInput"
-  )
-  .addEventListener(
-    "keydown",
-    function(event) {
-
-      if (
-        event.key === "Enter"
-      ) {
-
-        event.preventDefault();
-
-        sendMessage();
-
-      }
-
-    }
-  );
+  }
+);
 
 
 /* =========================
@@ -1202,12 +1083,6 @@ document
 ========================= */
 
 function scrollBottom() {
-
-  const chat =
-    document.getElementById(
-      "chat"
-    );
-
 
   chat.scrollTop =
     chat.scrollHeight;
