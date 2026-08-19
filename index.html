@@ -8,6 +8,7 @@
 <title>VIXORA</title>
 
 <style>
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -21,8 +22,6 @@ body {
     height: 100vh;
     overflow: hidden;
 }
-
-/* APP */
 
 .app {
     height: 100vh;
@@ -106,6 +105,15 @@ body {
 .welcome p {
     margin-top: 10px;
     color: #888894;
+}
+
+/* CREATOR */
+
+.creator {
+    margin-top: 18px;
+    font-size: 12px;
+    color: #666673;
+    letter-spacing: 0.5px;
 }
 
 /* MESSAGE */
@@ -237,6 +245,7 @@ body {
 }
 
 @keyframes blink {
+
     0%,100% {
         opacity: .2;
     }
@@ -244,6 +253,7 @@ body {
     50% {
         opacity: 1;
     }
+
 }
 
 /* MOBILE */
@@ -265,15 +275,15 @@ body {
     .status {
         display: none;
     }
+
 }
+
 </style>
 </head>
 
 <body>
 
 <div class="app">
-
-    <!-- HEADER -->
 
     <header class="header">
 
@@ -293,18 +303,25 @@ body {
             ● AI Online
         </div>
 
-        <button class="new-chat" onclick="newChat()">
+        <button
+            class="new-chat"
+            onclick="newChat()"
+        >
             + New Chat
         </button>
 
     </header>
 
 
-    <!-- CHAT -->
+    <main
+        class="chat"
+        id="chat"
+    >
 
-    <main class="chat" id="chat">
-
-        <div class="welcome" id="welcome">
+        <div
+            class="welcome"
+            id="welcome"
+        >
 
             <div class="welcome-icon">
                 ✦
@@ -315,19 +332,17 @@ body {
             </h1>
 
             <p>
-Your AI. Your Way.
-</p>
+                Your AI. Your Way.
+            </p>
 
-<div class="creator">
-    Crafted by Viqi
-</div>
+            <div class="creator">
+                Crafted by Viqi
+            </div>
 
         </div>
 
     </main>
 
-
-    <!-- INPUT -->
 
     <div class="input-container">
 
@@ -356,17 +371,9 @@ Your AI. Your Way.
 
 <script>
 
-/* =========================
-   VIXORA API
-========================= */
-
 const VIXORA_API =
 "https://black-limit-8938.viqiquotex.workers.dev/";
 
-
-/* =========================
-   SEND MESSAGE
-========================= */
 
 async function sendMessage() {
 
@@ -385,14 +392,10 @@ async function sendMessage() {
     if (!message) return;
 
 
-    /* HIDE WELCOME */
-
     if (welcome) {
         welcome.style.display = "none";
     }
 
-
-    /* USER MESSAGE */
 
     addMessage(
         message,
@@ -401,8 +404,6 @@ async function sendMessage() {
 
     input.value = "";
 
-
-    /* THINKING */
 
     const thinking =
         document.createElement("div");
@@ -454,12 +455,8 @@ async function sendMessage() {
             await response.json();
 
 
-        /* REMOVE THINKING */
-
         thinking.remove();
 
-
-        /* AI RESPONSE */
 
         addMessage(
             data.reply ||
@@ -474,7 +471,7 @@ async function sendMessage() {
         thinking.remove();
 
         addMessage(
-            "Aku sedang mengalami masalah koneksi 😭",
+            "Vixora sedang mengalami masalah koneksi 😭",
             "bot"
         );
 
@@ -486,10 +483,6 @@ async function sendMessage() {
 }
 
 
-/* =========================
-   ADD MESSAGE
-========================= */
-
 function addMessage(
     text,
     type
@@ -498,13 +491,11 @@ function addMessage(
     const chat =
         document.getElementById("chat");
 
-
     const message =
         document.createElement("div");
 
     message.className =
         "message " + type;
-
 
     const bubble =
         document.createElement("div");
@@ -514,7 +505,6 @@ function addMessage(
 
     bubble.textContent =
         text;
-
 
     message.appendChild(
         bubble
@@ -527,10 +517,6 @@ function addMessage(
 }
 
 
-/* =========================
-   NEW CHAT
-========================= */
-
 function newChat() {
 
     const chat =
@@ -538,7 +524,10 @@ function newChat() {
 
     chat.innerHTML = `
 
-        <div class="welcome" id="welcome">
+        <div
+            class="welcome"
+            id="welcome"
+        >
 
             <div class="welcome-icon">
                 ✦
@@ -552,16 +541,16 @@ function newChat() {
                 Your AI. Your Way.
             </p>
 
+            <div class="creator">
+                Crafted by Viqi
+            </div>
+
         </div>
 
     `;
 
 }
 
-
-/* =========================
-   ENTER TO SEND
-========================= */
 
 document
     .getElementById("messageInput")
@@ -580,10 +569,6 @@ document
         }
     );
 
-
-/* =========================
-   SCROLL
-========================= */
 
 function scrollBottom() {
 
