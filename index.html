@@ -1,23 +1,13 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
->
-
-<meta
-  name="theme-color"
-  content="#0b0b0f"
->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b0b0f">
 
 <title>VIXORA</title>
 
 <style>
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -44,13 +34,10 @@ body {
   flex-direction: column;
 }
 
-/* =========================
-   HEADER
-========================= */
+/* HEADER */
 
 .header {
   height: 64px;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -58,7 +45,6 @@ body {
   padding: 0 18px;
 
   border-bottom: 1px solid #222228;
-
   background: rgba(11,11,15,.96);
 
   flex-shrink: 0;
@@ -80,12 +66,11 @@ body {
   align-items: center;
   justify-content: center;
 
-  background:
-    linear-gradient(
-      135deg,
-      #8b5cf6,
-      #6366f1
-    );
+  background: linear-gradient(
+    135deg,
+    #8b5cf6,
+    #6366f1
+  );
 
   font-weight: 800;
 }
@@ -93,7 +78,6 @@ body {
 .logo-text {
   font-size: 18px;
   font-weight: 700;
-
   letter-spacing: 1px;
 }
 
@@ -114,9 +98,7 @@ body {
 
 .new-chat {
   border: 1px solid #292932;
-
   background: #17171d;
-
   color: #aaaab5;
 
   padding: 8px 12px;
@@ -132,13 +114,10 @@ body {
   background: #202027;
 }
 
-/* =========================
-   CHAT AREA
-========================= */
+/* CHAT */
 
 .chat {
   flex: 1;
-
   overflow-y: auto;
 
   padding:
@@ -158,9 +137,7 @@ body {
   border-radius: 10px;
 }
 
-/* =========================
-   WELCOME
-========================= */
+/* WELCOME */
 
 .welcome {
   max-width: 700px;
@@ -187,12 +164,11 @@ body {
 
   font-size: 28px;
 
-  background:
-    linear-gradient(
-      135deg,
-      #8b5cf6,
-      #6366f1
-    );
+  background: linear-gradient(
+    135deg,
+    #8b5cf6,
+    #6366f1
+  );
 
   box-shadow:
     0 0 35px
@@ -201,13 +177,11 @@ body {
 
 .welcome h1 {
   margin-top: 20px;
-
   font-size: 30px;
 }
 
 .welcome p {
   margin-top: 10px;
-
   color: #888894;
 }
 
@@ -221,9 +195,7 @@ body {
   letter-spacing: .5px;
 }
 
-/* =========================
-   MESSAGES
-========================= */
+/* MESSAGE */
 
 .message {
   max-width: 760px;
@@ -252,24 +224,23 @@ body {
 
   border-radius: 18px;
 
-  line-height: 1.6;
+  line-height: 1.65;
 
   font-size: 15px;
-
-  white-space: pre-wrap;
 
   overflow-wrap: break-word;
 }
 
 .user .bubble {
-  background:
-    linear-gradient(
-      135deg,
-      #7c3aed,
-      #6366f1
-    );
+  background: linear-gradient(
+    135deg,
+    #7c3aed,
+    #6366f1
+  );
 
   border-bottom-right-radius: 5px;
+
+  white-space: pre-wrap;
 }
 
 .bot .bubble {
@@ -280,9 +251,119 @@ body {
   border-bottom-left-radius: 5px;
 }
 
-/* =========================
-   CURSOR STREAMING
-========================= */
+/* MARKDOWN */
+
+.bot .bubble p {
+  margin-bottom: 10px;
+}
+
+.bot .bubble p:last-child {
+  margin-bottom: 0;
+}
+
+.bot .bubble strong {
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.bot .bubble em {
+  font-style: italic;
+  color: #d5d5df;
+}
+
+.bot .bubble h1,
+.bot .bubble h2,
+.bot .bubble h3 {
+  margin:
+    8px
+    0
+    10px;
+
+  line-height: 1.3;
+}
+
+.bot .bubble h1 {
+  font-size: 21px;
+}
+
+.bot .bubble h2 {
+  font-size: 19px;
+}
+
+.bot .bubble h3 {
+  font-size: 17px;
+}
+
+.bot .bubble ul,
+.bot .bubble ol {
+  margin:
+    8px
+    0
+    10px
+    20px;
+}
+
+.bot .bubble li {
+  margin-bottom: 5px;
+}
+
+.bot .bubble code {
+  background: #0d0d12;
+
+  border: 1px solid #292932;
+
+  padding:
+    2px
+    6px;
+
+  border-radius: 6px;
+
+  font-family:
+    SFMono-Regular,
+    Consolas,
+    monospace;
+
+  font-size: 13px;
+
+  color: #d8b4fe;
+}
+
+.bot .bubble pre {
+  background: #0d0d12;
+
+  border: 1px solid #292932;
+
+  border-radius: 10px;
+
+  padding: 13px;
+
+  margin:
+    10px
+    0;
+
+  overflow-x: auto;
+}
+
+.bot .bubble pre code {
+  background: transparent;
+  border: none;
+  padding: 0;
+
+  color: #e5e7eb;
+
+  white-space: pre;
+}
+
+.bot .bubble a {
+  color: #a78bfa;
+  text-decoration: none;
+}
+
+.bot .bubble a:hover {
+  text-decoration: underline;
+}
+
+/* STREAMING CURSOR */
 
 .streaming-cursor::after {
   content: "▋";
@@ -297,22 +378,16 @@ body {
 }
 
 @keyframes cursorBlink {
-
-  0%,
-  50% {
+  0%, 50% {
     opacity: 1;
   }
 
-  51%,
-  100% {
+  51%, 100% {
     opacity: 0;
   }
-
 }
 
-/* =========================
-   THINKING
-========================= */
+/* THINKING */
 
 .thinking {
   display: flex;
@@ -344,21 +419,16 @@ body {
 }
 
 @keyframes blink {
-
-  0%,
-  100% {
+  0%, 100% {
     opacity: .2;
   }
 
   50% {
     opacity: 1;
   }
-
 }
 
-/* =========================
-   INPUT
-========================= */
+/* INPUT */
 
 .input-container {
   position: fixed;
@@ -408,7 +478,6 @@ body {
   flex: 1;
 
   border: none;
-
   outline: none;
 
   background: transparent;
@@ -455,9 +524,7 @@ body {
   cursor: not-allowed;
 }
 
-/* =========================
-   MOBILE
-========================= */
+/* MOBILE */
 
 @media (max-width: 600px) {
 
@@ -480,12 +547,7 @@ body {
   .header {
     padding: 0 12px;
   }
-
 }
-
-/* =========================
-   DESKTOP
-========================= */
 
 @media (min-width: 601px) {
 
@@ -494,20 +556,15 @@ body {
   }
 
 }
-
 </style>
 
 </head>
-
 
 <body>
 
 <div class="app">
 
-
-  <!-- =====================
-       HEADER
-  ====================== -->
+  <!-- HEADER -->
 
   <header class="header">
 
@@ -523,7 +580,6 @@ body {
 
     </div>
 
-
     <div class="header-right">
 
       <div class="status">
@@ -535,7 +591,6 @@ body {
         AI Online
 
       </div>
-
 
       <button
         class="new-chat"
@@ -549,9 +604,7 @@ body {
   </header>
 
 
-  <!-- =====================
-       CHAT
-  ====================== -->
+  <!-- CHAT -->
 
   <main
     class="chat"
@@ -584,9 +637,7 @@ body {
   </main>
 
 
-  <!-- =====================
-       INPUT
-  ====================== -->
+  <!-- INPUT -->
 
   <div class="input-container">
 
@@ -611,7 +662,6 @@ body {
 
   </div>
 
-
 </div>
 
 
@@ -623,6 +673,149 @@ body {
 
 const VIXORA_API =
   "https://black-limit-8938.viqiquotex.workers.dev/";
+
+
+/* =========================
+   MARKDOWN RENDERER
+========================= */
+
+function renderMarkdown(text) {
+
+  let html = text;
+
+  // Escape HTML
+  html = html
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Code blocks
+  html = html.replace(
+    /```([\s\S]*?)```/g,
+    function(match, code) {
+
+      return "<pre><code>" +
+        code.trim() +
+        "</code></pre>";
+
+    }
+  );
+
+  // Inline code
+  html = html.replace(
+    /`([^`]+)`/g,
+    "<code>$1</code>"
+  );
+
+  // Headings
+  html = html.replace(
+    /^### (.*)$/gm,
+    "<h3>$1</h3>"
+  );
+
+  html = html.replace(
+    /^## (.*)$/gm,
+    "<h2>$1</h2>"
+  );
+
+  html = html.replace(
+    /^# (.*)$/gm,
+    "<h1>$1</h1>"
+  );
+
+  // Bold
+  html = html.replace(
+    /\*\*(.*?)\*\*/g,
+    "<strong>$1</strong>"
+  );
+
+  // Italic
+  html = html.replace(
+    /(?<!\*)\*([^*]+)\*(?!\*)/g,
+    "<em>$1</em>"
+  );
+
+  // Links
+  html = html.replace(
+    /$begin:math:display$\(\[\^$end:math:display$]+)\]$begin:math:text$\(https\?\:\\\/\\\/\[\^\\s\)\]\+\)$end:math:text$/g,
+    '<a href="$2" target="_blank" rel="noopener">$1</a>'
+  );
+
+  // Bullet list
+  html = html.replace(
+    /(?:^|\n)((?:[-*] .+(?:\n|$))+)/g,
+    function(match, list) {
+
+      const items =
+        list
+          .trim()
+          .split("\n")
+          .map(
+            item =>
+              "<li>" +
+              item.replace(/^[-*] /, "") +
+              "</li>"
+          )
+          .join("");
+
+      return "\n<ul>" +
+        items +
+        "</ul>\n";
+
+    }
+  );
+
+  // Numbered list
+  html = html.replace(
+    /(?:^|\n)((?:\d+\. .+(?:\n|$))+)/g,
+    function(match, list) {
+
+      const items =
+        list
+          .trim()
+          .split("\n")
+          .map(
+            item =>
+              "<li>" +
+              item.replace(/^\d+\. /, "") +
+              "</li>"
+          )
+          .join("");
+
+      return "\n<ol>" +
+        items +
+        "</ol>\n";
+
+    }
+  );
+
+  // Paragraphs
+  html = html
+    .split(/\n{2,}/)
+    .map(
+      block => {
+
+        if (
+          block.startsWith("<h1>") ||
+          block.startsWith("<h2>") ||
+          block.startsWith("<h3>") ||
+          block.startsWith("<ul>") ||
+          block.startsWith("<ol>") ||
+          block.startsWith("<pre>")
+        ) {
+          return block;
+        }
+
+        return "<p>" +
+          block.replace(/\n/g, "<br>") +
+          "</p>";
+
+      }
+    )
+    .join("");
+
+  return html;
+}
 
 
 /* =========================
@@ -661,15 +854,11 @@ async function sendMessage() {
   }
 
 
-  /* Hide welcome */
-
   if (welcome) {
     welcome.style.display =
       "none";
   }
 
-
-  /* Add user message */
 
   addMessage(
     message,
@@ -677,19 +866,12 @@ async function sendMessage() {
   );
 
 
-  /* Clear input */
-
   input.value = "";
-
-
-  /* Disable button */
 
   sendButton.disabled = true;
 
 
-  /* =========================
-     THINKING
-  ========================= */
+  /* THINKING */
 
   const thinking =
     document.createElement(
@@ -726,10 +908,6 @@ async function sendMessage() {
 
   try {
 
-    /* =====================
-       REQUEST WORKER
-    ====================== */
-
     const response =
       await fetch(
         VIXORA_API,
@@ -749,10 +927,6 @@ async function sendMessage() {
       );
 
 
-    /* =====================
-       ERROR
-    ====================== */
-
     if (!response.ok) {
 
       const errorText =
@@ -766,14 +940,10 @@ async function sendMessage() {
     }
 
 
-    /* Remove thinking */
-
     thinking.remove();
 
 
-    /* =====================
-       CREATE BOT MESSAGE
-    ====================== */
+    /* BOT MESSAGE */
 
     const botMessage =
       document.createElement(
@@ -803,9 +973,7 @@ async function sendMessage() {
     );
 
 
-    /* =====================
-       STREAM READER
-    ====================== */
+    /* STREAM */
 
     const reader =
       response.body.getReader();
@@ -846,10 +1014,10 @@ async function sendMessage() {
       fullText += chunk;
 
 
-      /* Update text */
-
-      botBubble.textContent =
-        fullText;
+      botBubble.innerHTML =
+        renderMarkdown(
+          fullText
+        );
 
 
       scrollBottom();
@@ -857,7 +1025,13 @@ async function sendMessage() {
     }
 
 
-    /* Remove cursor */
+    /* FINAL RENDER */
+
+    botBubble.innerHTML =
+      renderMarkdown(
+        fullText
+      );
+
 
     botBubble.classList.remove(
       "streaming-cursor"
@@ -888,11 +1062,8 @@ async function sendMessage() {
   }
 
 
-  /* Enable button */
-
   sendButton.disabled =
     false;
-
 
   input.focus();
 
@@ -1001,7 +1172,7 @@ function newChat() {
 
 
 /* =========================
-   ENTER TO SEND
+   ENTER
 ========================= */
 
 document
