@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vixora — Your AI. Your Way.</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #0d0d0f;
+            color: white;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            padding: 18px 20px;
+            border-bottom: 1px solid #29292d;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        header span {
+            color: #8b5cf6;
+        }
+
+        #chat {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        .user {
+            text-align: right;
+        }
+
+        .user span {
+            background: #8b5cf6;
+            padding: 10px 14px;
+            border-radius: 15px;
+            display: inline-block;
+            max-width: 80%;
+        }
+
+        .bot span {
+            background: #1b1b1f;
+            padding: 10px 14px;
+            border-radius: 15px;
+            display: inline-block;
+            max-width: 80%;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #29292d;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            border: 1px solid #333;
+            background: #18181b;
+            color: white;
+            outline: none;
+        }
+
+        button {
+            padding: 14px 18px;
+            border: none;
+            border-radius: 12px;
+            background: #8b5cf6;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            opacity: 0.85;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        ✦ <span>VIXORA</span>
+    </header>
+
+    <div id="chat">
+        <div class="message bot">
+            <span>Halo 👋 Aku Vixora. Ada yang bisa aku bantu?</span>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input 
+            type="text" 
+            id="messageInput" 
+            placeholder="Tulis pesan..."
+            onkeydown="handleEnter(event)"
+        >
+
+        <button onclick="sendMessage()">Kirim</button>
+    </div>
+
+    <script>
+        function sendMessage() {
+            const input = document.getElementById("messageInput");
+            const message = input.value.trim();
+
+            if (message === "") return;
+
+            const chat = document.getElementById("chat");
+
+            chat.innerHTML += `
+                <div class="message user">
+                    <span>${message}</span>
+                </div>
+            `;
+
+            input.value = "";
+
+            setTimeout(() => {
+                chat.innerHTML += `
+                    <div class="message bot">
+                        <span>Aku masih belajar 🧠. Nanti kita sambungkan aku dengan AI sungguhan!</span>
+                    </div>
+                `;
+
+                chat.scrollTop = chat.scrollHeight;
+            }, 500);
+
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function handleEnter(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+    </script>
+
+</body>
+</html>
