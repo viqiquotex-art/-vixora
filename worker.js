@@ -1,14 +1,22 @@
+javascript
 export default {
   async fetch(request, env) {
+
+    // ==========================================
+    // CORS
+    // ==========================================
+
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
       "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    // =========================
-    // CORS PREFLIGHT
-    // =========================
+
+    // ==========================================
+    // OPTIONS
+    // ==========================================
+
     if (request.method === "OPTIONS") {
       return new Response(null, {
         status: 204,
@@ -16,28 +24,33 @@ export default {
       });
     }
 
-    // =========================
-    // TEST GET
-    // =========================
+
+    // ==========================================
+    // GET — TEST
+    // ==========================================
+
     if (request.method === "GET") {
       return new Response(
         JSON.stringify({
           status: "ok",
-          message: "Vixora Gemini AI is running 🤖",
+          message: "Vixora Turbo AI is running ⚡",
         }),
         {
           status: 200,
           headers: {
-            "Content-Type": "application/json; charset=utf-8",
+            "Content-Type":
+              "application/json; charset=utf-8",
             ...corsHeaders,
           },
         }
       );
     }
 
-    // =========================
-    // ONLY POST ALLOWED
-    // =========================
+
+    // ==========================================
+    // ONLY POST
+    // ==========================================
+
     if (request.method !== "POST") {
       return jsonResponse(
         {
@@ -48,10 +61,13 @@ export default {
       );
     }
 
+
     try {
-      // =========================
+
+      // ========================================
       // CHECK API KEY
-      // =========================
+      // ========================================
+
       if (!env.GEMINI_API_KEY) {
         return jsonResponse(
           {
@@ -64,9 +80,11 @@ export default {
         );
       }
 
-      // =========================
-      // READ REQUEST BODY
-      // =========================
+
+      // ========================================
+      // READ BODY
+      // ========================================
+
       let body;
 
       try {
@@ -82,10 +100,12 @@ export default {
         );
       }
 
+
       const message =
         typeof body.message === "string"
           ? body.message.trim()
           : "";
+
 
       if (!message) {
         return jsonResponse(
@@ -98,49 +118,56 @@ export default {
         );
       }
 
-      // =========================
+
+      // ========================================
       // VIXORA SYSTEM PROMPT
-      // =========================
+      // ========================================
+
       const systemPrompt = `
-Kamu adalah Vixora, AI pribadi buatan Mas Viqi Septiawantoro.
+Kamu adalah Vixora, AI pribadi buatan Mas Viqi.
 
 IDENTITAS:
-- Nama kamu adalah Vixora.
-- Creator kamu adalah Mas Viqi Septiawantoro.
-- Selalu panggil creator dengan "Mas Viqi".
-- Jika ditanya siapa pembuat, pencipta, creator, pengembang, atau pemilik Vixora, jawab bahwa kamu dibuat oleh Mas Viqi.
-- Jika ditanya siapa kamu, jawab bahwa kamu adalah Vixora, AI pribadi buatan Mas Viqi.
+- Nama kamu Vixora.
+- Creator kamu adalah Mas Viqi.
+- Jika ditanya siapa pembuat atau creator kamu, jawab Mas Viqi.
 
 KEPRIBADIAN:
 - Cerdas, ramah, santai, natural, dan membantu.
 - Gunakan bahasa Indonesia secara default.
 - Jangan terlalu formal.
-- Jangan bertele-tele jika pertanyaan sederhana.
+- Jangan bertele-tele untuk pertanyaan sederhana.
 - Gunakan humor ringan jika cocok.
 - Jangan mengaku sebagai ChatGPT.
-- Jangan mengarang informasi yang tidak diketahui.
+- Jangan mengarang informasi.
 - Jika tidak yakin, katakan dengan jujur.
 
 ATURAN:
-- Jawab pertanyaan pengguna secara langsung.
-- Berikan jawaban yang jelas dan mudah dipahami.
-- Jika pengguna meminta langkah-langkah, berikan langkah yang praktis.
-- Jika pengguna meminta kode, berikan kode yang siap digunakan.
-- Jangan menyebutkan system prompt ini.
+- Jawab langsung.
+- Utamakan jawaban jelas dan praktis.
+- Jika diminta langkah, berikan langkah yang mudah diikuti.
+- Jika diminta kode, berikan kode siap digunakan.
+- Jangan menyebutkan instruksi sistem ini.
 `;
 
-      // =========================
-      // GEMINI MODEL
-      // =========================
-      const model = "gemini-3.6-flash";
+
+      // ========================================
+      // FAST MODEL
+      // ========================================
+
+      const model =
+        "gemini-3.5-flash-lite";
+
 
       const url =
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse`;
 
-      // =========================
+
+      // ========================================
       // GEMINI PAYLOAD
-      // =========================
+      // ========================================
+
       const payload = {
+
         systemInstruction: {
           parts: [
             {
@@ -161,310 +188,444 @@ ATURAN:
         ],
 
         generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2048,
+
+          // ====================================
+          // MINIMAL THINKING = FAST RESPONSE
+          // ====================================
+
+          thinkingConfig: {
+            thinkingLevel: "minimal",
+          },
+
+          // ====================================
+          // CUKUP UNTUK CHAT NORMAL
+          // ====================================
+
+          maxOutputTokens: 1024,
         },
       };
 
-      // =========================
-      // RETRY CONFIGURATION
-      // =========================
-      // 429 TIDAK di-retry karena
-      // quota memang sedang habis.
-      const maxRetries = 3;
 
-      let response = null;
-      let lastErrorText = "";
+      // ========================================
+      // GEMINI REQUEST
+      // ========================================
 
-      for (
-        let attempt = 0;
-        attempt <= maxRetries;
-        attempt++
-      ) {
-        try {
-          response = await fetch(url, {
+      let response;
+
+      try {
+
+        response = await fetch(
+          url,
+          {
             method: "POST",
 
             headers: {
-              "Content-Type": "application/json",
-              "x-goog-api-key": env.GEMINI_API_KEY,
+              "Content-Type":
+                "application/json",
+
+              "x-goog-api-key":
+                env.GEMINI_API_KEY,
             },
 
             body: JSON.stringify(payload),
-          });
-
-          // =========================
-          // SUCCESS
-          // =========================
-          if (response.ok) {
-            break;
           }
-
-          // =========================
-          // READ ERROR
-          // =========================
-          lastErrorText = await response.text();
-
-          // =========================
-          // 429 = JANGAN RETRY
-          // =========================
-          if (response.status === 429) {
-            break;
-          }
-
-          // =========================
-          // RETRY ONLY SERVER ERRORS
-          // =========================
-          const shouldRetry =
-            response.status === 500 ||
-            response.status === 502 ||
-            response.status === 503 ||
-            response.status === 504;
-
-          if (!shouldRetry || attempt === maxRetries) {
-            break;
-          }
-
-          // =========================
-          // EXPONENTIAL BACKOFF
-          // =========================
-          const delay =
-            Math.min(
-              1000 * Math.pow(2, attempt),
-              8000
-            ) +
-            Math.floor(Math.random() * 500);
-
-          await sleep(delay);
-        } catch (error) {
-          lastErrorText =
-            error?.message || "Network error";
-
-          if (attempt === maxRetries) {
-            break;
-          }
-
-          const delay =
-            Math.min(
-              1000 * Math.pow(2, attempt),
-              8000
-            ) +
-            Math.floor(Math.random() * 500);
-
-          await sleep(delay);
-        }
-      }
-
-      // =========================
-      // GEMINI ERROR HANDLING
-      // =========================
-      if (!response || !response.ok) {
-        return handleGeminiError(
-          response?.status || 500,
-          lastErrorText,
-          corsHeaders
         );
-      }
 
-      // =========================
-      // CHECK STREAM BODY
-      // =========================
-      if (!response.body) {
+      } catch (error) {
+
+        console.error(
+          "GEMINI_NETWORK_ERROR",
+          error
+        );
+
         return jsonResponse(
           {
             error:
-              "Gemini tidak mengembalikan response stream.",
-            code: "NO_RESPONSE_BODY",
+              "Tidak dapat terhubung ke Gemini.",
+            code:
+              "GEMINI_NETWORK_ERROR",
           },
           502,
           corsHeaders
         );
       }
 
-      // =========================
-      // STREAM READER
-      // =========================
-      const decoder = new TextDecoder();
-      const encoder = new TextEncoder();
-      const reader = response.body.getReader();
 
-      const stream = new ReadableStream({
-        async start(controller) {
-          let buffer = "";
+      // ========================================
+      // GEMINI ERROR
+      // ========================================
 
-          try {
-            while (true) {
-              const { done, value } =
-                await reader.read();
+      if (!response.ok) {
 
-              if (done) {
-                break;
-              }
+        const errorText =
+          await response.text();
 
-              buffer += decoder.decode(value, {
-                stream: true,
-              });
+        return handleGeminiError(
+          response.status,
+          errorText,
+          corsHeaders
+        );
+      }
 
-              const lines = buffer.split("\n");
 
-              buffer = lines.pop() || "";
+      // ========================================
+      // CHECK STREAM
+      // ========================================
 
-              for (const line of lines) {
-                const trimmed = line.trim();
+      if (!response.body) {
 
-                // Skip empty lines
-                if (!trimmed) {
-                  continue;
+        return jsonResponse(
+          {
+            error:
+              "Gemini tidak mengembalikan response stream.",
+            code:
+              "NO_RESPONSE_BODY",
+          },
+          502,
+          corsHeaders
+        );
+      }
+
+
+      // ========================================
+      // STREAM GEMINI → VIXORA
+      // ========================================
+
+      const reader =
+        response.body.getReader();
+
+      const decoder =
+        new TextDecoder();
+
+      const encoder =
+        new TextEncoder();
+
+
+      const stream =
+        new ReadableStream({
+
+          async start(controller) {
+
+            let buffer = "";
+
+
+            try {
+
+              while (true) {
+
+                const {
+                  done,
+                  value
+                } =
+                  await reader.read();
+
+
+                if (done) {
+                  break;
                 }
 
-                // Only process SSE data
-                if (!trimmed.startsWith("data:")) {
-                  continue;
-                }
 
-                const jsonText = trimmed
-                  .slice(5)
-                  .trim();
+                // Decode incoming bytes
 
-                if (!jsonText) {
-                  continue;
-                }
+                buffer +=
+                  decoder.decode(
+                    value,
+                    {
+                      stream: true,
+                    }
+                  );
 
-                try {
-                  const data =
-                    JSON.parse(jsonText);
 
-                  // =========================
-                  // STREAM ERROR
-                  // =========================
-                  if (data.error) {
-                    controller.error(
-                      new Error(
-                        data.error.message ||
-                          "Gemini stream error"
-                      )
-                    );
+                // Split SSE lines
 
-                    return;
-                  }
+                const lines =
+                  buffer.split("\n");
 
-                  // =========================
-                  // EXTRACT TEXT
-                  // =========================
-                  const parts =
-                    data.candidates?.[0]
-                      ?.content?.parts;
 
-                  if (!Array.isArray(parts)) {
+                // Keep incomplete line
+
+                buffer =
+                  lines.pop() || "";
+
+
+                for (
+                  const line
+                  of lines
+                ) {
+
+                  const trimmed =
+                    line.trim();
+
+
+                  if (!trimmed) {
                     continue;
                   }
 
-                  for (const part of parts) {
-                    if (
-                      typeof part.text === "string" &&
-                      part.text.length > 0
-                    ) {
-                      controller.enqueue(
-                        encoder.encode(part.text)
-                      );
-                    }
+
+                  // Only SSE data
+
+                  if (
+                    !trimmed.startsWith(
+                      "data:"
+                    )
+                  ) {
+                    continue;
                   }
-                } catch {
-                  // Ignore incomplete JSON chunks
-                }
-              }
-            }
 
-            // =========================
-            // PROCESS REMAINING BUFFER
-            // =========================
-            if (
-              buffer.trim().startsWith("data:")
-            ) {
-              const jsonText = buffer
-                .trim()
-                .slice(5)
-                .trim();
 
-              if (jsonText) {
-                try {
-                  const data =
-                    JSON.parse(jsonText);
+                  const jsonText =
+                    trimmed
+                      .slice(5)
+                      .trim();
 
-                  const parts =
-                    data.candidates?.[0]
-                      ?.content?.parts;
 
-                  if (Array.isArray(parts)) {
-                    for (const part of parts) {
+                  if (!jsonText) {
+                    continue;
+                  }
+
+
+                  try {
+
+                    const data =
+                      JSON.parse(
+                        jsonText
+                      );
+
+
+                    // ======================
+                    // STREAM ERROR
+                    // ======================
+
+                    if (data.error) {
+
+                      controller.error(
+                        new Error(
+                          data.error.message ||
+                          "Gemini stream error"
+                        )
+                      );
+
+                      return;
+                    }
+
+
+                    // ======================
+                    // GET TEXT
+                    // ======================
+
+                    const parts =
+                      data
+                        .candidates?.[0]
+                        ?.content?.parts;
+
+
+                    if (
+                      !Array.isArray(
+                        parts
+                      )
+                    ) {
+                      continue;
+                    }
+
+
+                    for (
+                      const part
+                      of parts
+                    ) {
+
                       if (
                         typeof part.text ===
-                          "string" &&
+                        "string" &&
                         part.text.length > 0
                       ) {
+
                         controller.enqueue(
-                          encoder.encode(part.text)
+                          encoder.encode(
+                            part.text
+                          )
                         );
+
                       }
+
                     }
+
+                  } catch {
+
+                    // Ignore incomplete SSE JSON
+
                   }
-                } catch {
-                  // Ignore incomplete JSON
+
                 }
+
               }
+
+
+              // =================================
+              // FLUSH DECODER
+              // =================================
+
+              buffer +=
+                decoder.decode();
+
+
+              // =================================
+              // PROCESS FINAL BUFFER
+              // =================================
+
+              const finalLine =
+                buffer.trim();
+
+
+              if (
+                finalLine.startsWith(
+                  "data:"
+                )
+              ) {
+
+                const jsonText =
+                  finalLine
+                    .slice(5)
+                    .trim();
+
+
+                if (jsonText) {
+
+                  try {
+
+                    const data =
+                      JSON.parse(
+                        jsonText
+                      );
+
+
+                    const parts =
+                      data
+                        .candidates?.[0]
+                        ?.content?.parts;
+
+
+                    if (
+                      Array.isArray(
+                        parts
+                      )
+                    ) {
+
+                      for (
+                        const part
+                        of parts
+                      ) {
+
+                        if (
+                          typeof part.text ===
+                          "string" &&
+                          part.text.length > 0
+                        ) {
+
+                          controller.enqueue(
+                            encoder.encode(
+                              part.text
+                            )
+                          );
+
+                        }
+
+                      }
+
+                    }
+
+                  } catch {
+
+                    // Ignore incomplete final JSON
+
+                  }
+
+                }
+
+              }
+
+
+              controller.close();
+
+            } catch (error) {
+
+              console.error(
+                "VIXORA_STREAM_ERROR",
+                error
+              );
+
+              controller.error(
+                error
+              );
+
+            } finally {
+
+              try {
+                reader.releaseLock();
+              } catch {}
+
             }
 
-            controller.close();
-          } catch (error) {
-            controller.error(error);
-          } finally {
-            try {
-              reader.releaseLock();
-            } catch {}
-          }
-        },
-      });
+          },
 
-      // =========================
+        });
+
+
+      // ========================================
       // RETURN STREAM
-      // =========================
-      return new Response(stream, {
-        status: 200,
+      // ========================================
 
-        headers: {
-          "Content-Type":
-            "text/plain; charset=utf-8",
+      return new Response(
+        stream,
+        {
+          status: 200,
 
-          "Cache-Control":
-            "no-cache, no-transform",
+          headers: {
 
-          "X-Accel-Buffering": "no",
+            "Content-Type":
+              "text/plain; charset=utf-8",
 
-          ...corsHeaders,
-        },
-      });
+            "Cache-Control":
+              "no-cache, no-transform",
+
+            "X-Accel-Buffering":
+              "no",
+
+            "Connection":
+              "keep-alive",
+
+            ...corsHeaders,
+          },
+        }
+      );
+
+
     } catch (error) {
+
       console.error(
         "VIXORA_WORKER_ERROR",
         error
       );
 
+
       return jsonResponse(
         {
           error:
             "Vixora mengalami kesalahan server.",
-          code: "WORKER_ERROR",
+          code:
+            "WORKER_ERROR",
         },
         500,
         corsHeaders
       );
+
     }
+
   },
 };
 
 
 // ==========================================
-// HELPER: JSON RESPONSE
+// JSON RESPONSE
 // ==========================================
 
 function jsonResponse(
@@ -472,6 +633,7 @@ function jsonResponse(
   status,
   corsHeaders
 ) {
+
   return new Response(
     JSON.stringify(data),
     {
@@ -485,22 +647,12 @@ function jsonResponse(
       },
     }
   );
+
 }
 
 
 // ==========================================
-// HELPER: SLEEP
-// ==========================================
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-
-// ==========================================
-// HELPER: GEMINI ERROR
+// GEMINI ERROR HANDLER
 // ==========================================
 
 function handleGeminiError(
@@ -508,13 +660,21 @@ function handleGeminiError(
   errorText,
   corsHeaders
 ) {
+
   let geminiError = null;
 
+
   try {
-    geminiError = JSON.parse(errorText);
+
+    geminiError =
+      JSON.parse(
+        errorText
+      );
+
   } catch {
-    // Error bukan JSON
+    // Not JSON
   }
+
 
   const apiMessage =
     geminiError?.error?.message ||
@@ -522,106 +682,155 @@ function handleGeminiError(
     errorText ||
     "Tidak ada detail error dari Gemini.";
 
+
   let userMessage =
     "Vixora gagal menghubungi Gemini.";
 
-  let code = "GEMINI_ERROR";
 
-  // =========================
+  let code =
+    "GEMINI_ERROR";
+
+
+  // ========================================
   // 400
-  // =========================
+  // ========================================
+
   if (status === 400) {
+
     userMessage =
       "Request Vixora ke Gemini tidak valid.";
 
-    code = "GEMINI_BAD_REQUEST";
+    code =
+      "GEMINI_BAD_REQUEST";
+
   }
 
-  // =========================
+
+  // ========================================
   // 401
-  // =========================
+  // ========================================
+
   else if (status === 401) {
+
     userMessage =
       "API key Gemini tidak valid atau sudah tidak berlaku.";
 
-    code = "GEMINI_UNAUTHORIZED";
+    code =
+      "GEMINI_UNAUTHORIZED";
+
   }
 
-  // =========================
+
+  // ========================================
   // 403
-  // =========================
+  // ========================================
+
   else if (status === 403) {
-    userMessage =
-      "API key Gemini tidak memiliki izin menggunakan resource ini.";
 
-    code = "GEMINI_FORBIDDEN";
+    userMessage =
+      "API key Gemini tidak memiliki izin menggunakan model ini.";
+
+    code =
+      "GEMINI_FORBIDDEN";
+
   }
 
-  // =========================
+
+  // ========================================
   // 404
-  // =========================
+  // ========================================
+
   else if (status === 404) {
-    userMessage =
-      "Model Gemini tidak ditemukan. Periksa konfigurasi model.";
 
-    code = "GEMINI_MODEL_NOT_FOUND";
+    userMessage =
+      "Model Gemini tidak ditemukan.";
+
+    code =
+      "GEMINI_MODEL_NOT_FOUND";
+
   }
 
-  // =========================
+
+  // ========================================
   // 429
-  // =========================
-  else if (status === 429) {
-    userMessage =
-      "Kuota Gemini Vixora sedang habis. Silakan coba lagi setelah kuota tersedia.";
+  // ========================================
 
-    code = "GEMINI_RATE_LIMIT";
+  else if (status === 429) {
+
+    userMessage =
+      "Kuota Gemini Vixora sedang habis. Coba lagi setelah quota tersedia.";
+
+    code =
+      "GEMINI_RATE_LIMIT";
+
   }
 
-  // =========================
+
+  // ========================================
   // 500
-  // =========================
+  // ========================================
+
   else if (status === 500) {
+
     userMessage =
       "Gemini sedang mengalami gangguan server.";
 
-    code = "GEMINI_SERVER_ERROR";
+    code =
+      "GEMINI_SERVER_ERROR";
+
   }
 
-  // =========================
+
+  // ========================================
   // 502 / 503 / 504
-  // =========================
+  // ========================================
+
   else if (
     status === 502 ||
     status === 503 ||
     status === 504
   ) {
-    userMessage =
-      "Layanan Gemini sedang sibuk. Silakan coba lagi.";
 
-    code = "GEMINI_TEMPORARY_ERROR";
+    userMessage =
+      "Gemini sedang sibuk. Silakan coba lagi.";
+
+    code =
+      "GEMINI_TEMPORARY_ERROR";
+
   }
 
-  // =========================
-  // LOG DETAIL DI CLOUDFLARE
-  // =========================
+
+  // ========================================
+  // CLOUDFLARE LOG
+  // ========================================
+
   console.error(
     "GEMINI_API_ERROR",
     JSON.stringify({
       status,
       code,
-      message: apiMessage,
+      message:
+        apiMessage,
     })
   );
 
-  // =========================
-  // RESPONSE KE FRONTEND
-  // =========================
+
+  // ========================================
+  // FRONTEND RESPONSE
+  // ========================================
+
   return jsonResponse(
     {
-      error: userMessage,
-      code,
+      error:
+        userMessage,
+
+      code:
+        code,
     },
+
     status,
+
     corsHeaders
   );
+
 }
