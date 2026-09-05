@@ -19,22 +19,22 @@ function App() {
 
   const scrollTo = (id) => {
     setMenuOpen(false)
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
     <div className="app-shell">
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
+      <div className="ambient ambient-one" aria-hidden="true" />
+      <div className="ambient ambient-two" aria-hidden="true" />
 
       <header className="nav-wrap">
-        <nav className="nav container">
+        <nav className="nav container" aria-label="Navigasi utama">
           <button className="brand" onClick={() => scrollTo('home')} aria-label="Vixora Home">
-            <span className="brand-mark">V</span>
+            <span className="brand-mark" aria-hidden="true">V</span>
             <span>VIXORA</span>
           </button>
 
-          <div className={`nav-links ${menuOpen ? 'open' : ''}`}>
+          <div className={`nav-links ${menuOpen ? 'open' : ''}`} id="mobile-navigation">
             <button onClick={() => scrollTo('services')}>Jasa</button>
             <button onClick={() => scrollTo('products')}>Produk</button>
             <button onClick={() => scrollTo('works')}>Karya</button>
@@ -42,7 +42,13 @@ function App() {
           </div>
 
           <button className="nav-cta" onClick={() => scrollTo('contact')}>Hubungi Saya <span>↗</span></button>
-          <button className="menu-btn" onClick={() => setMenuOpen(v => !v)} aria-label="Menu">☰</button>
+          <button
+            className="menu-btn"
+            onClick={() => setMenuOpen(v => !v)}
+            aria-label={menuOpen ? 'Tutup menu' : 'Buka menu'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-navigation"
+          >☰</button>
         </nav>
       </header>
 
@@ -59,10 +65,10 @@ function App() {
             <div className="hero-note"><span>●</span> Sedang membangun sesuatu yang baru</div>
           </div>
 
-          <aside className="hero-card">
-            <div className="card-glow" />
+          <aside className="hero-card" aria-label="Profil VIXORA">
+            <div className="card-glow" aria-hidden="true" />
             <div className="profile-top">
-              <div className="avatar">V</div>
+              <div className="avatar" aria-hidden="true">V</div>
               <div><strong>Viqi Septiawantoro</strong><small>Creator • Digital Builder</small></div>
             </div>
             <div className="hero-card-main">
@@ -82,7 +88,7 @@ function App() {
           <div className="container">
             <SectionHead kicker="01 / SERVICES" title="Apa yang saya kerjakan" text="Layanan kreatif dan digital untuk membantu kebutuhan personal maupun bisnis." />
             <div className="grid-3">
-              {services.map(([icon, title, text, tag]) => <article className="card" key={title}><div className="icon">{icon}</div><h3>{title}</h3><p>{text}</p><span className="tag">{tag}</span></article>)}
+              {services.map(([icon, title, text, tag]) => <article className="card" key={title}><div className="icon" aria-hidden="true">{icon}</div><h3>{title}</h3><p>{text}</p><span className="tag">{tag}</span></article>)}
             </div>
           </div>
         </section>
@@ -102,7 +108,7 @@ function App() {
           <div className="container">
             <SectionHead kicker="03 / SELECTED WORKS" title="Karya & project" text="Beberapa project yang menjadi bagian dari perjalanan digital VIXORA." />
             <div className="work-grid">
-              {works.map(([no, title, text]) => <article className="card work" key={no}><div className="work-top"><span>PROJECT {no}</span><b>↗</b></div><div><h3>{title}</h3><p>{text}</p></div></article>)}
+              {works.map(([no, title, text]) => <article className="card work" key={no}><div className="work-top"><span>PROJECT {no}</span><b aria-hidden="true">↗</b></div><div><h3>{title}</h3><p>{text}</p></div></article>)}
             </div>
           </div>
         </section>
@@ -117,8 +123,8 @@ function App() {
 
       <footer><div className="container footer-inner"><span>© 2026 VIXORA — Viqi Septiawantoro</span><span>Built with curiosity & code.</span></div></footer>
 
-      <button className={`ai-fab ${chatOpen ? 'active' : ''}`} onClick={() => setChatOpen(v => !v)} aria-label="Vixora AI">✦</button>
-      {chatOpen && <div className="ai-pop"><b>VIXORA AI</b><p>Halo 👋 Saya siap jadi pintu masuk ke ekosistem VIXORA. Fitur AI sedang disiapkan.</p><button onClick={() => setChatOpen(false)}>Tutup</button></div>}
+      <button className={`ai-fab ${chatOpen ? 'active' : ''}`} onClick={() => setChatOpen(v => !v)} aria-label={chatOpen ? 'Tutup Vixora AI' : 'Buka Vixora AI'} aria-expanded={chatOpen}>✦</button>
+      {chatOpen && <div className="ai-pop" role="dialog" aria-label="Vixora AI"><b>VIXORA AI</b><p>Halo 👋 Saya siap jadi pintu masuk ke ekosistem VIXORA. Fitur AI sedang disiapkan.</p><button onClick={() => setChatOpen(false)}>Tutup</button></div>}
     </div>
   )
 }
@@ -128,7 +134,7 @@ function SectionHead({ kicker, title, text }) {
 }
 
 function Product({ icon, title, meta, text }) {
-  return <article className="card product"><div className="product-cover"><span>{icon}</span><small>VIXORA</small></div><div className="product-body"><span className="product-meta">{meta}</span><h3>{title}</h3><p>{text}</p><a className="text-link" href="https://viqiquotex-art.github.io/pembukuan-app/">Buka project <span>↗</span></a></div></article>
+  return <article className="card product"><div className="product-cover" aria-hidden="true"><span>{icon}</span><small>VIXORA</small></div><div className="product-body"><span className="product-meta">{meta}</span><h3>{title}</h3><p>{text}</p><a className="text-link" href="https://viqiquotex-art.github.io/pembukuan-app/" target="_blank" rel="noopener noreferrer">Buka project <span>↗</span></a></div></article>
 }
 
 export default App
