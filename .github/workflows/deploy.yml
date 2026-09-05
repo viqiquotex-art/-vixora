@@ -32,8 +32,11 @@ jobs:
       - name: Build Vite
         run: npm run build
 
+      - name: Ensure custom domain
+        run: cp CNAME dist/CNAME
+
       - name: Verify dist
-        run: test -f dist/index.html && test -d dist/assets
+        run: test -f dist/index.html && test -d dist/assets && test -f dist/CNAME
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
