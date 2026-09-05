@@ -1,91 +1,48 @@
 export default {
-  async fetch(request, env) {
-
-    // ==========================================
-    // CORS
-    // ==========================================
-
+  async fetch(request) {
     const corsHeaders = {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS, GET",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type",
     };
 
-    // ==========================================
-    // OPTIONS
-    // ==========================================
-
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
-    }
-
-    // ==========================================
-    // GET — Health Check
-    // ==========================================
-
-    if (request.method === "GET") {
-      return new Response(
-        JSON.stringify({
-          status: "ok",
-          message: "Vixora Worker is running 🤖",
-        }),
-        {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-    }
-
-    // ==========================================
-    // POST — Basic API Response
-    // ==========================================
-
-    if (request.method === "POST") {
-      try {
-        const body = await request.json();
-
-        return new Response(
-          JSON.stringify({
-            success: true,
-            received: body,
-          }),
-          {
-            status: 200,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      } catch (error) {
-        return new Response(
-          JSON.stringify({
-            success: false,
-            error: "Invalid JSON request",
-          }),
-          {
-            status: 400,
-            headers: {
-              ...corsHeaders,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-      }
-    }
-
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      {
-        status: 405,
+    const json = (data, status = 200, extraHeaders = {}) =>
+      new Response(JSON.stringify(data), {
+        status,
         headers: {
           ...corsHeaders,
-          "Content-Type": "application/json",
+          "Content-Type": "application/json; charset=UTF-8",
+          "Cache-Control": "no-store",
+          ...extraHeaders,
         },
+      });
+
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders });
+    }
+
+    if (request.method === "GET") {
+      return json({ status: "ok", message: "Vixora Worker is running 🤖" });
+    }
+
+    if (request.method !== "POST") {
+      return json({ success: false, error: "Method not allowed" }, 405, {
+        Allow: "GET, POST, OPTIONS",
+      });
+    }
+
+    try {
+      const body = await request.json();
+
+      if (body === null || typeof body !== "object" || Array.isArray(body)) {
+        return json({ success: false, error: "Request body must be a JSON object" }, 400);
       }
-    );
+
+      // Placeholder endpoint. Do not echo the request body back to clients;
+      // future AI handling should happen here using server-side secrets.
+      return json({ success: true, message: "Request received" });
+    } catch {
+      return json({ success: false, error: "Invalid JSON request" }, 400);
+    }
   },
 };
