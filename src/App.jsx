@@ -1,248 +1,95 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
-const features = [
-  ['⚡', 'Fast to create', 'Ideas move from concept to something usable without unnecessary complexity.'],
-  ['✦', 'Creative by default', 'Design, presentation, content, and digital products live in one ecosystem.'],
-  ['⌘', 'Built for real use', 'Every project starts from a practical need and keeps improving through use.'],
-  ['◈', 'AI ready', 'VIXORA is designed to grow with intelligent tools and automation.'],
+const categories = ['All', 'Design', 'Code', 'Music', 'Video', 'AI', 'Experiments']
+const projects = [
+  { id: 1, title: 'VIXORA', category: 'Code', tools: 'React · CSS · GitHub', description: 'A personal digital universe for ideas, projects, experiments, and creative work.', visual: 'vixora' },
+  { id: 2, title: 'Pembukuan App', category: 'Code', tools: 'JavaScript · Web · GitHub', description: 'A focused digital tool for recording and understanding everyday finances.', visual: 'finance' },
+  { id: 3, title: 'Personal Website', category: 'Design', tools: 'UI · Typography · CSS', description: 'Explorations in personal identity, interface, layout, and visual direction.', visual: 'grid' },
+  { id: 4, title: 'Web Experiments', category: 'Experiments', tools: 'HTML · CSS · JavaScript', description: 'Small experiments built just to see what happens when an idea becomes interactive.', visual: 'code' },
+  { id: 5, title: 'AI Experiments', category: 'AI', tools: 'AI · Prompting · Creative Tools', description: 'Creative workflows exploring what happens when imagination meets generative technology.', visual: 'ai' },
+  { id: 6, title: 'Visual Studies', category: 'Design', tools: 'Canva · Visual Design', description: 'Posters, compositions, interfaces, and visual experiments made along the way.', visual: 'design' },
+  { id: 7, title: 'Video Playground', category: 'Video', tools: 'CapCut · Editing · Motion', description: 'Short-form edits, visual storytelling, transitions, and motion experiments.', visual: 'video' },
+  { id: 8, title: 'Sound Sketches', category: 'Music', tools: 'FL Studio · Instruments', description: 'Tracks, loops, textures, and unfinished sounds that may become something later.', visual: 'music' },
+]
+const toolkit = [
+  ['DESIGN', ['Canva', 'Graphic Design', 'Visual Design', 'Branding']],
+  ['CODE', ['HTML', 'CSS', 'JavaScript', 'React', 'GitHub']],
+  ['MUSIC', ['FL Studio', 'Music Production', 'Sound Design', 'Instruments']],
+  ['CREATIVE', ['Video Editing', 'Content Creation', 'AI Tools', 'Prompting']],
+]
+const garden = [
+  ['01', 'The internet is a playground', 'Thoughts on making things for the joy of making them.', 'idea'],
+  ['02', 'Learning in public', 'A collection of tiny discoveries, experiments, and unfinished thoughts.', 'learning'],
+  ['03', 'Small things matter', 'Sometimes the smallest interface detail is the most interesting part.', 'note'],
+  ['04', 'What if?', 'A place for questions before they become projects.', 'question'],
 ]
 
-const products = [
-  {
-    icon: 'N',
-    title: 'NEXA Kasir',
-    meta: 'Point of Sale',
-    text: 'Kasir digital untuk penjualan, produk, stok, keranjang, dan pembayaran.',
-    cta: 'Open product',
-    action: () => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' }),
-  },
-  {
-    icon: '₿',
-    title: 'NEXA Pembukuan',
-    meta: 'Business Finance',
-    text: 'Pembukuan pemasukan, pengeluaran, transaksi, dan rekap keuangan.',
-    cta: 'Open product',
-    action: () => window.open('https://viqiquotex-art.github.io/pembukuan-app/', '_blank', 'noopener,noreferrer'),
-  },
-  {
-    icon: '✦',
-    title: 'Creative Work',
-    meta: 'Design & Content',
-    text: 'Desain visual, presentasi, konten, dan pekerjaan kreatif untuk kebutuhan nyata.',
-    cta: 'View work',
-    action: () => document.getElementById('works')?.scrollIntoView({ behavior: 'smooth' }),
-  },
-]
-
-const services = [
-  ['✦', 'Desain Visual', 'Promosi, sosial media, banner, flyer, poster, dan materi visual digital.'],
-  ['▦', 'Presentasi & Dokumen', 'Presentasi profesional dan dokumen visual yang rapi, modern, dan mudah dipahami.'],
-  ['⌘', 'Web & Digital', 'Website, aplikasi, landing page, dan eksperimen digital untuk personal maupun bisnis.'],
-]
-
-const works = [
-  ['NEXA — Business App', 'Business tools for everyday operations.'],
-  ['VIXORA — Digital Ecosystem', 'Personal digital ecosystem and portfolio.'],
-  ['Creative Design Collection', 'Visual design, presentation, and content.'],
-  ['AI Experiments', 'Exploring useful AI-powered experiences.'],
-]
-
-function TechVisual() {
-  return (
-    <div className="tech-visual" aria-hidden="true">
-      <div className="tech-grid" />
-      <div className="tech-halo" />
-      <div className="tech-orbit o1"><i /><i /><i /><i /></div>
-      <div className="tech-orbit o2"><i /><i /><i /></div>
-      <div className="tech-orbit o3"><i /><i /></div>
-      <div className="tech-core"><b>V</b><span>VIXORA</span></div>
-      <div className="tech-node n1">AI</div>
-      <div className="tech-node n2">WEB</div>
-      <div className="tech-node n3">DESIGN</div>
-      <div className="tech-node n4">CODE</div>
-      <div className="tech-line l1" />
-      <div className="tech-line l2" />
-      <div className="tech-line l3" />
-    </div>
-  )
+function TechUniverse() {
+  return <div className="universe" aria-hidden="true">
+    <div className="universe-noise" /><div className="universe-grid" /><div className="universe-glow" />
+    <div className="universe-ring ring-a"><i /><i /><i /></div><div className="universe-ring ring-b"><i /><i /></div><div className="universe-ring ring-c"><i /><i /><i /><i /></div>
+    <div className="universe-core"><span>V</span><small>VIXORA</small></div>
+    <span className="universe-tag tag-a">CREATE</span><span className="universe-tag tag-b">EXPLORE</span><span className="universe-tag tag-c">BUILD</span><span className="universe-tag tag-d">REPEAT</span>
+    <span className="universe-dot dot-a" /><span className="universe-dot dot-b" /><span className="universe-dot dot-c" />
+  </div>
+}
+function ProjectVisual({ type }) {
+  const mark = type === 'vixora' ? 'V' : type === 'ai' ? '✦' : type === 'music' ? '♫' : type === 'code' ? '</>' : type === 'video' ? '▶' : '◈'
+  return <div className={`project-visual visual-${type}`}><span className="visual-orb" /><span className="visual-label">{type}</span><span className="visual-mark">{mark}</span></div>
 }
 
 function App() {
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [chatOpen, setChatOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false), [theme, setTheme] = useState('dark'), [filter, setFilter] = useState('All'), [selected, setSelected] = useState(null), [playing, setPlaying] = useState(false), [chatOpen, setChatOpen] = useState(false)
+  const visibleProjects = useMemo(() => filter === 'All' ? projects : projects.filter((project) => project.category === filter), [filter])
+  const go = (id) => { setMenuOpen(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }) }
 
-  const go = (id) => {
-    setMenuOpen(false)
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
+  return <div className={`app-shell theme-${theme}`}>
+    <header className="topbar"><div className="container nav-inner">
+      <button className="brand" onClick={() => go('home')}><span className="brand-mark">V</span><span>VIXORA</span></button>
+      <nav className={`nav-links ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">
+        <button onClick={() => go('about')}>About</button><button onClick={() => go('projects')}>Projects</button><button onClick={() => go('lab')}>Lab</button><button onClick={() => go('gallery')}>Gallery</button><button onClick={() => go('music')}>Music</button><button onClick={() => go('contact')}>Contact</button>
+      </nav>
+      <div className="nav-actions"><button className="theme-toggle" onClick={() => setTheme((v) => v === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">{theme === 'dark' ? '☼' : '◐'}</button><button className="menu-btn" onClick={() => setMenuOpen((v) => !v)} aria-label="Open menu">☰</button></div>
+    </div></header>
 
-  return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div className="container topbar-inner">
-          <button className="brand" onClick={() => go('home')} aria-label="Go to VIXORA home">
-            <span className="brand-mark">V</span><span>VIXORA</span>
-          </button>
+    <main id="home">
+      <section className="hero container"><div className="hero-copy">
+        <div className="eyebrow"><span /> PERSONAL DIGITAL UNIVERSE</div><h1>I Create Things<br /><em>That Should Exist.</em></h1><p className="hero-lead">Design, code, music, experiments, and random ideas — all in one place.</p>
+        <div className="hero-actions"><button className="primary-btn" onClick={() => go('projects')}>Explore Vixora <b>↗</b></button><button className="ghost-btn" onClick={() => go('projects')}>See my projects</button></div>
+        <div className="scroll-note"><span className="scroll-line" /> Scroll to explore</div>
+      </div><TechUniverse /></section>
 
-          <nav className={`top-links ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">
-            <button onClick={() => go('products')}>Products</button>
-            <button onClick={() => go('services')}>Services</button>
-            <button onClick={() => go('works')}>Projects</button>
-            <button onClick={() => go('about')}>About</button>
-          </nav>
+      <section className="ticker"><div className="ticker-track">CREATE <span>✦</span> EXPERIMENT <span>✦</span> DESIGN <span>✦</span> CODE <span>✦</span> MUSIC <span>✦</span> AI <span>✦</span> EXPLORE <span>✦</span> CREATE <span>✦</span> EXPERIMENT <span>✦</span></div></section>
 
-          <div className="top-actions">
-            <button
-              className="github-pill"
-              onClick={() => window.open('https://github.com/viqiquotex-art/-vixora', '_blank', 'noopener,noreferrer')}
-            >
-              GitHub ↗
-            </button>
-            <button className="menu-btn" onClick={() => setMenuOpen((v) => !v)} aria-label="Toggle navigation">
-              ☰
-            </button>
-          </div>
-        </div>
-      </header>
+      <section className="section about" id="about"><div className="container about-grid"><div className="section-kicker">01 / ABOUT</div><div className="about-copy"><h2>Hi, I'm <em>Viqi.</em></h2><p className="big-copy">I like turning random ideas into something real.</p><p>Sometimes it's a website. Sometimes it's a design. Sometimes it's music. Sometimes it's an experiment that probably didn't need to exist.</p><p>Vixora is where I collect the things I create, learn, explore, and experiment with.</p></div></div></section>
 
-      <main id="home">
-        <section className="hero container">
-          <div className="hero-copy">
-            <div className="eyebrow">VIXORA · DIGITAL ECOSYSTEM</div>
-            <h1>The digital space<br /><span>for useful ideas.</span></h1>
-            <p className="lead">
-              Products, creative work, services, and experiments by <b>Viqi Septiawantoro</b>.
-              Built with curiosity. Designed to be useful.
-            </p>
-            <div className="hero-actions">
-              <button className="primary-btn" onClick={() => go('products')}>Explore products →</button>
-              <button className="outline-btn" onClick={() => go('services')}>See services</button>
-            </div>
-            <div className="hero-meta">
-              <span><b>02+</b> Products</span>
-              <span><b>03</b> Services</span>
-              <span><b>∞</b> Ideas</span>
-            </div>
-          </div>
-          <TechVisual />
-        </section>
+      <section className="section creative-space" id="projects"><div className="container"><div className="section-head"><div><div className="section-kicker">02 / MY CREATIVE SPACE</div><h2>Things I like to <em>make.</em></h2></div><p>A few corners of the VIXORA universe. No strict rules. Just curiosity.</p></div><div className="space-grid">
+        {categories.slice(1).map((category, index) => <button className="space-card" key={category} onClick={() => { setFilter(category); go('project-gallery') }}><span className="space-number">0{index + 1}</span><span className="space-icon">{['◈', '</>', '♫', '▶', '✦', '∞'][index]}</span><h3>{category}</h3><span>Explore →</span></button>)}
+      </div></div></section>
 
-        <section className="feature-strip" aria-label="VIXORA principles">
-          <div className="container feature-grid">
-            {features.map(([icon, title, text]) => (
-              <article className="feature" key={title}>
-                <div className="feature-icon">{icon}</div>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+      <section className="section project-section" id="project-gallery"><div className="container"><div className="section-head" id="gallery"><div><div className="section-kicker">03 / THINGS I'VE MADE</div><h2>A digital <em>gallery.</em></h2></div><p>Projects are snapshots of what I'm building, learning, or simply enjoying.</p></div>
+        <div className="filter-row" role="tablist">{categories.map((category) => <button className={filter === category ? 'active' : ''} key={category} onClick={() => setFilter(category)}>{category}</button>)}</div>
+        <div className="projects-grid">{visibleProjects.map((project) => <article className="project-card" key={project.id} onClick={() => setSelected(project)}><ProjectVisual type={project.visual} /><div className="project-info"><div><span>{project.category}</span><h3>{project.title}</h3></div><b>↗</b><p>{project.description}</p><small>{project.tools}</small></div></article>)}</div>
+      </div></section>
 
-        <section className="section" id="products">
-          <div className="container">
-            <div className="section-heading">
-              <div><span>THE ECOSYSTEM</span><h2>Products built from ideas.</h2></div>
-              <p>Digital tools made to solve practical problems and keep getting better.</p>
-            </div>
-            <div className="product-grid">
-              {products.map((product, i) => (
-                <article className={`product-card ${i === 0 ? 'featured' : ''}`} key={product.title}>
-                  <div className="product-top">
-                    <div className="product-symbol">{product.icon}</div>
-                    <span>VIXORA / PRODUCT</span>
-                    <b>↗</b>
-                  </div>
-                  <div className="product-body">
-                    <small>{product.meta}</small>
-                    <h3>{product.title}</h3>
-                    <p>{product.text}</p>
-                    <button onClick={product.action}>{product.cta} →</button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+      <section className="section lab-section" id="lab"><div className="container"><div className="lab-banner"><div className="lab-copy"><div className="section-kicker">04 / VIXORA LAB</div><h2>Not everything<br />needs to become<br /><em>a product.</em></h2><p>Mini websites, UI experiments, JavaScript experiments, AI experiments, design experiments, and random ideas.</p></div><div className="lab-machine"><div className="machine-core">VIXORA<br /><small>LAB_01</small></div><i /><i /><i /><i /><span>01</span><span>02</span><span>03</span></div></div>
+        <div className="lab-list">{['Interface Playground', 'Tiny JavaScript Things', 'AI Visual Studies', 'Ideas That Went Weird'].map((item, index) => <button key={item} onClick={() => setSelected({ title: item, category: 'Experiments', tools: 'VIXORA LAB', description: 'Experimental work in progress. This space is intentionally unfinished.', visual: ['grid', 'code', 'ai', 'design'][index] })}><span>LAB / 0{index + 1}</span><b>{item}</b><i>↗</i></button>)}</div>
+      </div></section>
 
-        <section className="section dark-section" id="services">
-          <div className="container">
-            <div className="section-heading">
-              <div><span>WHAT I DO</span><h2>Services for people<br />who need things done.</h2></div>
-              <p>From visual communication to digital products, the work stays focused on clarity and usefulness.</p>
-            </div>
-            <div className="service-grid">
-              {services.map(([icon, title, text], i) => (
-                <article className="service-card" key={title}>
-                  <div className="service-number">0{i + 1}</div>
-                  <div className="service-icon">{icon}</div>
-                  <h3>{title}</h3>
-                  <p>{text}</p>
-                  <span className="service-arrow">Explore service ↗</span>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+      <section className="section toolkit-section"><div className="container"><div className="section-head"><div><div className="section-kicker">05 / CREATIVE TOOLKIT</div><h2>Things I use to <em>build.</em></h2></div><p>Tools are just instruments. The fun part is what happens when you combine them.</p></div><div className="toolkit-grid">{toolkit.map(([title, items]) => <article className="toolbox" key={title}><span>{title}</span><div>{items.map((item) => <b key={item}>{item}</b>)}</div></article>)}</div></div></section>
 
-        <section className="section" id="works">
-          <div className="container">
-            <div className="section-heading">
-              <div><span>SELECTED WORK</span><h2>One ecosystem.<br />Many experiments.</h2></div>
-              <p>Projects grow from simple ideas into tools, websites, and creative work.</p>
-            </div>
-            <div className="work-list">
-              {works.map(([name, description], i) => (
-                <article className="work-row" key={name}>
-                  <span className="work-index">0{i + 1}</span>
-                  <div><h3>{name}</h3><p>{description}</p></div>
-                  <span className="work-arrow">↗</span>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
+      <section className="section explore-section"><div className="container explore-grid"><div><div className="section-kicker">06 / CURRENTLY EXPLORING</div><h2>Still curious<br />about <em>everything.</em></h2></div><div className="explore-orbit">{['Web Development', 'AI', 'Creative Coding', 'UI Design', 'Video', 'Music', 'Digital Products'].map((item, index) => <span className={`explore-pill p-${index}`} key={item}>{item}</span>)}<div>∞</div></div></div></section>
 
-        <section className="about-section" id="about">
-          <div className="container about-grid">
-            <div>
-              <span>ABOUT VIXORA</span>
-              <h2>Build it.<br /><em>Use it.</em><br />Improve it.</h2>
-            </div>
-            <div>
-              <p>VIXORA is the digital home of <b>Mas Viqi</b> — a place where design, technology, business tools, and new ideas come together.</p>
-              <p>Not just a portfolio. Not just a service page. An ecosystem that keeps evolving.</p>
-              <button className="about-btn" onClick={() => { window.location.href = 'mailto:hello@vixora.my.id' }}>Let's build something →</button>
-            </div>
-          </div>
-        </section>
+      <section className="section music-section" id="music"><div className="container sound-card"><div><div className="section-kicker">07 / SOUND OF VIXORA</div><h2>Sometimes ideas<br />sound <em>better.</em></h2><p>Tracks, loops, instrument projects, and unfinished sounds made in FL Studio and beyond.</p></div><div className={`player ${playing ? 'playing' : ''}`}><div className="player-art"><span>♫</span></div><div className="player-info"><small>VIXORA / SOUND SKETCH</small><b>Untitled 01</b><span>Experiment · 03:42</span><div className="progress"><i /></div></div><button onClick={() => setPlaying((v) => !v)} aria-label={playing ? 'Pause' : 'Play'}>{playing ? 'Ⅱ' : '▶'}</button></div><div className="sound-tags"><span>FL Studio</span><span>Music Production</span><span>Sound Experiments</span><span>Instruments</span></div></div></section>
 
-        <section className="cta-section">
-          <div className="container cta-inner">
-            <span>READY WHEN YOU ARE</span>
-            <h2>Have an idea?<br /><b>Let's make it useful.</b></h2>
-            <button onClick={() => { window.location.href = 'mailto:hello@vixora.my.id' }}>Start a conversation →</button>
-          </div>
-        </section>
-      </main>
+      <section className="section garden-section"><div className="container"><div className="section-head"><div><div className="section-kicker">08 / DIGITAL GARDEN</div><h2>Things I'm <em>thinking about.</em></h2></div><p>Not finished. Not polished. A living collection of notes, discoveries, and ideas.</p></div><div className="garden-grid">{garden.map(([number, title, text, type]) => <article className={`garden-card garden-${type}`} key={number}><span>{number}</span><h3>{title}</h3><p>{text}</p><b>Read the thought ↗</b></article>)}</div></div></section>
 
-      <footer>
-        <div className="container footer-inner">
-          <span>© 2026 VIXORA · Viqi Septiawantoro</span>
-          <span>Built with curiosity &amp; code.</span>
-        </div>
-      </footer>
+      <section className="contact-section" id="contact"><div className="container contact-inner"><div className="section-kicker">09 / CONTACT</div><h2>Got an <em>idea?</em></h2><p>Maybe we can turn it into something.</p><a href="mailto:hello@vixora.my.id">Start a conversation ↗</a></div></section>
+    </main>
 
-      <button className="ai-fab" onClick={() => setChatOpen((v) => !v)} aria-label="Open VIXORA AI">✦</button>
-      {chatOpen && (
-        <div className="ai-pop" role="dialog" aria-label="VIXORA AI">
-          <b>VIXORA AI</b>
-          <p>Halo 👋 VIXORA AI sedang disiapkan untuk membantu kamu.</p>
-          <button onClick={() => setChatOpen(false)}>Close</button>
-        </div>
-      )}
-    </div>
-  )
+    <footer><div className="container footer-inner"><div><strong>VIXORA</strong><span>Made by Viqi.</span></div><p>Create. Experiment. Repeat.</p><small>© 2026 Vixora</small></div></footer>
+    <button className="ai-fab" onClick={() => setChatOpen((v) => !v)} aria-label="VIXORA AI">✦</button>{chatOpen && <div className="ai-pop"><b>VIXORA AI</b><p>Creative mode: on. AI playground coming soon.</p><button onClick={() => setChatOpen(false)}>Close</button></div>}
+    {selected && <div className="modal-backdrop" onClick={() => setSelected(null)}><div className="project-modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setSelected(null)}>×</button><ProjectVisual type={selected.visual || 'grid'} /><div className="modal-body"><span>{selected.category}</span><h2>{selected.title}</h2><p>{selected.description}</p><small>{selected.tools}</small><button onClick={() => setSelected(null)}>Back to gallery ↗</button></div></div></div>}
+  </div>
 }
-
 export default App
