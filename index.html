@@ -2,13 +2,41 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="VIXORA — digital products, services, and projects by Viqi Septiawantoro." />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="VIXORA — personal digital universe by Viqi Septiawantoro: design, code, music, experiments, and ideas." />
     <meta name="theme-color" content="#111827" />
-    <title>VIXORA — Digital Ecosystem</title>
+    <meta name="color-scheme" content="dark light" />
+    <title>VIXORA — Personal Digital Universe</title>
     <style>
-      html,body,#root{margin:0;min-height:100%;width:100%}body{background:#f7f7fb;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.boot{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}.boot-card{max-width:520px;width:100%;padding:32px;border-radius:24px;background:#111827;color:#fff;box-shadow:0 24px 70px rgba(17,24,39,.18)}.boot-brand{font-weight:900;letter-spacing:2px;font-size:13px;color:#a9a1ff}.boot-title{font-size:32px;line-height:1.1;margin:14px 0 10px}.boot-text{margin:0;color:#c6c9d2;line-height:1.6;font-size:14px}.boot-error{margin-top:18px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.08);color:#ffb4b4;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word;display:none}
+      html,body,#root{margin:0;min-height:100%;width:100%}
+      body{background:#f7f7fb;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+      .boot{min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}
+      .boot-card{max-width:520px;width:100%;padding:32px;border-radius:24px;background:#111827;color:#fff;box-shadow:0 24px 70px rgba(17,24,39,.18);box-sizing:border-box}
+      .boot-brand{font-weight:900;letter-spacing:2px;font-size:13px;color:#a9a1ff}
+      .boot-title{font-size:32px;line-height:1.1;margin:14px 0 10px}
+      .boot-text{margin:0;color:#c6c9d2;line-height:1.6;font-size:14px}
+      .boot-error{margin-top:18px;padding:12px 14px;border-radius:12px;background:rgba(255,255,255,.08);color:#ffb4b4;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-word;display:none}
+      .runtime-error{min-height:100vh;display:grid;place-content:center;gap:12px;padding:32px;box-sizing:border-box;background:#111827;color:#fff}
+      .runtime-error span{color:#a9a1ff;font-weight:900;letter-spacing:2px;font-size:12px}
+      .runtime-error h1{max-width:680px;margin:0;font-size:clamp(32px,6vw,64px);line-height:1}
+      .runtime-error p{max-width:680px;margin:0;color:#c6c9d2;line-height:1.6}
+      .runtime-error button{width:max-content;margin-top:8px;border:0;border-radius:999px;padding:12px 18px;cursor:pointer;background:#fff;color:#111827;font-weight:800}
     </style>
+    <script>
+      window.addEventListener('error', function (event) {
+        var box = document.getElementById('boot-error')
+        if (!box || !event.message) return
+        box.textContent = 'VIXORA gagal memuat JavaScript: ' + event.message
+        box.style.display = 'block'
+      })
+      window.addEventListener('unhandledrejection', function (event) {
+        var box = document.getElementById('boot-error')
+        if (!box) return
+        var reason = event.reason && event.reason.message ? event.reason.message : String(event.reason || 'Unknown error')
+        box.textContent = 'VIXORA gagal memuat: ' + reason
+        box.style.display = 'block'
+      })
+    </script>
   </head>
   <body>
     <div id="root">
