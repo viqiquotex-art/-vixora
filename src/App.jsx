@@ -47,7 +47,7 @@ function App() {
     <header className="topbar"><div className="container nav-inner">
       <button className="brand" onClick={() => go('home')}><span className="brand-mark">V</span><span>VIXORA</span></button>
       <nav className={`nav-links ${menuOpen ? 'open' : ''}`} aria-label="Main navigation">
-        <button onClick={() => go('about')}>About</button><button onClick={() => go('projects')}>Projects</button><button onClick={() => go('lab')}>Lab</button><button onClick={() => go('gallery')}>Gallery</button><button onClick={() => go('music')}>Music</button><button onClick={() => go('contact')}>Contact</button>
+        <button onClick={() => go('about')}>About</button><button onClick={() => go('projects')}>Projects</button><button onClick={() => go('youtube')}>YouTube</button><button onClick={() => go('lab')}>Lab</button><button onClick={() => go('gallery')}>Gallery</button><button onClick={() => go('music')}>Music</button><button onClick={() => go('contact')}>Contact</button>
       </nav>
       <div className="nav-actions"><button className="theme-toggle" onClick={() => setTheme((v) => v === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">{theme === 'dark' ? '☼' : '◐'}</button><button className="menu-btn" onClick={() => setMenuOpen((v) => !v)} aria-label="Open menu">☰</button></div>
     </div></header>
@@ -72,7 +72,42 @@ function App() {
         <div className="projects-grid">{visibleProjects.map((project) => <article className="project-card" key={project.id} onClick={() => setSelected(project)}><ProjectVisual type={project.visual} /><div className="project-info"><div><span>{project.category}</span><h3>{project.title}</h3></div><b>↗</b><p>{project.description}</p><small>{project.tools}</small></div></article>)}</div>
       </div></section>
 
-      <section className="section lab-section" id="lab"><div className="container"><div className="lab-banner"><div className="lab-copy"><div className="section-kicker">04 / VIXORA LAB</div><h2>Not everything<br />needs to become<br /><em>a product.</em></h2><p>Mini websites, UI experiments, JavaScript experiments, AI experiments, design experiments, and random ideas.</p></div><div className="lab-machine"><div className="machine-core">VIXORA<br /><small>LAB_01</small></div><i /><i /><i /><i /><span>01</span><span>02</span><span>03</span></div></div>
+      <section className="section youtube-section" id="youtube">
+  <div className="container">
+    <div className="youtube-intro">
+      <div>
+        <div className="section-kicker">04 / MY CONTENT</div>
+        <h2>Ideas don't just live here.<br />Some of them <em>become content.</em></h2>
+        <p>Di luar VIXORA, aku juga bikin konten di YouTube — tempat ide, visual, editing, eksperimen, dan cerita kecil berkembang jadi karya.</p>
+      </div>
+      <a className="youtube-channel" href="https://www.youtube.com/@nineenable" target="_blank" rel="noreferrer">
+        <span className="youtube-play">▶</span>
+        <span><small>YOUTUBE CHANNEL</small><b>@nineenable</b></span>
+        <i>↗</i>
+      </a>
+    </div>
+    <div className="youtube-grid">
+      <article className="youtube-feature">
+        <div className="youtube-screen">
+          <span className="yt-glow" /><span className="yt-play">▶</span><small>NINEENABLE</small>
+        </div>
+        <div className="youtube-copy">
+          <span>CONTENT UNIVERSE</span>
+          <h3>NineEnable</h3>
+          <p>Ruang untuk video, Shorts, visual storytelling, dan eksperimen konten yang terus berkembang.</p>
+          <a href="https://www.youtube.com/@nineenable" target="_blank" rel="noreferrer">Visit channel ↗</a>
+        </div>
+      </article>
+      <div className="youtube-topics">
+        <div className="yt-topic"><span>01</span><b>SHORTS</b><p>Konten singkat dengan visual yang langsung menangkap perhatian.</p></div>
+        <div className="yt-topic"><span>02</span><b>STORY</b><p>Ide yang dikemas menjadi cerita dan pengalaman yang mudah diingat.</p></div>
+        <div className="yt-topic"><span>03</span><b>VISUAL</b><p>Eksperimen editing, AI, desain, motion, dan visual storytelling.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section className="section lab-section" id="lab"><div className="container"><div className="lab-banner"><div className="lab-copy"><div className="section-kicker">04 / VIXORA LAB</div><h2>Not everything<br />needs to become<br /><em>a product.</em></h2><p>Mini websites, UI experiments, JavaScript experiments, AI experiments, design experiments, and random ideas.</p></div><div className="lab-machine"><div className="machine-core">VIXORA<br /><small>LAB_01</small></div><i /><i /><i /><i /><span>01</span><span>02</span><span>03</span></div></div>
         <div className="lab-list">{['Interface Playground', 'Tiny JavaScript Things', 'AI Visual Studies', 'Ideas That Went Weird'].map((item, index) => <button key={item} onClick={() => setSelected({ title: item, category: 'Experiments', tools: 'VIXORA LAB', description: 'Experimental work in progress. This space is intentionally unfinished.', visual: ['grid', 'code', 'ai', 'design'][index] })}><span>LAB / 0{index + 1}</span><b>{item}</b><i>↗</i></button>)}</div>
       </div></section>
 
