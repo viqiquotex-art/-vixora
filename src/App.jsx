@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import './youtube.css'
 
 const categories = ['All', 'Design', 'Code', 'Music', 'Video', 'AI', 'Experiments']
 const projects = [
