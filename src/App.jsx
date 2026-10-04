@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import './youtube.css'
+import './command-center.css'
 
 const categories = ['All', 'Design', 'Code', 'Music', 'Video', 'AI', 'Experiments']
 const projects = [
@@ -40,9 +41,19 @@ function ProjectVisual({ type }) {
 }
 
 function App() {
-  const [menuOpen, setMenuOpen] = useState(false), [theme, setTheme] = useState('dark'), [filter, setFilter] = useState('All'), [selected, setSelected] = useState(null), [playing, setPlaying] = useState(false), [chatOpen, setChatOpen] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false), [theme, setTheme] = useState('dark'), [filter, setFilter] = useState('All'), [selected, setSelected] = useState(null), [playing, setPlaying] = useState(false), [chatOpen, setChatOpen] = useState(false), [command, setCommand] = useState(''), [commandStatus, setCommandStatus] = useState('idle'), [commandResult, setCommandResult] = useState('')
   const visibleProjects = useMemo(() => filter === 'All' ? projects : projects.filter((project) => project.category === filter), [filter])
   const go = (id) => { setMenuOpen(false); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }) }
+  const sendCommand = async () => {
+    const value = command.trim(); if (!value || commandStatus === 'working') return
+    setCommandStatus('working'); setCommandResult('Sending command to VIXORA Core…')
+    try {
+      const response = await fetch('/api/command', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ command: value, source: 'vixora-command-center' }) })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Command failed')
+      setCommandStatus('success'); setCommandResult(data.message || 'Command accepted by VIXORA Core.')
+    } catch (error) { setCommandStatus('error'); setCommandResult(error.message || 'VIXORA Core is not reachable yet.') }
+  }
 
   return <div className={`app-shell theme-${theme}`}>
     <header className="topbar"><div className="container nav-inner">
@@ -124,7 +135,7 @@ function App() {
     </main>
 
     <footer><div className="container footer-inner"><div><strong>VIXORA</strong><span>Made by Viqi.</span></div><p>Create. Experiment. Repeat.</p><small>© 2026 Vixora</small></div></footer>
-    <button className="ai-fab" onClick={() => setChatOpen((v) => !v)} aria-label="VIXORA AI">✦</button>{chatOpen && <div className="ai-pop"><b>VIXORA AI</b><p>Creative mode: on. AI playground coming soon.</p><button onClick={() => setChatOpen(false)}>Close</button></div>}
+    <button className="ai-fab" onClick={() => setChatOpen((v) => !v)} aria-label="Open VIXORA AI Command Center">✦</button>{chatOpen && <div className="ai-pop command-center"><div className="command-head"><div><b>VIXORA AI</b><span>COMMAND CENTER · CORE ONLINE</span></div><button onClick={() => setChatOpen(false)} aria-label="Close">×</button></div><div className="command-body"><p className="command-hint">Give VIXORA one instruction. The Core will route it to the right executor when connectors are enabled.</p><textarea value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendCommand() }} placeholder="Contoh: Siapkan 3 Shorts untuk YouTube besok…" rows="4"/><button className="command-send" onClick={sendCommand} disabled={commandStatus === 'working'}>{commandStatus === 'working' ? 'Processing…' : 'Send command ↗'}</button>{commandResult && <div className={`command-result ${commandStatus}`}>{commandResult}</div>}<div className="command-modules"><span>GPT CORE</span><span>CREAO</span><span>YOUTUBE</span><span>MORE SOON</span></div></div></div>}
     {selected && <div className="modal-backdrop" onClick={() => setSelected(null)}><div className="project-modal" onClick={(e) => e.stopPropagation()}><button className="modal-close" onClick={() => setSelected(null)}>×</button><ProjectVisual type={selected.visual || 'grid'} /><div className="modal-body"><span>{selected.category}</span><h2>{selected.title}</h2><p>{selected.description}</p><small>{selected.tools}</small><button onClick={() => setSelected(null)}>Back to gallery ↗</button></div></div></div>}
   </div>
 }
