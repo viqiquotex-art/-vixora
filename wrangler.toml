@@ -1,3 +1,7 @@
 name = "black-limit-8938"
 main = "worker.js"
 compatibility_date = "2026-08-19"
+
+[[routes]]
+pattern = "vixora.my.id/api/*"
+zone_name = "vixora.my.id"
