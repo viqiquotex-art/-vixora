@@ -29,14 +29,27 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Clean previous build output
+        run: rm -rf dist
+
       - name: Build Vite
-        run: npm run build
+        run: npm run build -- --outDir dist --emptyOutDir
 
       - name: Ensure custom domain
         run: cp CNAME dist/CNAME
 
-      - name: Verify dist
-        run: test -f dist/index.html && test -d dist/assets && test -f dist/CNAME
+      - name: Verify production artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f dist/index.html
+          test -f dist/CNAME
+          test -d dist/assets
+          js_count=$(find dist/assets -type f -name '*.js' | wc -l)
+          echo "Production JavaScript bundles: $js_count"
+          test "$js_count" -gt 0
+          echo "Built files:"
+          find dist -maxdepth 2 -type f | sort
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
