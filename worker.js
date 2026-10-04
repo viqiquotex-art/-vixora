@@ -1,8 +1,11 @@
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://vixora.my.id",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
+
+const CREAO_APP_ID = "1305331a-99f0-4330-b1c1-226f5f0ea129";
+const CREAO_BASE_URL = `https://agent.creao.ai/api/v1/apps/${CREAO_APP_ID}/runs`;
 
 const json = (data, status = 200, extraHeaders = {}) =>
   new Response(JSON.stringify(data), {
@@ -15,6 +18,28 @@ const json = (data, status = 200, extraHeaders = {}) =>
     },
   });
 
+const getCreaoKey = (env) =>
+  typeof env?.CREAO_API_KEY === "string" ? env.CREAO_API_KEY.trim() : "";
+
+async function creaoRequest(url, env, init = {}) {
+  const apiKey = getCreaoKey(env);
+  if (!apiKey) {
+    return { response: null, error: "CREAO_API_KEY is not configured in Worker secrets." };
+  }
+
+  return {
+    response: await fetch(url, {
+      ...init,
+      headers: {
+        ...(init.headers || {}),
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+    }),
+    error: null,
+  };
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
@@ -23,17 +48,48 @@ export default {
 
     const url = new URL(request.url);
 
-    if (request.method === "GET") {
+    if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/api/health")) {
       return json({
         status: "ok",
         service: "vixora-command-core",
-        version: "0.1.0",
-        routes: ["/", "/api/health", "/api/command"],
+        version: "0.2.0",
+        executor: "creao-api-trigger",
+        appId: CREAO_APP_ID,
+        routes: ["/", "/api/health", "/api/command", "/api/command/:runId"],
+      });
+    }
+
+    if (request.method === "GET" && url.pathname.startsWith("/api/command/")) {
+      const runId = url.pathname.split("/").filter(Boolean).pop();
+      if (!runId) return json({ success: false, error: "Run ID is required" }, 400);
+
+      const result = await creaoRequest(`${CREAO_BASE_URL}/${encodeURIComponent(runId)}`, env, { method: "GET" });
+
+      if (result.error) {
+        return json({ success: false, status: "not_configured", error: result.error }, 503);
+      }
+
+      if (!result.response.ok) {
+        const detail = await result.response.text().catch(() => "");
+        return json({
+          success: false,
+          status: "executor_error",
+          error: `CREAO returned HTTP ${result.response.status}`,
+          detail: detail.slice(0, 500),
+        }, 502);
+      }
+
+      return json({
+        success: true,
+        status: "ok",
+        executor: await result.response.json().catch(() => null),
       });
     }
 
     if (request.method !== "POST") {
-      return json({ success: false, error: "Method not allowed" }, 405, { Allow: "GET, POST, OPTIONS" });
+      return json({ success: false, error: "Method not allowed" }, 405, {
+        Allow: "GET, POST, OPTIONS",
+      });
     }
 
     if (url.pathname !== "/api/command") {
@@ -51,54 +107,46 @@ export default {
         return json({ success: false, error: "Command is required" }, 400);
       }
 
-      const creaoWebhookUrl = typeof env?.CREAO_WEBHOOK_URL === "string" ? env.CREAO_WEBHOOK_URL.trim() : "";
-      const creaoWebhookSecret = typeof env?.CREAO_WEBHOOK_SECRET === "string" ? env.CREAO_WEBHOOK_SECRET : "";
+      const source = typeof body.source === "string" && body.source.trim()
+        ? body.source.trim()
+        : "vixora-command-center";
 
-      if (!creaoWebhookUrl) {
-        return json({
-          success: true,
-          status: "accepted",
-          message: "Command accepted by VIXORA Core. CREAO webhook is not configured yet.",
-          command,
-          source: body.source || "unknown",
-          execution: { planner: "vixora-core", executor: "creao", youtube: "via-creao", connected: false },
-        });
-      }
-
-      const executorResponse = await fetch(creaoWebhookUrl, {
+      const result = await creaoRequest(CREAO_BASE_URL, env, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(creaoWebhookSecret ? { Authorization: `Bearer ${creaoWebhookSecret}` } : {}),
-        },
-        body: JSON.stringify({
-          command,
-          source: body.source || "vixora-command-center",
-          requested_at: new Date().toISOString(),
-        }),
+        body: JSON.stringify({ inputs: { command } }),
       });
 
-      if (!executorResponse.ok) {
+      if (result.error) {
+        return json({ success: false, status: "not_configured", error: result.error }, 503);
+      }
+
+      if (!result.response.ok) {
+        const detail = await result.response.text().catch(() => "");
         return json({
           success: false,
           status: "executor_error",
-          error: `CREAO returned HTTP ${executorResponse.status}`,
+          error: `CREAO returned HTTP ${result.response.status}`,
+          detail: detail.slice(0, 500),
           command,
         }, 502);
       }
 
-      let executorData = null;
-      try { executorData = await executorResponse.json(); } catch {}
+      const executorData = await result.response.json().catch(() => null);
 
       return json({
         success: true,
         status: "dispatched",
-        message: "Command dispatched to CREAO. YouTube actions should run through the connected CREAO agent.",
+        message: "Command dispatched to the VIXORA YouTube Executor via CREAO API Trigger.",
         command,
-        source: body.source || "unknown",
-        execution: { planner: "vixora-core", executor: "creao", youtube: "via-creao", connected: true },
-        executor: executorData,
-      });
+        source,
+        execution: {
+          planner: "vixora-core",
+          executor: "creao-api-trigger",
+          youtube: "via-creao",
+          connected: true,
+        },
+        run: executorData,
+      }, 202);
     } catch {
       return json({ success: false, error: "Invalid JSON request" }, 400);
     }
