@@ -1,0 +1,19 @@
+/* VIXORA AI COMMAND CENTER */
+.command-center{width:min(380px,calc(100vw - 32px));padding:0;overflow:hidden}
+.command-head{display:flex;align-items:center;justify-content:space-between;padding:15px 16px;border-bottom:1px solid var(--line)}
+.command-head div{display:grid;gap:4px}
+.command-head b{font-size:11px;letter-spacing:.12em}
+.command-head span{font-size:7px;letter-spacing:1.1px;color:var(--accent)}
+.command-head>button{border:0;background:transparent;color:var(--muted);font-size:20px;line-height:1}
+.command-body{padding:16px}
+.command-hint{margin:0 0 12px;font-size:10px;line-height:1.65;color:var(--muted)}
+.command-body textarea{width:100%;resize:vertical;min-height:92px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.18);color:var(--text);padding:11px;font:inherit;font-size:11px;line-height:1.6;outline:none}
+.command-body textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(155,140,255,.08)}
+.command-body textarea::placeholder{color:var(--dim)}
+.command-send{width:100%;margin-top:9px;border:1px solid var(--accent);border-radius:9px;background:var(--accent);color:#fff;padding:10px 12px;font-size:10px;font-weight:800}
+.command-send:disabled{opacity:.65;cursor:wait}
+.command-result{margin-top:10px;border:1px solid var(--line);border-radius:9px;padding:10px;font-size:10px;line-height:1.55;color:var(--muted)}
+.command-result.success{border-color:rgba(90,210,145,.35);color:#b9efd2}
+.command-result.error{border-color:rgba(255,100,120,.35);color:#ffc1ca}
+.command-modules{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+.command-modules span{font-size:7px;letter-spacing:1px;padding:5px 7px;border:1px solid var(--line);border-radius:100px;color:var(--dim)}
