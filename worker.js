@@ -16,7 +16,7 @@ const json = (data, status = 200, extraHeaders = {}) =>
   });
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     if (request.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
@@ -51,17 +51,53 @@ export default {
         return json({ success: false, error: "Command is required" }, 400);
       }
 
+      const creaoWebhookUrl = typeof env?.CREAO_WEBHOOK_URL === "string" ? env.CREAO_WEBHOOK_URL.trim() : "";
+      const creaoWebhookSecret = typeof env?.CREAO_WEBHOOK_SECRET === "string" ? env.CREAO_WEBHOOK_SECRET : "";
+
+      if (!creaoWebhookUrl) {
+        return json({
+          success: true,
+          status: "accepted",
+          message: "Command accepted by VIXORA Core. CREAO webhook is not configured yet.",
+          command,
+          source: body.source || "unknown",
+          execution: { planner: "vixora-core", executor: "creao", youtube: "via-creao", connected: false },
+        });
+      }
+
+      const executorResponse = await fetch(creaoWebhookUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(creaoWebhookSecret ? { Authorization: `Bearer ${creaoWebhookSecret}` } : {}),
+        },
+        body: JSON.stringify({
+          command,
+          source: body.source || "vixora-command-center",
+          requested_at: new Date().toISOString(),
+        }),
+      });
+
+      if (!executorResponse.ok) {
+        return json({
+          success: false,
+          status: "executor_error",
+          error: `CREAO returned HTTP ${executorResponse.status}`,
+          command,
+        }, 502);
+      }
+
+      let executorData = null;
+      try { executorData = await executorResponse.json(); } catch {}
+
       return json({
         success: true,
-        status: "accepted",
-        message: "Command received by VIXORA Core. External executors are the next connector layer.",
+        status: "dispatched",
+        message: "Command dispatched to CREAO. YouTube actions should run through the connected CREAO agent.",
         command,
         source: body.source || "unknown",
-        execution: {
-          planner: "vixora-core",
-          executors: ["creao", "youtube"],
-          connected: false,
-        },
+        execution: { planner: "vixora-core", executor: "creao", youtube: "via-creao", connected: true },
+        executor: executorData,
       });
     } catch {
       return json({ success: false, error: "Invalid JSON request" }, 400);
