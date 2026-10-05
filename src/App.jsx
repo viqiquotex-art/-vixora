@@ -135,7 +135,7 @@ function WorkspacePage({ session }) {
       finalTranscriptRef.current = finalText
       const nextCommand = `${finalText}${interim}`.trim()
       setCommand(nextCommand)
-      if (finished) setTimeout(() => sendCommand(), 250)
+      if (finished) setTimeout(() => sendCommand(finalText.trim()), 250)
     }
     recognition.onerror = () => setVoiceState('error')
     recognition.onend = () => setVoiceState('idle')
@@ -166,8 +166,8 @@ function WorkspacePage({ session }) {
     }
   }
 
-  const sendCommand = async () => {
-    const value = command.trim()
+  const sendCommand = async (commandOverride = '') => {
+    const value = (commandOverride || command).trim()
     if (!value || commandStatus === 'working') return
     setCommandStatus('working')
     setCommandResult('Mengirim instruksi ke VIXORA Core…')
