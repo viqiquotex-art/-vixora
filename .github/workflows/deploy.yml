@@ -32,6 +32,15 @@ jobs:
       - name: Clean previous build output
         run: rm -rf dist
 
+      - name: Verify Supabase configuration
+        env:
+          VIXORA_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VIXORA_SUPABASE_PUBLISHABLE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$VIXORA_SUPABASE_PUBLISHABLE_KEY"
+          echo "Supabase publishable key: configured"
+
       - name: Build Vite
         env:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VIXORA_SUPABASE_PUBLISHABLE_KEY }}
