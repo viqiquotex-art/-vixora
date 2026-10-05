@@ -33,6 +33,8 @@ jobs:
         run: rm -rf dist
 
       - name: Build Vite
+        env:
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VIXORA_SUPABASE_PUBLISHABLE_KEY }}
         run: npm run build -- --outDir dist --emptyOutDir
 
       - name: Ensure custom domain
