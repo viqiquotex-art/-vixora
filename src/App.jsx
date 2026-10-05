@@ -103,6 +103,7 @@ function WorkspacePage({ session }) {
   const [speechSupported, setSpeechSupported] = useState(true)
   const recognitionRef = useRef(null)
   const finalTranscriptRef = useRef('')
+  const voiceCommandRef = useRef(false)
   const [commandStatus, setCommandStatus] = useState('idle')
   const [commandResult, setCommandResult] = useState('')
 
@@ -119,6 +120,7 @@ function WorkspacePage({ session }) {
     recognition.interimResults = true
     recognition.onstart = () => {
       finalTranscriptRef.current = ''
+      voiceCommandRef.current = true
       setVoiceState('listening')
     }
     recognition.onresult = (event) => {
@@ -137,20 +139,38 @@ function WorkspacePage({ session }) {
       setCommand(nextCommand)
       if (finished) setTimeout(() => sendCommand(finalText.trim()), 250)
     }
-    recognition.onerror = () => setVoiceState('error')
+    recognition.onerror = () => {
+      voiceCommandRef.current = false
+      setVoiceState('error')
+    }
     recognition.onend = () => setVoiceState('idle')
     recognitionRef.current = recognition
     return () => recognition.abort()
   }, [])
 
   const speakResponse = (text) => {
-    if (!speechSupported || !text) return
-    window.speechSynthesis.cancel()
+    if (!speechSupported || !text) return false
+    const synth = window.speechSynthesis
+    synth.cancel()
+    const voices = synth.getVoices()
+    const preferred = voices.find((voice) => /^id(-|_)/i.test(voice.lang)) || voices.find((voice) => /indonesia|indonesian/i.test(voice.name))
     const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'id-ID'
-    utterance.rate = 1
+    utterance.lang = preferred?.lang || 'id-ID'
+    if (preferred) utterance.voice = preferred
+    utterance.rate = 0.96
     utterance.pitch = 1
-    window.speechSynthesis.speak(utterance)
+    utterance.volume = 1
+    utterance.onstart = () => setVoiceState('speaking')
+    utterance.onend = () => {
+      voiceCommandRef.current = false
+      setVoiceState('idle')
+    }
+    utterance.onerror = () => {
+      voiceCommandRef.current = false
+      setVoiceState('error')
+    }
+    synth.speak(utterance)
+    return true
   }
 
   const toggleVoice = () => {
@@ -182,7 +202,10 @@ function WorkspacePage({ session }) {
       const message = data.message || 'Instruksi diterima VIXORA Core.'
       setCommandStatus('success')
       setCommandResult(message)
-      if (voiceState === 'listening' || finalTranscriptRef.current) speakResponse(message)
+      if (voiceCommandRef.current || finalTranscriptRef.current) {
+        setVoiceState('thinking')
+        window.setTimeout(() => speakResponse(message), 80)
+      }
     } catch (error) {
       setCommandStatus('error')
       setCommandResult(error.message || 'VIXORA Core belum dapat dihubungi.')
