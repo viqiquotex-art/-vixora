@@ -70,11 +70,70 @@ function AuthPage({ initialMode = 'login' }) {
   )
 }
 
+
+function AuthPage({ initialMode = 'login' }) {
+  const [mode, setMode] = useState(initialMode)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
+  const [message, setMessage] = useState('')
+
+  const switchMode = (next) => {
+    setMode(next)
+    setMessage('')
+    window.location.hash = next
+  }
+
+  const submit = (event) => {
+    event.preventDefault()
+    setMessage(mode === 'login'
+      ? 'Login interface siap. Authentication backend akan dihubungkan ke VIXORA Core.'
+      : 'Registration interface siap. Authentication backend akan dihubungkan ke VIXORA Core.')
+  }
+
+  return <div className="auth-shell">
+    <div className="auth-noise" />
+    <a className="auth-back" href="#top">← Back to VIXORA</a>
+    <div className="auth-card">
+      <a className="agency-logo auth-logo" href="#top"><span className="agency-logo-mark">V</span><span>VIXORA AI</span></a>
+      <div className="agency-kicker auth-kicker">AI AGENCY · ACCESS PORTAL</div>
+      <h1>{mode === 'login' ? 'Welcome back.' : 'Create your account.'}</h1>
+      <p className="auth-subtitle">{mode === 'login' ? 'Masuk untuk mengakses VIXORA AI Command Center dan agent kamu.' : 'Buat akun untuk mulai menggunakan ekosistem AI agency VIXORA.'}</p>
+      <div className="auth-tabs">
+        <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')}>Login</button>
+        <button className={mode === 'register' ? 'active' : ''} onClick={() => switchMode('register')}>Register</button>
+      </div>
+      <form className="auth-form" onSubmit={submit}>
+        {mode === 'register' && <label>Full name<input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" required /></label>}
+        <label>Email address<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></label>
+        <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength="6" required /></label>
+        {mode === 'login' && <button type="button" className="auth-forgot">Forgot password?</button>}
+        <button className="auth-submit" type="submit">{mode === 'login' ? 'Login to VIXORA ↗' : 'Create VIXORA account ↗'}</button>
+      </form>
+      {message && <div className="auth-message">{message}</div>}
+      <div className="auth-divider"><span>VIXORA CORE</span></div>
+      <div className="auth-secure"><i /> Secure access portal · Multi-agent workspace</div>
+    </div>
+  </div>
+}
+
 function App() {
   const [chatOpen, setChatOpen] = useState(false)
   const [command, setCommand] = useState('')
   const [commandStatus, setCommandStatus] = useState('idle')
   const [commandResult, setCommandResult] = useState('')
+  const [authMode, setAuthMode] = useState(null)
+
+  useEffect(() => {
+    const syncRoute = () => {
+      const route = window.location.hash.replace('#', '').toLowerCase()
+      setAuthMode(route === 'login' || route === 'register' ? route : null)
+      window.scrollTo({ top: 0, behavior: 'instant' })
+    }
+    syncRoute()
+    window.addEventListener('hashchange', syncRoute)
+    return () => window.removeEventListener('hashchange', syncRoute)
+  }, [])
   const [authMode, setAuthMode] = useState(null)
 
   useEffect(() => {
@@ -113,6 +172,8 @@ function App() {
     setChatOpen(true)
     setTimeout(() => document.getElementById('agency-command-input')?.focus(), 50)
   }
+
+  if (authMode) return <AuthPage initialMode={authMode} />
 
   if (authMode) return <AuthPage initialMode={authMode} />
 
