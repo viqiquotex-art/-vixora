@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './agency.css'
 import { supabase } from './lib/supabase'
 
@@ -98,8 +98,56 @@ function AuthPage({ initialMode = 'login' }) {
 function WorkspacePage({ session }) {
   const [chatOpen, setChatOpen] = useState(false)
   const [command, setCommand] = useState('')
+  const [voiceState, setVoiceState] = useState('idle')
+  const [voiceSupported, setVoiceSupported] = useState(true)
+  const recognitionRef = useRef(null)
+  const finalTranscriptRef = useRef('')
   const [commandStatus, setCommandStatus] = useState('idle')
   const [commandResult, setCommandResult] = useState('')
+
+  useEffect(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setVoiceSupported(false)
+      return
+    }
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'id-ID'
+    recognition.continuous = false
+    recognition.interimResults = true
+    recognition.onstart = () => {
+      finalTranscriptRef.current = ''
+      setVoiceState('listening')
+    }
+    recognition.onresult = (event) => {
+      let interim = ''
+      let finalText = finalTranscriptRef.current
+      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+        const spoken = event.results[i][0].transcript
+        if (event.results[i].isFinal) finalText += `${spoken} `
+        else interim += spoken
+      }
+      finalTranscriptRef.current = finalText
+      setCommand(`${finalText}${interim}`.trim())
+    }
+    recognition.onerror = () => setVoiceState('error')
+    recognition.onend = () => setVoiceState('idle')
+    recognitionRef.current = recognition
+    return () => recognition.abort()
+  }, [])
+
+  const toggleVoice = () => {
+    if (!voiceSupported) return
+    if (voiceState === 'listening') {
+      recognitionRef.current?.stop()
+      return
+    }
+    try {
+      recognitionRef.current?.start()
+    } catch {
+      setVoiceState('error')
+    }
+  }
 
   const sendCommand = async () => {
     const value = command.trim()
@@ -149,9 +197,14 @@ function WorkspacePage({ session }) {
         </article>)}
       </section>
       <section className="workspace-command">
-        <div className="command-head"><div><b>VIXORA COMMAND CENTER</b><span>CORE ONLINE · EXECUTION READY</span></div><span className="online"><i /> READY</span></div>
+        <div className="command-head"><div><b>VIXORA VOICE COMMAND CENTER</b><span>VOICE + TEXT · CORE ONLINE · EXECUTION READY</span></div><span className="online"><i /> READY</span></div>
         <div className="workspace-command-body">
-          <textarea value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendCommand() }} placeholder="Contoh: Siapkan 3 Shorts untuk YouTube besok…" rows="5" />
+          <div className="workspace-voice-row">
+            <button type="button" className={`voice-orb ${voiceState}`} onClick={toggleVoice} disabled={!voiceSupported} aria-label="Voice command"><span>◉</span></button>
+            <div className="voice-copy"><b>{voiceState === 'listening' ? 'Listening…' : voiceState === 'error' ? 'Voice unavailable' : 'Speak to VIXORA'}</b><small>{voiceSupported ? 'Bahasa Indonesia · tap orb untuk bicara' : 'Browser ini tidak mendukung voice recognition'}</small></div>
+            <span className="voice-wave" aria-hidden="true"><i/><i/><i/><i/><i/></span>
+          </div>
+          <textarea value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendCommand() }} placeholder="Atau ketik: Siapkan 3 Shorts untuk YouTube besok…" rows="5" />
           <button className="command-send" onClick={sendCommand} disabled={commandStatus === 'working'}>{commandStatus === 'working' ? 'Processing…' : 'Send command ↗'}</button>
           {commandResult && <div className={`command-result ${commandStatus}`}>{commandResult}</div>}
         </div>
