@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './agency.css'
+import { supabase } from './lib/supabase'
 
 const agents = [
   { icon: '✦', code: 'AGENT 01', title: 'Content Agent', text: 'Menyusun ide, script, caption, Shorts, dan paket konten siap dieksekusi.' },
@@ -16,6 +17,7 @@ function AuthPage({ initialMode = 'login' }) {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [message, setMessage] = useState('')
+  const [busy, setBusy] = useState(false)
 
   const switchMode = (next) => {
     setMode(next)
@@ -23,11 +25,48 @@ function AuthPage({ initialMode = 'login' }) {
     window.location.hash = next
   }
 
-  const submit = (event) => {
+  const submit = async (event) => {
     event.preventDefault()
-    setMessage(mode === 'login'
-      ? 'Login interface siap. Authentication backend akan dihubungkan ke VIXORA Core.'
-      : 'Registration interface siap. Authentication backend akan dihubungkan ke VIXORA Core.')
+    if (busy) return
+    setBusy(true)
+    setMessage('')
+    try {
+      if (mode === 'register') {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: name }, emailRedirectTo: window.location.origin + '#login' },
+        })
+        if (error) throw error
+        setMessage('Akun berhasil dibuat. Cek email untuk verifikasi, lalu login ke VIXORA.')
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
+        window.location.hash = 'workspace'
+      }
+    } catch (error) {
+      setMessage(error.message || 'Authentication gagal. Coba lagi.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const forgotPassword = async () => {
+    if (!email) {
+      setMessage('Masukkan email terlebih dahulu untuk reset password.')
+      return
+    }
+    setBusy(true)
+    setMessage('')
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '#login' })
+      if (error) throw error
+      setMessage('Link reset password sudah dikirim jika email tersebut terdaftar.')
+    } catch (error) {
+      setMessage(error.message || 'Gagal mengirim reset password.')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return <div className="auth-shell">
@@ -39,15 +78,15 @@ function AuthPage({ initialMode = 'login' }) {
       <h1>{mode === 'login' ? 'Welcome back.' : 'Create your account.'}</h1>
       <p className="auth-subtitle">{mode === 'login' ? 'Masuk untuk mengakses VIXORA AI Command Center dan agent kamu.' : 'Buat akun untuk mulai menggunakan ekosistem AI agency VIXORA.'}</p>
       <div className="auth-tabs">
-        <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')}>Login</button>
-        <button className={mode === 'register' ? 'active' : ''} onClick={() => switchMode('register')}>Register</button>
+        <button type="button" className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')}>Login</button>
+        <button type="button" className={mode === 'register' ? 'active' : ''} onClick={() => switchMode('register')}>Register</button>
       </div>
       <form className="auth-form" onSubmit={submit}>
         {mode === 'register' && <label>Full name<input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="name" required /></label>}
         <label>Email address<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" required /></label>
         <label>Password<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength="6" required /></label>
-        {mode === 'login' && <button type="button" className="auth-forgot">Forgot password?</button>}
-        <button className="auth-submit" type="submit">{mode === 'login' ? 'Login to VIXORA ↗' : 'Create VIXORA account ↗'}</button>
+        {mode === 'login' && <button type="button" className="auth-forgot" onClick={forgotPassword}>Forgot password?</button>}
+        <button className="auth-submit" type="submit" disabled={busy}>{busy ? 'Processing…' : mode === 'login' ? 'Login to VIXORA ↗' : 'Create VIXORA account ↗'}</button>
       </form>
       {message && <div className="auth-message">{message}</div>}
       <div className="auth-divider"><span>VIXORA CORE</span></div>
