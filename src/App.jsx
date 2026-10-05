@@ -100,12 +100,14 @@ function WorkspacePage({ session }) {
   const [command, setCommand] = useState('')
   const [voiceState, setVoiceState] = useState('idle')
   const [voiceSupported, setVoiceSupported] = useState(true)
+  const [speechSupported, setSpeechSupported] = useState(true)
   const recognitionRef = useRef(null)
   const finalTranscriptRef = useRef('')
   const [commandStatus, setCommandStatus] = useState('idle')
   const [commandResult, setCommandResult] = useState('')
 
   useEffect(() => {
+    setSpeechSupported('speechSynthesis' in window)
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
       setVoiceSupported(false)
@@ -122,19 +124,34 @@ function WorkspacePage({ session }) {
     recognition.onresult = (event) => {
       let interim = ''
       let finalText = finalTranscriptRef.current
+      let finished = false
       for (let i = event.resultIndex; i < event.results.length; i += 1) {
         const spoken = event.results[i][0].transcript
-        if (event.results[i].isFinal) finalText += `${spoken} `
-        else interim += spoken
+        if (event.results[i].isFinal) {
+          finalText += `${spoken} `
+          finished = true
+        } else interim += spoken
       }
       finalTranscriptRef.current = finalText
-      setCommand(`${finalText}${interim}`.trim())
+      const nextCommand = `${finalText}${interim}`.trim()
+      setCommand(nextCommand)
+      if (finished) setTimeout(() => sendCommand(), 250)
     }
     recognition.onerror = () => setVoiceState('error')
     recognition.onend = () => setVoiceState('idle')
     recognitionRef.current = recognition
     return () => recognition.abort()
   }, [])
+
+  const speakResponse = (text) => {
+    if (!speechSupported || !text) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'id-ID'
+    utterance.rate = 1
+    utterance.pitch = 1
+    window.speechSynthesis.speak(utterance)
+  }
 
   const toggleVoice = () => {
     if (!voiceSupported) return
@@ -162,8 +179,10 @@ function WorkspacePage({ session }) {
       })
       const data = await response.json()
       if (!response.ok) throw new Error(data.error || 'Command failed')
+      const message = data.message || 'Instruksi diterima VIXORA Core.'
       setCommandStatus('success')
-      setCommandResult(data.message || 'Instruksi diterima VIXORA Core.')
+      setCommandResult(message)
+      if (voiceState === 'listening' || finalTranscriptRef.current) speakResponse(message)
     } catch (error) {
       setCommandStatus('error')
       setCommandResult(error.message || 'VIXORA Core belum dapat dihubungi.')
@@ -201,7 +220,7 @@ function WorkspacePage({ session }) {
         <div className="workspace-command-body">
           <div className="workspace-voice-row">
             <button type="button" className={`voice-orb ${voiceState}`} onClick={toggleVoice} disabled={!voiceSupported} aria-label="Voice command"><span>◉</span></button>
-            <div className="voice-copy"><b>{voiceState === 'listening' ? 'Listening…' : voiceState === 'error' ? 'Voice unavailable' : 'Speak to VIXORA'}</b><small>{voiceSupported ? 'Bahasa Indonesia · tap orb untuk bicara' : 'Browser ini tidak mendukung voice recognition'}</small></div>
+            <div className="voice-copy"><b>{voiceState === 'listening' ? 'Listening…' : voiceState === 'error' ? 'Voice unavailable' : 'Speak to VIXORA'}</b><small>{voiceSupported && speechSupported ? 'Bahasa Indonesia · bicara lalu VIXORA menjawab suara' : 'Voice belum didukung penuh di browser ini'}</small></div>
             <span className="voice-wave" aria-hidden="true"><i/><i/><i/><i/><i/></span>
           </div>
           <textarea value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendCommand() }} placeholder="Atau ketik: Siapkan 3 Shorts untuk YouTube besok…" rows="5" />
