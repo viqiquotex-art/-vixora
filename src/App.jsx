@@ -95,23 +95,112 @@ function AuthPage({ initialMode = 'login' }) {
   </div>
 }
 
+function WorkspacePage({ session }) {
+  const [chatOpen, setChatOpen] = useState(false)
+  const [command, setCommand] = useState('')
+  const [commandStatus, setCommandStatus] = useState('idle')
+  const [commandResult, setCommandResult] = useState('')
+
+  const sendCommand = async () => {
+    const value = command.trim()
+    if (!value || commandStatus === 'working') return
+    setCommandStatus('working')
+    setCommandResult('Mengirim instruksi ke VIXORA Core…')
+    try {
+      const response = await fetch('/api/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: value, source: 'vixora-workspace' }),
+      })
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Command failed')
+      setCommandStatus('success')
+      setCommandResult(data.message || 'Instruksi diterima VIXORA Core.')
+    } catch (error) {
+      setCommandStatus('error')
+      setCommandResult(error.message || 'VIXORA Core belum dapat dihubungi.')
+    }
+  }
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    window.location.hash = 'login'
+  }
+
+  const email = session?.user?.email || 'VIXORA user'
+  const name = session?.user?.user_metadata?.full_name || email.split('@')[0]
+
+  return <div className="workspace-shell">
+    <header className="workspace-nav">
+      <a className="agency-logo" href="#workspace"><span className="agency-logo-mark">V</span><span>VIXORA AI</span></a>
+      <div className="workspace-user"><span>{name}</span><button onClick={signOut}>Logout ↗</button></div>
+    </header>
+    <main className="workspace-main">
+      <section className="workspace-welcome">
+        <div className="agency-kicker">VIXORA CORE · PRIVATE WORKSPACE</div>
+        <h1>Welcome, <em>{name}</em>.</h1>
+        <p>Satu ruang kerja untuk mengendalikan agent, workflow, dan executor VIXORA.</p>
+        <div className="workspace-status"><i /> Core online <span>·</span> {email}</div>
+      </section>
+      <section className="workspace-grid">
+        {agents.map((agent) => <article className="workspace-agent" key={agent.title}>
+          <div className="workspace-agent-icon">{agent.icon}</div>
+          <div><span>{agent.code}</span><h3>{agent.title}</h3><p>{agent.text}</p></div>
+        </article>)}
+      </section>
+      <section className="workspace-command">
+        <div className="command-head"><div><b>VIXORA COMMAND CENTER</b><span>CORE ONLINE · EXECUTION READY</span></div><span className="online"><i /> READY</span></div>
+        <div className="workspace-command-body">
+          <textarea value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendCommand() }} placeholder="Contoh: Siapkan 3 Shorts untuk YouTube besok…" rows="5" />
+          <button className="command-send" onClick={sendCommand} disabled={commandStatus === 'working'}>{commandStatus === 'working' ? 'Processing…' : 'Send command ↗'}</button>
+          {commandResult && <div className={`command-result ${commandStatus}`}>{commandResult}</div>}
+        </div>
+      </section>
+    </main>
+  </div>
+}
+
 function App() {
   const [chatOpen, setChatOpen] = useState(false)
   const [command, setCommand] = useState('')
   const [commandStatus, setCommandStatus] = useState('idle')
   const [commandResult, setCommandResult] = useState('')
   const [authMode, setAuthMode] = useState(null)
+  const [session, setSession] = useState(null)
+  const [sessionLoading, setSessionLoading] = useState(true)
+  const [route, setRoute] = useState('top')
 
   useEffect(() => {
     const syncRoute = () => {
-      const route = window.location.hash.replace('#', '').toLowerCase()
-      setAuthMode(route === 'login' || route === 'register' ? route : null)
+      const nextRoute = window.location.hash.replace('#', '').toLowerCase() || 'top'
+      setRoute(nextRoute)
+      setAuthMode(nextRoute === 'login' || nextRoute === 'register' ? nextRoute : null)
       window.scrollTo({ top: 0, behavior: 'instant' })
     }
     syncRoute()
     window.addEventListener('hashchange', syncRoute)
-    return () => window.removeEventListener('hashchange', syncRoute)
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      setSession(nextSession)
+      setSessionLoading(false)
+    })
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session)
+      setSessionLoading(false)
+    })
+    return () => {
+      window.removeEventListener('hashchange', syncRoute)
+      listener.subscription.unsubscribe()
+    }
   }, [])
+
+  if (sessionLoading) return <div className="auth-shell"><div className="auth-card"><div className="agency-logo auth-logo"><span className="agency-logo-mark">V</span><span>VIXORA AI</span></div><div className="auth-message">Connecting to VIXORA Core…</div></div></div>
+  if (route === 'workspace') {
+    if (!session) {
+      window.location.hash = 'login'
+      return null
+    }
+    return <WorkspacePage session={session} />
+  }
 
 
   const sendCommand = async () => {
