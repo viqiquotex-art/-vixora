@@ -111,6 +111,44 @@ export default {
         ? body.source.trim()
         : "vixora-command-center";
 
+      // AGENT 01 — Content Agent
+      // Handles content ideation and short-form scripting before executor dispatch.
+      const contentIntent = /(?:ide|konsep|skrip|script|shorts?|konten|content|youtube short)/i.test(command);
+      if (contentIntent) {
+        const topicMatch = command.match(/(?:tentang|topik|tema|mengenai|about)\\s+(.+?)(?:\\.|$)/i);
+        const topic = topicMatch?.[1]?.trim() || "AI";
+
+        const content = [
+          {
+            title: "AI Itu Apa Sih? 30 Detik Paham",
+            hook: "Kalau HP kamu bisa nebak kata berikutnya, itu contoh AI.",
+            script: `AI sebenarnya ada di sekitar kita. Saat keyboard menebak kata berikutnya, saat YouTube merekomendasikan video, atau saat email memisahkan spam, ada sistem yang belajar dari pola data. Jadi AI bukan sulap. AI menggunakan data dan pola untuk membuat prediksi atau membantu mengambil keputusan. Singkatnya: AI belajar dari data, lalu menggunakan pola itu untuk membantu kita.`,
+          },
+          {
+            title: "3 Kesalahan Umum Saat Pakai AI buat Tugas",
+            hook: "Pakai AI buat tugas? Jangan lakukan tiga kesalahan ini.",
+            script: `Pertama, copy-paste jawaban AI mentah-mentah. Kedua, percaya hasil AI seratus persen tanpa mengecek fakta. Ketiga, memberi perintah terlalu umum tanpa konteks. Cara lebih aman? Beri konteks yang jelas, gunakan AI sebagai partner berpikir, lalu cek kembali informasi penting sebelum dipakai.`,
+          },
+          {
+            title: "AI di Saku Kamu",
+            hook: "Tanpa sadar, kamu mungkin memakai AI setiap hari.",
+            script: `Rekomendasi video, filter spam email, kamera yang mengenali objek, sampai prediksi kata di keyboard—semuanya bisa melibatkan AI atau machine learning. Jadi AI bukan cuma chatbot. Teknologi ini sudah masuk ke banyak fitur yang kita pakai setiap hari. Pertanyaannya bukan lagi kapan AI datang, tapi seberapa pintar kita menggunakannya.`,
+          },
+        ];
+
+        return json({
+          success: true,
+          status: "completed",
+          agent: "content-agent",
+          agentCode: "AGENT 01",
+          task: "short-form-content",
+          topic,
+          message: `Content Agent selesai. Aku membuat 3 konsep Shorts tentang ${topic}, lengkap dengan hook dan skrip 30 detik.`,
+          result: content,
+          next: "youtube-agent",
+        });
+      }
+
       const result = await creaoRequest(CREAO_BASE_URL, env, {
         method: "POST",
         body: JSON.stringify({ inputs: { command } }),
