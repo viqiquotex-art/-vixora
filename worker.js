@@ -52,7 +52,8 @@ export default {
       return json({
         status: "ok",
         service: "vixora-command-core",
-        version: "0.2.0",
+        version: "0.3.0",
+        agents: ["AGENT 01: content-agent"],
         executor: "creao-api-trigger",
         appId: CREAO_APP_ID,
         routes: ["/", "/api/health", "/api/command", "/api/command/:runId"],
@@ -115,7 +116,7 @@ export default {
       // Handles content ideation and short-form scripting before executor dispatch.
       const contentIntent = /(?:ide|konsep|skrip|script|shorts?|konten|content|youtube short)/i.test(command);
       if (contentIntent) {
-        const topicMatch = command.match(/(?:tentang|topik|tema|mengenai|about)\\s+(.+?)(?:\\.|$)/i);
+        const topicMatch = command.match(/(?:tentang|topik|tema|mengenai|about)\s+(.+?)(?:\\.|$)/i);
         const topic = topicMatch?.[1]?.trim() || "AI";
 
         const content = [
