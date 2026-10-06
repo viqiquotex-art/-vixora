@@ -48,11 +48,12 @@ export default {
 
     const url = new URL(request.url);
 
-    if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/api/health")) {
+    if ((request.method === "GET" || request.method === "HEAD") && (url.pathname === "/" || url.pathname === "/api/health")) {
       return json({
         status: "ok",
         service: "vixora-command-core",
         version: "0.3.0",
+        deployment: "cloudflare-worker",
         agents: ["AGENT 01: content-agent"],
         executor: "creao-api-trigger",
         appId: CREAO_APP_ID,
