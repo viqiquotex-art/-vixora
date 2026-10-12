@@ -161,7 +161,7 @@ export default {
           supabaseAuth: Boolean(env?.SUPABASE_PUBLISHABLE_KEY),
           telegram: Boolean(env?.TELEGRAM_BOT_TOKEN && env?.TELEGRAM_WEBHOOK_SECRET && env?.TELEGRAM_ALLOWED_CHAT_IDS),
         },
-        routes: ["/", "/api/health", "/api/command", "/api/command/:runId"],
+        routes: ["/", "/api/health", "/api/command", "/api/command/:runId", "/api/telegram/webhook"],
       });
     }
 
