@@ -174,6 +174,9 @@ export default {
       const runId = url.pathname.split("/").filter(Boolean).pop();
       if (!runId) return json({ success: false, error: "Run ID is required" }, 400);
 
+      const auth = await authorizeSupabaseUser(request, env);
+      if (!auth.ok) return json({ success: false, status: auth.status === 401 ? "unauthorized" : "auth_unavailable", error: auth.error }, auth.status);
+
       const result = await creaoRequest(`${CREAO_BASE_URL}/${encodeURIComponent(runId)}`, env, { method: "GET" });
 
       if (result.error) {
