@@ -310,6 +310,12 @@ function App() {
   const sendCommand = async () => {
     const value = command.trim()
     if (!value || commandStatus === 'working') return
+    if (!session) {
+      setCommandStatus('error')
+      setCommandResult('Login dulu untuk menjalankan perintah di VIXORA.')
+      window.location.hash = 'login'
+      return
+    }
     setCommandStatus('working')
     setCommandResult('Mengirim instruksi ke VIXORA Core…')
     try {
