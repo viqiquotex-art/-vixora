@@ -2,6 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 import './agency.css'
 import { supabase } from './lib/supabase'
 
+async function getCommandHeaders() {
+  const { data } = await supabase.auth.getSession()
+  const token = data?.session?.access_token
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  }
+}
+
 const agents = [
   { icon: '✦', code: 'AGENT 01', title: 'Content Agent', text: 'Menyusun ide, script, caption, Shorts, dan paket konten siap dieksekusi.' },
   { icon: '◈', code: 'AGENT 02', title: 'YouTube Agent', text: 'Menyiapkan workflow YouTube dari ide sampai proses publish melalui executor.' },
@@ -194,7 +203,7 @@ function WorkspacePage({ session }) {
     try {
       const response = await fetch('/api/command', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getCommandHeaders(),
         body: JSON.stringify({ command: value, source: 'vixora-workspace' }),
       })
       const data = await response.json()
@@ -306,7 +315,7 @@ function App() {
     try {
       const response = await fetch('/api/command', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await getCommandHeaders(),
         body: JSON.stringify({ command: value, source: 'vixora-command-center' }),
       })
       const data = await response.json()
