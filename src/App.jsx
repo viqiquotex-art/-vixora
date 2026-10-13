@@ -336,78 +336,50 @@ function App() {
   if (authMode) return <AuthPage initialMode={authMode} />
 
   return (
-    <div className="agency-shell">
-      <header className="agency-nav">
-        <div className="agency-nav-inner">
-          <a className="agency-logo" href="#top"><VixoraSplashMark small /><span className="brand-wordmark">VIXORA <small>CREATIVE + AI</small></span></a>
-          <nav className="agency-nav-links">
-            <a href="#agents">Agents</a>
-            <a href="#workflow">Workflow</a>
-            <a href="#command">Command Center</a>
-          </nav>
-          <button className="agency-nav-cta" onClick={() => { window.location.hash = 'login' }}>Try Now ↗</button>
-        </div>
+    <div className="vixora-home" id="top">
+      <header className="vh-nav">
+        <a className="vh-brand" href="#top" aria-label="VIXORA Creative beranda"><VixoraSplashMark /><span>VIXORA<small>CREATIVE</small></span></a>
+        <nav className="vh-links"><a href="#top">Beranda</a><a href="#layanan">Layanan</a><a href="#portfolio">Portofolio</a><a href="#harga">Harga</a><a href="#faq">FAQ</a></nav>
+        <a className="vh-nav-cta" href="https://wa.me/6285866073007?text=Halo%20VIXORA%20Creative%2C%20saya%20ingin%20konsultasi%20desain." target="_blank" rel="noreferrer">◉ Pesan via WhatsApp</a>
       </header>
-
-      <main id="top">
-        <section className="agency-hero agency-container">
-          <div>
-            <div className="agency-kicker">AI AGENCY · MULTI-AGENT SYSTEM</div>
-            <h1>One command.<br /><em>Many agents.</em></h1>
-            <p>VIXORA adalah AI agency yang mengubah instruksi menjadi pekerjaan nyata. Satu Core mengatur agent, workflow, dan executor untuk menjalankan tugas digital dari satu tempat.</p>
-            <div className="agency-actions">
-              <button className="agency-primary" onClick={() => { window.location.hash = 'login' }}>Try Now ↗</button>
-              <button className="agency-secondary" onClick={() => document.getElementById('agents')?.scrollIntoView({ behavior: 'smooth' })}>Explore Agents</button>
-            </div>
+      <main>
+        <section className="vh-hero">
+          <div className="vh-paint vh-paint-red"/><div className="vh-paint vh-paint-yellow"/><div className="vh-paint vh-paint-black"/>
+          <div className="vh-hero-copy">
+            <span className="vh-kicker">JASA DESAIN GRAFIS</span>
+            <h1>IDE KAMU,<br/>KAMI <em>DESAIN.</em></h1>
+            <p>Bantu wujudkan visual yang menarik untuk bisnis, acara, dan kebutuhan pribadi kamu.</p>
+            <div className="vh-benefits"><span><b className="red">ϟ</b> Proses<br/>Cepat</span><span><b className="yellow">★</b> Hasil<br/>Profesional</span><span><b className="black">♡</b> Revisi<br/>Fleksibel</span></div>
+            <div className="vh-actions"><a className="vh-btn primary" href="https://wa.me/6285866073007?text=Halo%20VIXORA%20Creative%2C%20saya%20ingin%20pesan%20desain." target="_blank" rel="noreferrer">◉ Pesan Sekarang <span>→</span></a><a className="vh-btn secondary" href="#portfolio">Lihat Portofolio</a></div>
           </div>
-          <div className="agency-status">
-            <div className="agency-status-top"><strong>VIXORA CORE</strong><span className="online"><i /> ONLINE</span></div>
-            <div className="agency-orb"><div className="agency-orb-core">V</div></div>
-          </div>
-        </section>
-
-        <section className="agency-section" id="agents">
-          <div className="agency-container">
-            <div className="agency-section-head"><div><div className="agency-kicker">THE AGENCY</div><h2>Agents that do the work.</h2></div><p>Setiap agent punya peran khusus. VIXORA Core memilih dan mengarahkan agent berdasarkan instruksi yang diberikan.</p></div>
-            <div className="agent-grid">{agents.map((agent) => <article className="agent-card" key={agent.title}><div className="agent-icon">{agent.icon}</div><small>{agent.code}</small><h3>{agent.title}</h3><p>{agent.text}</p></article>)}</div>
+          <div className="vh-hero-art" aria-label="Contoh karya desain VIXORA">
+            <div className="vh-poster vh-poster-coffee"><img src="https://images.unsplash.com/photo-1461023058943-07fcbe16d735?auto=format&fit=crop&w=700&q=85" alt="Minuman kopi untuk contoh desain"/><small>KOPI NUSANTARA</small><h2>ES KOPI<br/><em>LOKAL</em></h2><p>Temani hari baikmu.</p><b>CUMA 25K</b></div>
+            <div className="vh-poster vh-poster-event"><img src="https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&w=700&q=85" alt="Seminar untuk contoh poster"/><small>VIXORA COMMUNITY</small><h2>SEMINAR<br/><em>PENGEMBANGAN KARIER</em></h2><p>Persiapkan diri untuk peluang lebih besar.</p><b>DAFTAR SEKARANG</b></div>
+            <div className="vh-poster vh-poster-beauty"><img src="https://images.unsplash.com/photo-1556229010-6c3f2c9ca5f8?auto=format&fit=crop&w=700&q=85" alt="Produk skincare untuk contoh desain"/><small>LUMIÈRE BEAUTY</small><h2>Rawat Kulit<br/>Lebih Cerah</h2><p>Perawatan harian untuk kulitmu.</p><b>PROMO SPESIAL</b></div>
           </div>
         </section>
-
-        <section className="agency-section" id="workflow">
-          <div className="agency-container">
-            <div className="agency-section-head"><div><div className="agency-kicker">HOW IT WORKS</div><h2>From command to execution.</h2></div><p>Arsitektur VIXORA dibuat untuk memisahkan reasoning, planning, execution, dan verification.</p></div>
-            <div className="workflow">{[
-              ['01', 'INTAKE', 'Core memahami instruksi dan menentukan agent yang tepat.'],
-              ['02', 'RECON', 'Agent mengumpulkan konteks dan data yang diperlukan.'],
-              ['03', 'EXECUTE', 'Executor menjalankan aksi yang sudah direncanakan.'],
-              ['04', 'VERIFY', 'Hasil diperiksa dan dikembalikan ke command center.'],
-            ].map(([n, t, d]) => <div className="workflow-step" key={n}><span>{n}</span><h3>{t}</h3><p>{d}</p></div>)}</div>
+        <section className="vh-portfolio vh-section" id="portfolio">
+          <div className="vh-section-head"><div><h2>Contoh visual.<br/>Banyak kemungkinan.</h2><i className="vh-underline"/></div><p>Contoh konsep desain untuk menunjukkan arah visual VIXORA Creative. Karya ditampilkan sebagai konsep, bukan proyek klien yang diklaim nyata.</p></div>
+          <div className="vh-work-grid">
+            <article className="vh-work"><div className="vh-work-art coffee"><div className="vh-work-poster"><small>KOPI NUSANTARA</small><h3>ES KOPI<br/><em>LOKAL</em></h3><p>Temani hari baikmu.</p><b>CUMA 25K</b></div></div><div className="vh-work-info"><span>01 · FOOD & BEVERAGE</span><h3>Promo Kopi Lokal</h3><p>Headline kuat dan harga menonjol untuk menarik perhatian pelanggan.</p></div></article>
+            <article className="vh-work"><div className="vh-work-art event"><div className="vh-work-poster"><small>VIXORA COMMUNITY</small><h3>SEMINAR<br/><em>PENGEMBANGAN KARIER</em></h3><p>Persiapkan diri untuk peluang lebih besar.</p><b>DAFTAR SEKARANG</b></div></div><div className="vh-work-info"><span>02 · EVENT</span><h3>Poster Acara</h3><p>Informasi acara disusun jelas agar audiens cepat memahami detailnya.</p></div></article>
+            <article className="vh-work"><div className="vh-work-art beauty"><div className="vh-work-poster"><small>LUMIÈRE BEAUTY</small><h3>Rawat Kulit<br/>Lebih Cerah</h3><p>Perawatan harian untuk kulit sehat.</p><b>PROMO SPESIAL</b></div></div><div className="vh-work-info"><span>03 · PRODUCT PROMO</span><h3>Konten Promo Produk</h3><p>Visual bersih untuk menonjolkan produk dan karakter brand.</p></div></article>
           </div>
         </section>
-
-        <section className="agency-section" id="command">
-          <div className="agency-container agency-command">
-            <div className="agency-command-copy">
-              <div className="agency-kicker">COMMAND CENTER</div>
-              <h2>Tell VIXORA what needs to happen.</h2>
-              <p>Tulis tujuanmu dalam bahasa biasa. VIXORA Core akan meneruskan instruksi ke agent dan executor yang tersedia.</p>
-              <button className="agency-primary" onClick={openCommand}>Open Command Center ↗</button>
-            </div>
-            <div className="agency-command-box">
-              <div className="online"><i /> CORE ONLINE</div>
-              <textarea id="agency-command-input" value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendCommand() }} placeholder="Contoh: Siapkan 3 Shorts untuk YouTube besok…" rows="6" />
-              <button className="agency-send" onClick={sendCommand} disabled={commandStatus === 'working'}>{commandStatus === 'working' ? 'Processing…' : 'Send command ↗'}</button>
-              {commandResult && <div className={`agency-result ${commandStatus}`}>{commandResult}</div>}
-            </div>
-          </div>
-        </section>
+        <section className="vh-section vh-services" id="layanan"><div className="vh-section-head"><div><span className="vh-label">LAYANAN KAMI</span><h2>Desain yang cocok<br/>untuk kebutuhanmu.</h2></div><p>Dari promosi harian sampai identitas brand, diskusikan kebutuhanmu dan kita pilih solusi visual yang sesuai.</p></div><div className="vh-service-grid"><article><b>01</b><h3>Konten Media Sosial</h3><p>Feed, story, promo diskon, dan materi kampanye digital.</p></article><article><b>02</b><h3>Poster, Flyer & Banner</h3><p>Publikasi acara, materi promosi, brosur, dan banner.</p></article><article><b>03</b><h3>Branding & Produk</h3><p>Label, menu, kartu nama, dan kebutuhan visual usaha.</p></article></div></section>
+        <section className="vh-section vh-pricing" id="harga"><div className="vh-section-head"><div><span className="vh-label">HARGA TRANSPARAN</span><h2>Mulai dari yang<br/>paling kamu butuhkan.</h2></div><p>Paket perkenalan untuk desain sederhana. Harga akhir dikonfirmasi sebelum pengerjaan dimulai.</p></div><div className="vh-price-grid"><article><span>SMALL</span><h3>Quick Design</h3><p>Untuk satu kebutuhan visual sederhana.</p><strong>Rp25.000</strong><small>/ desain</small><ul><li>1 desain sederhana</li><li>1 ukuran pilihan</li><li>Maksimal 2 revisi minor</li><li>File digital siap unggah</li></ul><a href="https://wa.me/6285866073007?text=Halo%20VIXORA%2C%20saya%20tertarik%20paket%20Small%20Rp25.000." target="_blank" rel="noreferrer">Pilih paket →</a></article><article className="featured"><span>MEDIUM · POPULER</span><h3>Dual Format</h3><p>Satu konsep untuk dua penempatan media sosial.</p><strong>Rp45.000</strong><small>/ paket</small><ul><li>1 konsep desain</li><li>2 ukuran media sosial</li><li>Maksimal 2 revisi minor</li><li>File digital siap unggah</li></ul><a href="https://wa.me/6285866073007?text=Halo%20VIXORA%2C%20saya%20tertarik%20paket%20Medium%20Rp45.000." target="_blank" rel="noreferrer">Pilih paket →</a></article><article><span>LARGE</span><h3>Content Bundle</h3><p>Untuk beberapa konten dalam satu gaya visual.</p><strong>Rp99.000</strong><small>/ 5 desain</small><ul><li>5 desain konten sederhana</li><li>Gaya visual konsisten</li><li>Revisi minor sesuai kesepakatan</li><li>File digital siap unggah</li></ul><a href="https://wa.me/6285866073007?text=Halo%20VIXORA%2C%20saya%20tertarik%20paket%20Large%20Rp99.000." target="_blank" rel="noreferrer">Pilih paket →</a></article></div></section>
+        <section className="vh-section vh-faq" id="faq"><div className="vh-section-head"><div><span className="vh-label">FAQ</span><h2>Yang sering<br>ditanyakan.</h2></div><p>Semua dibuat jelas dari awal supaya proses desain nyaman dan ekspektasi tetap sejalan.</p></div><div className="vh-faq-grid"><article><h3>Bagaimana cara order?</h3><p>Hubungi WhatsApp, jelaskan kebutuhan, lalu sepakati harga dan jadwal sebelum pengerjaan.</p></article><article><h3>Apa yang perlu disiapkan?</h3><p>Siapkan teks, foto atau logo bila ada, ukuran, tujuan desain, dan referensi gaya.</p></article><article><h3>Berapa lama prosesnya?</h3><p>Estimasi waktu dikonfirmasi setelah brief dan materi diterima lengkap.</p></article><article><h3>Bisa revisi?</h3><p>Bisa, sesuai batas revisi minor dan ketentuan paket yang disepakati.</p></article></div></section>
+        <section className="vh-cta"><div><span className="vh-label">LET'S MAKE IT STAND OUT</span><h2>Idemu layak<br/>tampil lebih baik.</h2><p>Ceritakan kebutuhan desainmu. Kita mulai dari brief sederhana dan harga yang jelas.</p></div><a className="vh-btn primary" href="https://wa.me/6285866073007?text=Halo%20VIXORA%20Creative%2C%20saya%20ingin%20konsultasi%20desain." target="_blank" rel="noreferrer">◉ Konsultasi via WhatsApp →</a></section>
+        <section className="vh-ai-section" id="command"><div><span className="vh-label">VIXORA AI COMMAND CENTER</span><h2>Satu instruksi.<br/>Banyak kemungkinan.</h2><p>Butuh bantuan AI dan otomasi? Masuk ke workspace VIXORA untuk mengakses agent, workflow, dan command center.</p><div className="vh-actions"><button className="vh-btn primary" onClick={() => { window.location.hash = 'login' }}>Masuk / Daftar ↗</button><button className="vh-btn secondary" onClick={() => document.getElementById('agents')?.scrollIntoView({behavior:'smooth'})}>Lihat AI Agents</button></div></div><div className="vh-ai-card"><div><span className="vh-live-dot"/> VIXORA CORE</div><h3>AI WORKSPACE</h3><p>Content · Research · Creative · Automation</p><button onClick={() => { window.location.hash = 'login' }}>Buka Command Center ↗</button></div></section>
+        <section className="vh-agent-list" id="agents"><div className="vh-section-head"><div><span className="vh-label">AI ECOSYSTEM</span><h2>Lebih dari sekadar desain.</h2></div><p>VIXORA juga mengembangkan workflow AI untuk membantu tugas digital lebih terarah.</p></div><div className="vh-agent-grid">{agents.map(agent => <article key={agent.title}><span>{agent.code}</span><h3>{agent.title}</h3><p>{agent.text}</p></article>)}</div></section>
       </main>
-
-      <footer className="agency-container agency-footer"><span>VIXORA AI AGENCY</span><span>Orchestrate. Execute. Verify.</span><span>© 2026</span></footer>
-      <button className="ai-fab" onClick={() => setChatOpen((v) => !v)} aria-label="Open VIXORA AI Command Center">✦</button>
+      <footer className="vh-footer"><a className="vh-brand" href="#top"><VixoraSplashMark small/><span>VIXORA<small>CREATIVE + AI</small></span></a><p>Design that makes your brand stand out.</p><span>© 2026 VIXORA</span></footer>
+      <a className="vh-wa-float" href="https://wa.me/6285866073007?text=Halo%20VIXORA%20Creative%2C%20saya%20ingin%20konsultasi%20desain." target="_blank" rel="noreferrer">◉ Chat WhatsApp</a>
+      <button className="ai-fab vh-ai-fab" onClick={() => setChatOpen((v) => !v)} aria-label="Open VIXORA AI Command Center">✦</button>
       {chatOpen && <div className="ai-pop command-center"><div className="command-head"><div><b>VIXORA AI</b><span>COMMAND CENTER · CORE ONLINE</span></div><button onClick={() => setChatOpen(false)} aria-label="Close">×</button></div><div className="command-body"><p className="command-hint">Berikan satu instruksi. VIXORA Core akan meneruskannya ke executor yang sesuai.</p><textarea value={command} onChange={(e) => setCommand(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) sendCommand() }} placeholder="Contoh: Siapkan 3 Shorts untuk YouTube besok…" rows="4"/><button className="command-send" onClick={sendCommand} disabled={commandStatus === 'working'}>{commandStatus === 'working' ? 'Processing…' : 'Send command ↗'}</button>{commandResult && <div className={`command-result ${commandStatus}`}>{commandResult}</div>}<div className="command-modules"><span>CORE</span><span>CREAO</span><span>YOUTUBE</span><span>MORE SOON</span></div></div></div>}
     </div>
   )
+
 }
 
 export default App
