@@ -297,7 +297,7 @@ function App() {
     }
   }, [])
 
-  if (sessionLoading) return <div className="auth-shell"><div className="auth-card"><div className="agency-logo auth-logo"><span className="agency-logo-mark">V</span><span>VIXORA AI</span></div><div className="auth-message">Connecting to VIXORA Core…</div></div></div>
+  if (sessionLoading) return <div className="auth-shell"><div className="auth-card"><div className="agency-logo auth-logo"><VixoraSplashMark small /><span className="brand-wordmark">VIXORA <small>CREATIVE + AI</small></span></div><div className="auth-message">Connecting to VIXORA Core…</div></div></div>
   if (route === 'workspace') {
     if (!session) {
       window.location.hash = 'login'
@@ -339,7 +339,7 @@ function App() {
     <div className="agency-shell">
       <header className="agency-nav">
         <div className="agency-nav-inner">
-          <a className="agency-logo" href="#top"><span className="agency-logo-mark">V</span><span>VIXORA AI</span></a>
+          <a className="agency-logo" href="#top"><VixoraSplashMark small /><span className="brand-wordmark">VIXORA <small>CREATIVE + AI</small></span></a>
           <nav className="agency-nav-links">
             <a href="#agents">Agents</a>
             <a href="#workflow">Workflow</a>
