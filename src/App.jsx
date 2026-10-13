@@ -11,6 +11,15 @@ const agents = [
   { icon: 'V', code: 'CORE', title: 'VIXORA Orchestrator', text: 'Otak utama yang menerima instruksi dan meneruskannya ke agent yang paling tepat.' },
 ]
 
+function VixoraSplashMark({ small = false }) {
+  return <svg className={small ? 'vixora-splash-mark small' : 'vixora-splash-mark'} viewBox="0 0 64 64" role="img" aria-label="VIXORA paint splash logo">
+    <path d="M9 8 C4 3 0 8 4 14 L22 48 Q26 55 31 48 L39 33 L29 14 Q26 8 21 13 L18 17 Z" fill="#ed1c24"/>
+    <path d="M27 5 C24 -1 18 4 22 10 L37 42 Q41 51 46 43 L57 22 Q61 15 55 13 Q51 12 48 19 L42 29 L33 9 Q31 4 27 5Z" fill="#ffcc00"/>
+    <path d="M40 11 C39 5 46 2 49 8 L60 25 Q63 30 58 34 L47 49 Q43 55 39 49 L34 40 L41 27 L47 20Z" fill="#111111"/>
+    <circle cx="7" cy="27" r="3" fill="#ed1c24"/><circle cx="16" cy="5" r="2.5" fill="#ed1c24"/><circle cx="57" cy="6" r="2.5" fill="#111"/><circle cx="59" cy="43" r="3" fill="#ffcc00"/><circle cx="25" cy="59" r="2.5" fill="#ffcc00"/>
+  </svg>
+}
+
 function AuthPage({ initialMode = 'login' }) {
   const [mode, setMode] = useState(initialMode)
   const [email, setEmail] = useState('')
@@ -73,7 +82,7 @@ function AuthPage({ initialMode = 'login' }) {
     <div className="auth-noise" />
     <a className="auth-back" href="#top">← Back to VIXORA</a>
     <div className="auth-card">
-      <a className="agency-logo auth-logo" href="#top"><span className="agency-logo-mark">V</span><span>VIXORA AI</span></a>
+      <a className="agency-logo auth-logo" href="#top"><VixoraSplashMark small /><span className="brand-wordmark">VIXORA <small>CREATIVE + AI</small></span></a>
       <div className="agency-kicker auth-kicker">AI AGENCY · ACCESS PORTAL</div>
       <h1>{mode === 'login' ? 'Welcome back.' : 'Create your account.'}</h1>
       <p className="auth-subtitle">{mode === 'login' ? 'Masuk untuk mengakses VIXORA AI Command Center dan agent kamu.' : 'Buat akun untuk mulai menggunakan ekosistem AI agency VIXORA.'}</p>
@@ -222,7 +231,7 @@ function WorkspacePage({ session }) {
 
   return <div className="workspace-shell">
     <header className="workspace-nav">
-      <a className="agency-logo" href="#workspace"><span className="agency-logo-mark">V</span><span>VIXORA AI</span></a>
+      <a className="agency-logo" href="#workspace"><VixoraSplashMark small /><span className="brand-wordmark">VIXORA <small>CREATIVE + AI</small></span></a>
       <div className="workspace-user"><span>{name}</span><button onClick={signOut}>Logout ↗</button></div>
     </header>
     <main className="workspace-main">
