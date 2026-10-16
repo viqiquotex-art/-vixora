@@ -154,3 +154,23 @@ textarea::placeholder{color:#999}
   .footer{flex-wrap:wrap;line-height:1.7}
 }
 @media(prefers-reduced-motion:reduce){.orb-ring{animation:none}}
+
+
+/* Hero refinement: integrate the abstract mark; remove the competing orbital illustration */
+.welcome{isolation:isolate}
+.welcome::before{
+  width:290px;height:290px;right:4%;top:-155px;
+  border-width:42px;border-radius:48% 52% 38% 62% / 40% 42% 58% 60%;
+  transform:rotate(-18deg);opacity:.9
+}
+.welcome::after{
+  width:155px;height:155px;right:13%;bottom:-93px;
+  background:#facc15;border-radius:56% 44% 39% 61% / 44% 58% 42% 56%;
+  transform:rotate(18deg)
+}
+/* Hide the old V orb and orbit rings so the brand abstract stays the hero focus */
+.welcome .orb-wrap{display:none}
+@media(max-width:760px){
+  .welcome::before{width:220px;height:220px;right:-32px;top:-104px;border-width:31px}
+  .welcome::after{width:125px;height:125px;right:13px;bottom:-79px}
+}
