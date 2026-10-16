@@ -59,7 +59,7 @@
   <main class="main">
     <header class="topbar">
       <div class="breadcrumb">VIXORA <span>/</span> {activeTab}</div>
-      <div class="top-actions"><span class="status-chip"><i></i> Build in progress</span><button class="icon-button" aria-label="Notifications">♧</button><div class="avatar small">VX</div></div>
+      <div class="top-actions"><span class="status-chip"><i></i> Build in progress</span><button class="icon-button" aria-label="Notifications">♧</button><a class="avatar small" href="/login" aria-label="Sign in or account settings" title="Sign in / account"><span>VX</span></a></div>
     </header>
 
     <div class="content">
