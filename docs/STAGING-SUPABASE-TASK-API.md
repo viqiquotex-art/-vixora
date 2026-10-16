@@ -25,3 +25,15 @@ Do not use a service-role key. The API forwards the user's Supabase access token
 3. Verify GET/POST only expose rows owned by that user.
 4. Do not apply `202610160001_agent_runs.sql` to the existing Supabase project until the staging auth/API checks pass.
 5. Keep `vixora.my.id` and its production Worker untouched.
+
+## Supabase Auth redirect allowlist
+
+In Supabase Dashboard → Authentication → URL Configuration, add the staging callback URL to **Redirect URLs**:
+
+- `https://vixora-workspace-staging.viqiquotex.workers.dev/login`
+
+Do not replace the existing production Site URL just to support staging. Add this staging URL to the allowlist. The login page uses Supabase Auth password sign-in and account creation; email confirmation behavior depends on the project's existing email-confirmation setting.
+
+## Current phase status
+
+The staging UI now includes a login/create-account screen and attempts to load/save personal tasks through these endpoints after sign-in. The endpoints and UI must pass GitHub CI and live staging verification before considering the task flow complete. Agent execution remains disconnected, and the separate `agent_runs` migration remains unapplied.
