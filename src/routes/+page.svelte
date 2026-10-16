@@ -1,22 +1,75 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { supabase } from '$lib/supabase';
+
   type Tab = 'Overview' | 'Task Center' | 'Agent Hub' | 'Automations' | 'Integrations';
-  type DraftTask = { id: number; title: string; createdAt: string; status: 'Draft' };
+  type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };
 
   let activeTab = $state<Tab>('Overview');
   let taskInput = $state('');
   let tasks = $state<DraftTask[]>([]);
   let notice = $state('Workspace baru sedang disiapkan. Task belum dikirim ke executor.');
+  let accessToken = $state<string | null>(null);
+  let signedInEmail = $state<string | null>(null);
+
+  async function loadSavedTasks(token: string) {
+    try {
+      const response = await fetch('/api/tasks', { headers: { Authorization: `Bearer ${token}` } });
+      if (!response.ok) throw new Error('Task history belum dapat dimuat.');
+      const rows = await response.json() as Array<{ id: string; title: string; description: string | null; created_at: string }>;
+      tasks = rows.map((row) => ({ id: row.id, title: row.title, createdAt: new Date(row.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), status: 'Saved' }));
+    } catch {
+      notice = 'Koneksi task belum tersedia. Periksa konfigurasi Supabase staging.';
+    }
+  }
+
+  onMount(() => {
+    let active = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!active) return;
+      accessToken = data.session?.access_token ?? null;
+      signedInEmail = data.session?.user.email ?? null;
+      if (data.session) void loadSavedTasks(data.session.access_token);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      accessToken = session?.access_token ?? null;
+      signedInEmail = session?.user.email ?? null;
+      if (session) void loadSavedTasks(session.access_token);
+      else tasks = [];
+    });
+    return () => { active = false; listener.subscription.unsubscribe(); };
+  });
 
   const tabs: Tab[] = ['Overview', 'Task Center', 'Agent Hub', 'Automations', 'Integrations'];
 
-  function createDraft(event: SubmitEvent) {
+  async function createDraft(event: SubmitEvent) {
     event.preventDefault();
-    const title = taskInput.trim();
-    if (!title) return;
-    tasks = [{ id: Date.now(), title, createdAt: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), status: 'Draft' }, ...tasks];
-    taskInput = '';
-    activeTab = 'Task Center';
-    notice = 'Draft tersimpan di sesi browser ini. Belum ada agent yang dieksekusi.';
+    const prompt = taskInput.trim();
+    if (!prompt) return;
+    if (!accessToken) {
+      notice = 'Silakan sign in terlebih dahulu untuk menyimpan task secara permanen.';
+      await goto('/login');
+      return;
+    }
+    try {
+      const response = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ title: prompt.slice(0, 240), description: prompt, priority: 'medium' })
+      });
+      const result = await response.json() as Array<{ id: string; title: string; created_at: string }> | { error?: string };
+      if (!response.ok || !Array.isArray(result) || !result[0]) {
+        throw new Error(!Array.isArray(result) && result.error ? result.error : 'Task belum berhasil disimpan.');
+      }
+      const row = result[0];
+      tasks = [{ id: row.id, title: row.title, createdAt: new Date(row.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), status: 'Saved' }, ...tasks.filter((task) => task.id !== row.id)];
+      taskInput = '';
+      activeTab = 'Task Center';
+      notice = 'Task tersimpan di Supabase untuk akun ini. Belum ada agent yang dieksekusi.';
+    } catch (cause) {
+      notice = cause instanceof Error ? cause.message : 'Task belum berhasil disimpan.';
+    }
   }
 
   const agents = [
@@ -52,7 +105,7 @@
 
     <div class="sidebar-bottom">
       <div class="environment"><span class="pulse"></span><span><strong>STAGING</strong><small>Isolated environment</small></span></div>
-      <div class="user-row"><div class="avatar">VX</div><span><strong>Workspace owner</strong><small>Local preview</small></span><span class="dots">•••</span></div>
+      <div class="user-row"><div class="avatar">VX</div><span><strong>{signedInEmail ?? "Workspace visitor"}</strong><small>{signedInEmail ? "Signed in" : "Sign in to save tasks"}</small></span><span class="dots">•••</span></div>
     </div>
   </aside>
 
@@ -77,7 +130,7 @@
 
         <section class="section-heading"><div><span class="eyebrow">YOUR OPERATIONS</span><h2>Workspace overview</h2></div><span class="muted-label">PHASE 01 · FOUNDATION</span></section>
         <div class="metric-grid">
-          <article class="metric-card"><div class="metric-top"><span>Task drafts</span><span class="metric-icon purple">⌘</span></div><div class="metric-value">{tasks.length.toString().padStart(2, '0')}</div><div class="metric-foot"><span class="neutral-dot"></span> Local session only</div></article>
+          <article class="metric-card"><div class="metric-top"><span>Saved tasks</span><span class="metric-icon purple">⌘</span></div><div class="metric-value">{tasks.length.toString().padStart(2, '0')}</div><div class="metric-foot"><span class="neutral-dot"></span> {signedInEmail ? "Synced with Supabase" : "Sign in required"}</div></article>
           <article class="metric-card"><div class="metric-top"><span>Agent blueprints</span><span class="metric-icon cyan">✳</span></div><div class="metric-value">04</div><div class="metric-foot"><span class="neutral-dot"></span> Runtime not connected</div></article>
           <article class="metric-card"><div class="metric-top"><span>Connected executors</span><span class="metric-icon amber">↗</span></div><div class="metric-value">00</div><div class="metric-foot"><span class="warning-dot"></span> Pending verification</div></article>
           <article class="metric-card"><div class="metric-top"><span>Quality checks</span><span class="metric-icon green">✓</span></div><div class="metric-value">—</div><div class="metric-foot"><span class="neutral-dot"></span> Not run yet</div></article>
@@ -120,9 +173,9 @@
         <article class="panel task-panel"><div class="panel-heading"><div><span class="eyebrow">NEW TASK</span><h2>Capture an objective</h2></div></div><form onsubmit={createDraft}><label class="sr-only" for="task-input">Describe a task</label><textarea id="task-input" bind:value={taskInput} placeholder="Jelaskan hasil yang ingin kamu capai…" rows="3"></textarea><div class="composer-footer"><span>Belum menjalankan agent</span><button class="primary-button" type="submit" disabled={!taskInput.trim()}>Save draft <span>↗</span></button></div></form></article>
         <section class="section-heading"><div><span class="eyebrow">TASK HISTORY</span><h2>Recent tasks</h2></div><span class="muted-label">{tasks.length} DRAFT(S)</span></section>
         {#if tasks.length}
-          <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · Current browser session</small></div><span class="draft-pill">Draft</span></article>{/each}</div>
+          <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><span class="draft-pill">{task.status}</span></article>{/each}</div>
         {:else}
-          <div class="empty-state"><div class="empty-icon">⌘</div><h3>Belum ada task</h3><p>Tambahkan task pertama. Draft hanya tersimpan selama sesi browser ini.</p></div>
+          <div class="empty-state"><div class="empty-icon">⌘</div><h3>Belum ada task</h3><p>Tambahkan task pertama. Sign in untuk menyimpan task secara permanen.</p></div>
         {/if}
       {:else if activeTab === 'Agent Hub'}
         <section class="page-intro"><div class="eyebrow">SPECIALIST NETWORK</div><h1>Agent <span>Hub</span></h1><p>Registry awal untuk peran, kapabilitas, dan quality gate VIXORA.</p></section>
