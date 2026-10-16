@@ -20,6 +20,15 @@ function getBearer(request: Request) {
   return match?.[1] ?? null;
 }
 
+async function getAuthenticatedUserId(config: { url: string; key: string }, token: string) {
+  const response = await fetch(`${config.url}/auth/v1/user`, {
+    headers: { apikey: config.key, Authorization: `Bearer ${token}` }
+  });
+  if (!response.ok) return null;
+  const user = await response.json() as { id?: string };
+  return typeof user.id === 'string' ? user.id : null;
+}
+
 export const GET: RequestHandler = async ({ request, platform }) => {
   const config = getConfig(platform);
   const token = getBearer(request);
@@ -79,8 +88,12 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     return json({ error: 'Task description is too long.' }, { status: 400 });
   }
 
-  // The user's access token is forwarded to Supabase; RLS determines ownership.
-  // Never accept user_id from the browser or use a service-role key here.
+  // Resolve the account from Supabase Auth; never trust user_id supplied by the browser.
+  const userId = await getAuthenticatedUserId(config, token);
+  if (!userId) return json({ error: 'Session is invalid or expired. Please sign in again.' }, { status: 401 });
+
+  // The user's access token is forwarded to Supabase; RLS still determines ownership.
+  // Never use a service-role key here.
   const response = await fetch(`${config.url}/rest/v1/tasks`, {
     method: 'POST',
     headers: {
@@ -91,6 +104,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       Accept: 'application/json'
     },
     body: JSON.stringify({
+      user_id: userId,
       title,
       description,
       priority,
