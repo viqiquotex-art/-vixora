@@ -1,0 +1,109 @@
+import { json } from '@sveltejs/kit';
+import type { RequestHandler } from './$types';
+
+type Env = {
+  SUPABASE_URL?: string;
+  SUPABASE_ANON_KEY?: string;
+};
+
+function getConfig(platform: App.Platform | undefined) {
+  const env = (platform?.env ?? {}) as Env;
+  const url = env.SUPABASE_URL?.replace(/\/$/, '');
+  const key = env.SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return { url, key };
+}
+
+function getBearer(request: Request) {
+  const header = request.headers.get('authorization') ?? '';
+  const match = header.match(/^Bearer\s+(.+)$/i);
+  return match?.[1] ?? null;
+}
+
+export const GET: RequestHandler = async ({ request, platform }) => {
+  const config = getConfig(platform);
+  const token = getBearer(request);
+  if (!config) {
+    return json({ error: 'Supabase is not configured for this environment.' }, { status: 503 });
+  }
+  if (!token) return json({ error: 'Sign in is required.' }, { status: 401 });
+
+  const response = await fetch(
+    `${config.url}/rest/v1/tasks?select=id,title,description,due_date,priority,completed,created_at&order=created_at.desc`,
+    {
+      headers: {
+        apikey: config.key,
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/json'
+      }
+    }
+  );
+
+  const body = await response.text();
+  if (!response.ok) {
+    return json({ error: 'Could not load tasks.', detail: body.slice(0, 500) }, { status: response.status });
+  }
+  return new Response(body, {
+    status: 200,
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+  });
+};
+
+export const POST: RequestHandler = async ({ request, platform }) => {
+  const config = getConfig(platform);
+  const token = getBearer(request);
+  if (!config) {
+    return json({ error: 'Supabase is not configured for this environment.' }, { status: 503 });
+  }
+  if (!token) return json({ error: 'Sign in is required.' }, { status: 401 });
+
+  let input: unknown;
+  try {
+    input = await request.json();
+  } catch {
+    return json({ error: 'Request body must be valid JSON.' }, { status: 400 });
+  }
+
+  if (!input || typeof input !== 'object') {
+    return json({ error: 'A task object is required.' }, { status: 400 });
+  }
+  const record = input as Record<string, unknown>;
+  const title = typeof record.title === 'string' ? record.title.trim() : '';
+  const description = typeof record.description === 'string' ? record.description.trim() : null;
+  const priority = record.priority === 'low' || record.priority === 'high' ? record.priority : 'medium';
+
+  if (title.length < 1 || title.length > 240) {
+    return json({ error: 'Task title must contain 1–240 characters.' }, { status: 400 });
+  }
+  if (description && description.length > 12000) {
+    return json({ error: 'Task description is too long.' }, { status: 400 });
+  }
+
+  // The user's access token is forwarded to Supabase; RLS determines ownership.
+  // Never accept user_id from the browser or use a service-role key here.
+  const response = await fetch(`${config.url}/rest/v1/tasks`, {
+    method: 'POST',
+    headers: {
+      apikey: config.key,
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Prefer: 'return=representation',
+      Accept: 'application/json'
+    },
+    body: JSON.stringify({
+      title,
+      description,
+      priority,
+      completed: false
+    })
+  });
+
+  const body = await response.text();
+  if (!response.ok) {
+    return json({ error: 'Task could not be saved. Check the session and row-level security policies.', detail: body.slice(0, 500) }, { status: response.status });
+  }
+  return new Response(body, {
+    status: 201,
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' }
+  });
+};
