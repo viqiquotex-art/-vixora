@@ -41,3 +41,15 @@ The same test suite runs in GitHub Actions before the staging build.
 ## Router behavior guard
 
 Specialist matching uses whole-word matching to avoid overlapping fragments (for example, `hook` inside `webhook`). Regression tests cover this overlap.
+
+
+## Gemini Free Tier — staging setup
+
+The staging workspace has an authenticated server endpoint at `POST /api/agent-ai`. It routes a task to one of four specialist instructions and calls only `gemini-3.8-flash` with a 1,200-token output cap. It does not enable Google Search grounding, does not invoke CREAO/n8n, and has no provider/model fallback. HTTP 429 or provider errors return a clear error rather than trying a paid alternative.
+
+To connect an account:
+1. In Google AI Studio, create an API key for a project that remains on the Free Tier. Do not attach paid billing if the intention is a strict zero-cost setup. Confirm current model availability and free quota on the official [Gemini API pricing page](https://ai.google.dev/gemini-api/docs/pricing).
+2. Open Cloudflare Dashboard → Workers & Pages → `vixora-workspace-staging` → Settings → Variables and Secrets. Add `GEMINI_API_KEY` as an encrypted Secret (not a plain-text variable).
+3. Save and retry **Run AI Agent** from the Task Center. The key is read only on the server; never put it in client code, Git, or chat.
+
+Free-tier requests are still subject to Google's changing limits and data-use terms. Free Tier content may be used to improve Google products. Avoid confidential company, employee, health, or other sensitive data. VIXORA does not automatically upgrade the project or fall back to paid models. If the key is missing, endpoint returns `GEMINI_NOT_CONFIGURED`; if quota is exhausted it returns a quota error.
