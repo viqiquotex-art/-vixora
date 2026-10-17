@@ -5,21 +5,15 @@ import { routeTaskToAgent } from '$lib/server/agent-registry';
 type Env = {
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
-  DASHSCOPE_API_KEY?: string;
-  MODELSTUDIO_WORKSPACE_ID?: string;
-  DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED?: string;
+  GEMINI_API_KEY?: string;
+  GEMINI_FREE_TIER_ONLY_CONFIRMED?: string;
 };
 type SupabaseConfig = { url: string; key: string };
 type TaskRow = { id: string; title: string; description: string | null; priority: string | null };
 
-// Singapore / International Qwen model. Use the workspace-specific endpoint recommended by Alibaba.
-const MODEL = 'qwen3.8-flash';
-
-function getAlibabaChatUrl(env: Env): string | null {
-  const workspaceId = env.MODELSTUDIO_WORKSPACE_ID?.trim();
-  if (!workspaceId || !/^[a-zA-Z0-9-]+$/.test(workspaceId)) return null;
-  return `https://${workspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`;
-}
+// Google AI Studio Gemini API. This route is only enabled after the operator confirms a Free Tier key/project.
+const MODEL = 'gemini-3.8-flash';
+const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
 const DEFAULT_SUPABASE_URL = 'https://gdxughluqryzlklrnzhz.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImdkeHVnaGx1cXJ5emxrbHJuemh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NjI0ODAsImV4cCI6MjEwMzEzODQ4MH0.YhQaMhH6gwhLZNVem9NR0Ow32iqrgcB3YiAi-WSBKMo';
 
@@ -56,25 +50,25 @@ function makeSystemPrompt(agentId: string, agentName: string): string {
   return [...common, specialist[agentId] || 'Specialty: practical planning and problem solving.'].join('\n');
 }
 
-function mapAlibabaError(status: number): { status: number; error: string; message: string } {
+function mapGeminiError(status: number): { status: number; error: string; message: string } {
   if (status === 429) {
     return {
       status: 429,
-      error: 'ALIBABA_QUOTA_OR_RATE_LIMIT',
-      message: 'Kuota gratis atau batas laju Alibaba Cloud sedang tercapai. VIXORA tidak beralih ke provider lain; periksa sisa kuota qwen3.8-flash di Model Studio.'
+      error: 'GEMINI_QUOTA_OR_RATE_LIMIT',
+      message: 'Kuota gratis atau batas laju Gemini API sedang tercapai. Tidak ada fallback ke provider lain; periksa kuota di Google AI Studio.'
     };
   }
-  if (status === 401 || status === 403 || status === 402) {
+  if (status === 401 || status === 403) {
     return {
       status: 502,
-      error: 'ALIBABA_KEY_REGION_OR_QUOTA_ERROR',
-      message: 'Alibaba Cloud menolak permintaan. Periksa API key Model Studio wilayah Singapura, akses model, dan status Free Quota Only. VIXORA tidak mencoba provider lain.'
+      error: 'GEMINI_KEY_OR_PROJECT_ERROR',
+      message: 'Google menolak permintaan. Periksa API key, akses model dan status project Free Tier di Google AI Studio. VIXORA tidak mencoba provider lain.'
     };
   }
   return {
     status: 502,
-    error: 'ALIBABA_REQUEST_FAILED',
-    message: `Permintaan Alibaba Cloud gagal (HTTP ${status}). Tidak ada fallback ke provider lain.`
+    error: 'GEMINI_REQUEST_FAILED',
+    message: `Permintaan Gemini gagal (HTTP ${status}). Tidak ada fallback ke provider lain.`
   };
 }
 
@@ -83,22 +77,16 @@ export const POST: RequestHandler = async ({ request, platform }) => {
   const token = getBearer(request);
   if (!token) return json({ error: 'Sign in is required.' }, { status: 401 });
 
-  if (!env.DASHSCOPE_API_KEY?.trim()) {
+  if (!env.GEMINI_API_KEY?.trim()) {
     return json({
-      error: 'ALIBABA_NOT_CONFIGURED',
-      message: 'Tambahkan DASHSCOPE_API_KEY sebagai secret di Cloudflare Worker staging. Jangan menaruh API key di browser, chat, atau repository.'
+      error: 'GEMINI_NOT_CONFIGURED',
+      message: 'Tambahkan GEMINI_API_KEY sebagai secret pada Cloudflare Worker staging. Key tidak perlu dan tidak boleh ditaruh di browser atau repository.'
     }, { status: 503 });
   }
-  if (!getAlibabaChatUrl(env)) {
+  if (env.GEMINI_FREE_TIER_ONLY_CONFIRMED?.trim().toLowerCase() !== 'true') {
     return json({
-      error: 'ALIBABA_WORKSPACE_NOT_CONFIGURED',
-      message: 'Tambahkan MODELSTUDIO_WORKSPACE_ID untuk workspace Alibaba Model Studio wilayah Singapura yang sama dengan API key. VIXORA tidak memanggil endpoint regional lama.'
-    }, { status: 503 });
-  }
-  if (env.DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED?.trim().toLowerCase() !== 'true') {
-    return json({
-      error: 'FREE_QUOTA_ONLY_NOT_CONFIRMED',
-      message: 'Run AI dikunci untuk mencegah biaya tak terduga. Aktifkan Free Quota Only untuk model qwen3.8-flash di Alibaba Model Studio, lalu set DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED=true pada Worker staging.'
+      error: 'GEMINI_FREE_TIER_NOT_CONFIRMED',
+      message: 'Run AI dikunci sampai Free Tier dikonfirmasi. Gunakan key/project Google AI Studio yang belum di-upgrade ke billing berbayar, lalu set GEMINI_FREE_TIER_ONLY_CONFIRMED=true pada Worker staging.'
     }, { status: 503 });
   }
 
@@ -144,77 +132,51 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
   let response: Response;
   try {
-    response = await fetch(getAlibabaChatUrl(env)!, {
+    response = await fetch(GEMINI_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.DASHSCOPE_API_KEY.trim()}`
+        'x-goog-api-key': env.GEMINI_API_KEY.trim()
       },
       body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          { role: 'system', content: makeSystemPrompt(agent.id, agent.name) },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature: 0.4,
-        max_completion_tokens: 1200,
-        enable_thinking: false,
-        stream: false
+        system_instruction: { parts: [{ text: makeSystemPrompt(agent.id, agent.name) }] },
+        contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+        generationConfig: { temperature: 0.4, maxOutputTokens: 1200 }
       }),
       signal: AbortSignal.timeout(25000)
     });
   } catch {
     return json({
-      error: 'ALIBABA_NETWORK_ERROR',
-      message: 'Tidak bisa menghubungi Alibaba Cloud Model Studio sekarang. Tidak ada provider alternatif yang dipanggil.'
+      error: 'GEMINI_NETWORK_ERROR',
+      message: 'Tidak bisa menghubungi Gemini API sekarang. Tidak ada provider alternatif yang dipanggil.'
     }, { status: 502 });
   }
 
   if (!response.ok) {
-    // Parse only the provider error code/message to distinguish Free Quota Only exhaustion.
-    // Do not forward provider responses, since they may contain operational details.
-    const providerErrorText = await response.text().catch(() => '');
-    let providerCode = '';
-    try {
-      const providerError = JSON.parse(providerErrorText) as { code?: string; error?: { code?: string; message?: string }; message?: string };
-      providerCode = [providerError.code, providerError.error?.code, providerError.message, providerError.error?.message]
-        .filter((part): part is string => typeof part === 'string')
-        .join(' ');
-    } catch {
-      providerCode = providerErrorText.slice(0, 300);
-    }
-    if (/AllocationQuota\.FreeTierOnly/i.test(providerCode)) {
-      return json({
-        error: 'ALIBABA_FREE_QUOTA_EXHAUSTED',
-        message: 'Kuota gratis Qwen3.8-Flash habis. Karena Free Quota Only aktif, Alibaba menolak permintaan berikutnya tanpa beralih ke penagihan pay-as-you-go.'
-      }, { status: 429 });
-    }
-    const mapped = mapAlibabaError(response.status);
+    const mapped = mapGeminiError(response.status);
+    // Do not forward provider response bodies; they can contain sensitive operational details.
     return json({ error: mapped.error, message: mapped.message, model: MODEL }, { status: mapped.status });
   }
 
   const body = await response.json() as {
-    choices?: Array<{ message?: { content?: string | Array<{ text?: string }> }; finish_reason?: string }>;
-    usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number };
-    error?: { message?: string; code?: string };
+    candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; finishReason?: string }>;
+    promptFeedback?: { blockReason?: string };
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; totalTokenCount?: number };
   };
-  const contentValue = body.choices?.[0]?.message?.content;
-  const answer = typeof contentValue === 'string'
-    ? contentValue.trim()
-    : Array.isArray(contentValue)
-      ? contentValue.map((part) => part.text || '').join('').trim()
-      : '';
+  const answer = body.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join('').trim() || '';
   if (!answer) {
     return json({
-      error: 'ALIBABA_EMPTY_RESPONSE',
-      message: 'Alibaba Cloud tidak mengembalikan teks. Periksa detail permintaan/model lalu coba lagi.',
+      error: 'GEMINI_EMPTY_RESPONSE',
+      message: body.promptFeedback?.blockReason
+        ? 'Permintaan diblokir oleh filter keselamatan model. Coba ubah isi task.'
+        : 'Gemini tidak mengembalikan teks. Silakan coba lagi.',
       model: MODEL
     }, { status: 502 });
   }
 
   return json({
     result: {
-      mode: 'alibaba-cloud-free-quota-only',
+      mode: 'google-ai-studio-free-tier',
       status: 'completed',
       model: MODEL,
       agentId: agent.id,
@@ -224,13 +186,13 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       limitations: [
         'Tidak ada browsing atau grounding pencarian web pada request ini.',
         'Agent hanya menghasilkan teks/draft; tidak menjalankan tool atau workflow eksternal.',
-        'Menggunakan Alibaba Cloud Model Studio model qwen3.8-flash di endpoint Singapura; hanya bisa berjalan saat Free Quota Only dikonfirmasi.',
+        'Menggunakan Gemini API melalui Google AI Studio. Operator harus memastikan project masih berada pada Free Tier dan tidak terhubung ke billing berbayar.',
         'VIXORA tidak melakukan fallback ke model/provider lain jika request gagal atau kuota habis.'
       ],
-      usage: body.usage ? {
-        inputTokens: body.usage.prompt_tokens ?? null,
-        outputTokens: body.usage.completion_tokens ?? null,
-        totalTokens: body.usage.total_tokens ?? null
+      usage: body.usageMetadata ? {
+        inputTokens: body.usageMetadata.promptTokenCount ?? null,
+        outputTokens: body.usageMetadata.candidatesTokenCount ?? null,
+        totalTokens: body.usageMetadata.totalTokenCount ?? null
       } : null,
       createdAt: new Date().toISOString()
     }
