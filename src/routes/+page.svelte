@@ -4,7 +4,7 @@
   import { supabase } from '$lib/supabase';
 
   type Tab = 'Overview' | 'Task Center' | 'Agent Hub' | 'Automations' | 'Integrations';
-  type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };
+  type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };\n  type AgentRunView = { id: string; task_id: string | null; title: string; status: string; assigned_agent: string | null; executor: string | null; created_at: string; output?: { message?: string; agent_name?: string } | null };
 
   let activeTab = $state<Tab>('Overview');
   let taskInput = $state('');
@@ -14,7 +14,7 @@
   let signedInEmail = $state<string | null>(null);
   let taskBusy = $state(false);
   let taskFeedback = $state('');
-  let taskFeedbackError = $state(false);
+  let taskFeedbackError = $state(false);\n  let agentRuns = $state<AgentRunView[]>([]);\n  let runStorageReady = $state<boolean | null>(null);\n  let runNotice = $state('');\n  let runFeedbackError = $state(false);\n  let runBusyTaskId = $state<string | null>(null);
 
   async function loadSavedTasks(token: string) {
     try {
@@ -33,16 +33,65 @@
       if (!active) return;
       accessToken = data.session?.access_token ?? null;
       signedInEmail = data.session?.user.email ?? null;
-      if (data.session) void loadSavedTasks(data.session.access_token);
+      if (data.session) void loadSavedTasks(data.session.access_token);\n      if (data.session) void loadAgentRuns(data.session.access_token);
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       accessToken = session?.access_token ?? null;
       signedInEmail = session?.user.email ?? null;
-      if (session) void loadSavedTasks(session.access_token);
+      if (session) void loadSavedTasks(session.access_token);\n      if (session) void loadAgentRuns(session.access_token);\n      else { agentRuns = []; runStorageReady = null; }
       else tasks = [];
     });
     return () => { active = false; listener.subscription.unsubscribe(); };
   });
+
+  async function loadAgentRuns(token: string) {
+    try {
+      const response = await fetch('/api/agent-runs', { headers: { Authorization: `Bearer ${token}` } });
+      const result = await response.json() as { runs?: AgentRunView[]; storageReady?: boolean; message?: string; error?: string };
+      if (!response.ok) throw new Error(result.message || result.error || 'Run history belum dapat dimuat.');
+      agentRuns = result.runs ?? [];
+      runStorageReady = result.storageReady ?? true;
+      if (!runStorageReady) {
+        runNotice = 'Penyimpanan agent run belum dipasang pada database staging terpisah. Database produksi tidak diubah.';
+        runFeedbackError = true;
+      }
+    } catch (cause) {
+      runStorageReady = false;
+      runNotice = cause instanceof Error ? cause.message : 'Run history belum dapat dimuat.';
+      runFeedbackError = true;
+    }
+  }
+
+  async function createAgentRun(taskId: string) {
+    if (!accessToken) {
+      runNotice = 'Sign in dulu untuk menyiapkan agent run.';
+      runFeedbackError = true;
+      await goto('/login');
+      return;
+    }
+    if (runBusyTaskId) return;
+    runBusyTaskId = taskId;
+    runNotice = '';
+    runFeedbackError = false;
+    try {
+      const response = await fetch('/api/agent-runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ task_id: taskId })
+      });
+      const result = await response.json() as { run?: AgentRunView; error?: string; message?: string };
+      if (!response.ok || !result.run) throw new Error(result.message || result.error || 'Run plan belum berhasil disimpan.');
+      agentRuns = [result.run, ...agentRuns.filter((run) => run.id !== result.run?.id)];
+      runStorageReady = true;
+      runNotice = `Rencana dibuat dan diarahkan ke ${result.run.output?.agent_name ?? result.run.assigned_agent ?? 'agent'}. Belum ada executor yang dijalankan.`;
+      runFeedbackError = false;
+    } catch (cause) {
+      runNotice = cause instanceof Error ? cause.message : 'Run plan belum berhasil disimpan.';
+      runFeedbackError = true;
+    } finally {
+      runBusyTaskId = null;
+    }
+  }
 
   const tabs: Tab[] = ['Overview', 'Task Center', 'Agent Hub', 'Automations', 'Integrations'];
 
@@ -191,9 +240,28 @@
         <article class="panel task-panel"><div class="panel-heading"><div><span class="eyebrow">NEW TASK</span><h2>Capture an objective</h2></div></div><form onsubmit={createDraft}><label class="sr-only" for="task-input">Describe a task</label><textarea id="task-input" bind:value={taskInput} placeholder="Jelaskan hasil yang ingin kamu capai…" rows="3"></textarea><div class="composer-footer"><span>Belum menjalankan agent</span><button class="primary-button" type="submit" disabled={!taskInput.trim() || taskBusy}>{taskBusy ? 'Saving…' : 'Save draft'} <span>↗</span></button></div></form>{#if taskFeedback}<p class={taskFeedbackError ? 'task-feedback is-error' : 'task-feedback is-success'} role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}</article>
         <section class="section-heading"><div><span class="eyebrow">TASK HISTORY</span><h2>Recent tasks</h2></div><span class="muted-label">{tasks.length} DRAFT(S)</span></section>
         {#if tasks.length}
-          <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><span class="draft-pill">{task.status}</span></article>{/each}</div>
+          <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><span class="draft-pill">{task.status}</span><button class="run-task-button" type="button" onclick={() => void createAgentRun(task.id)} disabled={runBusyTaskId !== null}>{runBusyTaskId === task.id ? 'Preparing…' : 'Prepare run'}</button></article>{/each}</div>
         {:else}
           <div class="empty-state"><div class="empty-icon">⌘</div><h3>Belum ada task</h3><p>Tambahkan task pertama. Sign in untuk menyimpan task secara permanen.</p></div>
+        {/if}
+        <section class="section-heading run-heading"><div><span class="eyebrow">ORCHESTRATOR</span><h2>Agent run history</h2></div><span class="muted-label">{agentRuns.length} RUN PLAN(S)</span></section>
+        {#if runNotice}
+          <p class={runFeedbackError ? 'task-feedback is-error' : 'task-feedback is-success'} role={runFeedbackError ? 'alert' : 'status'}>{runNotice}</p>
+        {/if}
+        {#if agentRuns.length}
+          <div class="run-list">
+            {#each agentRuns as run}
+              <article class="run-row">
+                <span class="run-symbol">✳</span>
+                <div class="run-title"><strong>{run.title}</strong><small>{run.output?.agent_name ?? run.assigned_agent ?? 'Agent pending'} · {run.executor ?? 'not connected'} · {new Date(run.created_at).toLocaleString('id-ID')}</small>{#if run.output?.message}<p>{run.output.message}</p>{/if}</div>
+                <span class="run-state-pill">{run.status.replaceAll('_', ' ')}</span>
+              </article>
+            {/each}
+          </div>
+        {:else if runStorageReady === false}
+          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>Run storage needs isolated staging DB</h3><p>Agent routing is coded, but the run table has not been applied because this app currently shares a Supabase project with production. No production schema change has been made.</p></div>
+        {:else}
+          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>No agent runs yet</h3><p>Prepare a run from a saved task to route it to the first specialist. This records a plan only; external execution remains disconnected.</p></div>
         {/if}
       {:else if activeTab === 'Agent Hub'}
         <section class="page-intro"><div class="eyebrow">SPECIALIST NETWORK</div><h1>Agent <span>Hub</span></h1><p>Registry awal untuk peran, kapabilitas, dan quality gate VIXORA.</p></section>
