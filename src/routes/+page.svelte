@@ -162,7 +162,7 @@
               <textarea id="task-input" bind:value={taskInput} placeholder="Contoh: Riset 5 ide YouTube Shorts tentang AI, lalu susun hook dan skrip 30 detik…" rows="3"></textarea>
               <div class="composer-footer"><span><span class="keyboard">↵</span> Simpan sebagai draft</span><button class="primary-button" type="submit" disabled={!taskInput.trim() || taskBusy}>{taskBusy ? 'Saving…' : 'Create task'} <span>↗</span></button></div>
             </form>
-            {#if taskFeedback}<p class:{"is-error"}={taskFeedbackError} class:{"is-success"}={!taskFeedbackError} class="task-feedback" role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}
+            {#if taskFeedback}<p class={taskFeedbackError ? 'task-feedback is-error' : 'task-feedback is-success'} role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}
             <div class="suggestions"><span>TRY:</span><button onclick={() => taskInput = 'Riset 5 ide YouTube Shorts tentang AI'}>Riset ide konten</button><button onclick={() => taskInput = 'Buat rencana otomasi workflow n8n'}>Rencana otomasi</button><button onclick={() => taskInput = 'Buat checklist quality assurance untuk hasil AI'}>Quality checklist</button></div>
           </article>
           <article class="panel pipeline-panel">
