@@ -2,7 +2,7 @@
   import { goto } from '$app/navigation';
   import { supabase } from '$lib/supabase';
 
-  let mode = $state<'signin' | 'signup'>('signin');
+  let mode = $state<'signin' | 'signup' | 'forgot'>('signin');
   let email = $state('');
   let password = $state('');
   let busy = $state(false);
@@ -15,7 +15,13 @@
     message = '';
     error = '';
     try {
-      if (mode === 'signin') {
+      if (mode === 'forgot') {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: window.location.origin + '/reset-password?recovery=1'
+        });
+        if (resetError) throw resetError;
+        message = 'Jika email tersebut terdaftar, instruksi pemulihan akan dikirim. Periksa Inbox, Spam, dan Promotions.';
+      } else if (mode === 'signin') {
         const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (authError) throw authError;
         await goto('/');
@@ -27,7 +33,7 @@
         });
         if (authError) throw authError;
         if (data.session) await goto('/');
-        else message = 'Akun dibuat. Periksa email untuk konfirmasi sebelum login.';
+        else message = 'Permintaan pendaftaran selesai. Jika ini akun baru, periksa email untuk konfirmasi. Jika pernah mendaftar sebelumnya, gunakan Sign in atau Lupa password.';
       }
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Autentikasi gagal. Coba lagi.';
@@ -38,7 +44,7 @@
 </script>
 
 <svelte:head>
-  <title>{mode === 'signin' ? 'Sign in' : 'Create account'} — VIXORA Workspace</title>
+  <title>{mode === 'signin' ? 'Sign in' : mode === 'signup' ? 'Create account' : 'Reset password'} — VIXORA Workspace</title>
   <meta name="description" content="Secure sign-in for VIXORA Workspace." />
 </svelte:head>
 
@@ -50,22 +56,31 @@
 
   <section class="auth-card">
     <div class="auth-eyebrow">SECURE WORKSPACE ACCESS</div>
-    <h1>{mode === 'signin' ? 'Welcome back.' : 'Create your account.'}</h1>
-    <p>Masuk untuk menyimpan task di workspace-mu. Executor AI masih dalam tahap integrasi staging.</p>
+    <h1>{mode === 'signin' ? 'Welcome back.' : mode === 'signup' ? 'Create your account.' : 'Reset your password.'}</h1>
+    <p>{mode === 'forgot' ? 'Masukkan email akunmu. Kami akan mengirim tautan pemulihan jika alamat tersebut terdaftar dan pengiriman email tersedia.' : 'Masuk untuk menyimpan task di workspace-mu. Executor AI masih dalam tahap integrasi staging.'}</p>
 
-    <div class="auth-switch" role="group" aria-label="Authentication mode">
-      <button class:active={mode === 'signin'} type="button" onclick={() => { mode = 'signin'; error = ''; message = ''; }}>Sign in</button>
-      <button class:active={mode === 'signup'} type="button" onclick={() => { mode = 'signup'; error = ''; message = ''; }}>Create account</button>
-    </div>
+    {#if mode !== 'forgot'}
+      <div class="auth-switch" role="group" aria-label="Authentication mode">
+        <button class:active={mode === 'signin'} type="button" onclick={() => { mode = 'signin'; error = ''; message = ''; }}>Sign in</button>
+        <button class:active={mode === 'signup'} type="button" onclick={() => { mode = 'signup'; error = ''; message = ''; }}>Create account</button>
+      </div>
+    {:else}
+      <button class="auth-inline-link back-to-signin" type="button" onclick={() => { mode = 'signin'; error = ''; message = ''; }}>← Kembali ke Sign in</button>
+    {/if}
 
     <form onsubmit={submit}>
       <label for="email">Email</label>
       <input id="email" type="email" autocomplete="email" bind:value={email} required placeholder="you@example.com" />
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete={mode === 'signin' ? 'current-password' : 'new-password'} bind:value={password} required minlength="6" placeholder="Minimal 6 karakter" />
+      {#if mode !== 'forgot'}
+        <label for="password">Password</label>
+        <input id="password" type="password" autocomplete={mode === 'signin' ? 'current-password' : 'new-password'} bind:value={password} required minlength="6" placeholder="Minimal 6 karakter" />
+      {/if}
+      {#if mode === 'signin'}
+        <button class="auth-inline-link forgot-link" type="button" onclick={() => { mode = 'forgot'; error = ''; message = ''; }}>Lupa password?</button>
+      {/if}
       {#if error}<p class="auth-message error" role="alert">{error}</p>{/if}
       {#if message}<p class="auth-message success" role="status">{message}</p>{/if}
-      <button class="auth-submit" type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'signin' ? 'Sign in to VIXORA →' : 'Create account →'}</button>
+      <button class="auth-submit" type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'signin' ? 'Sign in to VIXORA →' : mode === 'signup' ? 'Create account →' : 'Send recovery link →'}</button>
     </form>
     <div class="auth-note"><span></span> Staging environment · credentials handled by Supabase Auth</div>
   </section>
@@ -92,5 +107,6 @@
   .auth-note{display:flex;align-items:center;gap:8px;border-top:1px solid #eee;margin-top:22px;padding-top:17px;color:#777;font-size:10px}
   .auth-note span{width:7px;height:7px;border-radius:50%;background:#facc15}
   .auth-back{margin-top:20px;color:#666;font-size:12px;text-decoration:none}.auth-back:hover{color:#e11d2e}
+  .auth-inline-link{border:0;background:transparent;padding:2px 0;color:#c71e2d;font-size:11px;text-align:left;cursor:pointer}.forgot-link{justify-self:end;margin-top:-1px}.back-to-signin{margin:-10px 0 20px}
   @media(max-width:480px){.auth-card{padding:23px 19px}h1{font-size:28px}}
 </style>
