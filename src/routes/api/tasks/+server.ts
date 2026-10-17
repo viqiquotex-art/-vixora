@@ -6,11 +6,14 @@ type Env = {
   SUPABASE_ANON_KEY?: string;
 };
 
+const DEFAULT_SUPABASE_URL = 'https://gdxughluqryzlklrnzhz.supabase.co';
+// Publishable legacy anon key only; never use a service-role key in this route.
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkeHVnaGx1cXJ5emxrbHJuemh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NjI0ODAsImV4cCI6MjEwMzEzODQ4MH0.YhQaMhH6gwhLZNVem9NR0Ow32iqrgcB3YiAi-WSBKMo';
+
 function getConfig(platform: App.Platform | undefined) {
   const env = (platform?.env ?? {}) as Env;
-  const url = env.SUPABASE_URL?.replace(/\/$/, '');
-  const key = env.SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
+  const url = (env.SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\\/$/, '');
+  const key = env.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
   return { url, key };
 }
 
