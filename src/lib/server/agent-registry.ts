@@ -38,15 +38,26 @@ export const AGENT_REGISTRY: AgentDefinition[] = [
   }
 ];
 
+function hasWholeWord(text: string, term: string): boolean {
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}($|[^\\p{L}\\p{N}])`, 'u').test(text);
+}
+
+function hasAnyWholeWord(text: string, terms: string[]): boolean {
+  return terms.some((term) => hasWholeWord(text, term));
+}
+
 export function routeTaskToAgent(text: string): AgentDefinition {
   const normalized = text.normalize('NFKC').toLowerCase();
-  if (['youtube', 'shorts', 'reels', 'caption', 'skrip', 'script', 'hook', 'konten', 'video'].some((term) => normalized.includes(term))) {
+
+  // Match whole words so "webhook" does not hit the content keyword "hook".
+  if (hasAnyWholeWord(normalized, ['youtube', 'shorts', 'reels', 'caption', 'skrip', 'script', 'hook', 'konten', 'video'])) {
     return AGENT_REGISTRY[0];
   }
-  if (['research', 'riset', 'bandingkan', 'compare', 'sumber', 'referensi', 'analisis', 'analysis'].some((term) => normalized.includes(term))) {
+  if (hasAnyWholeWord(normalized, ['research', 'riset', 'bandingkan', 'compare', 'sumber', 'referensi', 'analisis', 'analysis'])) {
     return AGENT_REGISTRY[1];
   }
-  if (['workflow', 'otomasi', 'automation', 'n8n', 'webhook', 'integrasi', 'integrate'].some((term) => normalized.includes(term))) {
+  if (hasAnyWholeWord(normalized, ['workflow', 'otomasi', 'automation', 'n8n', 'webhook', 'integrasi', 'integrate'])) {
     return AGENT_REGISTRY[2];
   }
   return AGENT_REGISTRY[3];

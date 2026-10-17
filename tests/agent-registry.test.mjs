@@ -21,7 +21,7 @@ test('routes research requests to Research Agent', () => {
 
 test('routes automation requests to Workflow Planner', () => {
   assert.equal(routeTaskToAgent('Buat workflow n8n untuk memproses formulir').id, 'workflow-planner');
-  assert.equal(routeTaskToAgent('Integrasi webhook untuk otomasi approval').id, 'workflow-planner');
+  assert.equal(routeTaskToAgent('Integrasi webhook untuk otomasi approval').id, 'workflow-planner');\n  assert.equal(routeTaskToAgent('Webhook untuk kirim hasil form tanpa konten video').id, 'workflow-planner');
 });
 
 test('uses Strategy & Planner for generic tasks', () => {

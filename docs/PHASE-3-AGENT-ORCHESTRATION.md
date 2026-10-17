@@ -36,3 +36,8 @@ Run `npm test` to check:
 - Unicode-normalized terms route consistently.
 
 The same test suite runs in GitHub Actions before the staging build.
+
+
+## Router behavior guard
+
+Specialist matching uses whole-word matching to avoid overlapping fragments (for example, `hook` inside `webhook`). Regression tests cover this overlap.
