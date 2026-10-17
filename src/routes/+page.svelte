@@ -12,6 +12,9 @@
   let notice = $state('Workspace baru sedang disiapkan. Task belum dikirim ke executor.');
   let accessToken = $state<string | null>(null);
   let signedInEmail = $state<string | null>(null);
+  let taskBusy = $state(false);
+  let taskFeedback = $state('');
+  let taskFeedbackError = $state(false);
 
   async function loadSavedTasks(token: string) {
     try {
@@ -46,29 +49,43 @@
   async function createDraft(event: SubmitEvent) {
     event.preventDefault();
     const prompt = taskInput.trim();
-    if (!prompt) return;
+    if (!prompt || taskBusy) return;
+    taskFeedback = '';
+    taskFeedbackError = false;
     if (!accessToken) {
-      notice = 'Silakan sign in terlebih dahulu untuk menyimpan task secara permanen.';
+      taskFeedback = 'Silakan sign in terlebih dahulu untuk menyimpan task.';
+      taskFeedbackError = true;
+      notice = taskFeedback;
       await goto('/login');
       return;
     }
+
+    taskBusy = true;
     try {
       const response = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
         body: JSON.stringify({ title: prompt.slice(0, 240), description: prompt, priority: 'medium' })
       });
-      const result = await response.json() as Array<{ id: string; title: string; created_at: string }> | { error?: string };
+      const result = await response.json() as Array<{ id: string; title: string; created_at: string }> | { error?: string; detail?: string };
       if (!response.ok || !Array.isArray(result) || !result[0]) {
-        throw new Error(!Array.isArray(result) && result.error ? result.error : 'Task belum berhasil disimpan.');
+        const apiError = !Array.isArray(result) ? result.error : undefined;
+        const detail = !Array.isArray(result) ? result.detail : undefined;
+        throw new Error(apiError ? `${apiError}${detail ? ` — ${detail}` : ''}` : 'Task belum berhasil disimpan.');
       }
       const row = result[0];
       tasks = [{ id: row.id, title: row.title, createdAt: new Date(row.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }), status: 'Saved' }, ...tasks.filter((task) => task.id !== row.id)];
       taskInput = '';
+      taskFeedback = 'Berhasil! Task tersimpan di Supabase. Task belum menjalankan AI Agent.';
+      taskFeedbackError = false;
       activeTab = 'Task Center';
-      notice = 'Task tersimpan di Supabase untuk akun ini. Belum ada agent yang dieksekusi.';
+      notice = taskFeedback;
     } catch (cause) {
-      notice = cause instanceof Error ? cause.message : 'Task belum berhasil disimpan.';
+      taskFeedback = cause instanceof Error ? cause.message : 'Task belum berhasil disimpan.';
+      taskFeedbackError = true;
+      notice = taskFeedback;
+    } finally {
+      taskBusy = false;
     }
   }
 
@@ -143,8 +160,9 @@
             <form onsubmit={createDraft}>
               <label class="sr-only" for="task-input">Describe a task</label>
               <textarea id="task-input" bind:value={taskInput} placeholder="Contoh: Riset 5 ide YouTube Shorts tentang AI, lalu susun hook dan skrip 30 detik…" rows="3"></textarea>
-              <div class="composer-footer"><span><span class="keyboard">↵</span> Simpan sebagai draft</span><button class="primary-button" type="submit" disabled={!taskInput.trim()}>Create task <span>↗</span></button></div>
+              <div class="composer-footer"><span><span class="keyboard">↵</span> Simpan sebagai draft</span><button class="primary-button" type="submit" disabled={!taskInput.trim() || taskBusy}>{taskBusy ? 'Saving…' : 'Create task'} <span>↗</span></button></div>
             </form>
+            {#if taskFeedback}<p class:{"is-error"}={taskFeedbackError} class:{"is-success"}={!taskFeedbackError} class="task-feedback" role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}
             <div class="suggestions"><span>TRY:</span><button onclick={() => taskInput = 'Riset 5 ide YouTube Shorts tentang AI'}>Riset ide konten</button><button onclick={() => taskInput = 'Buat rencana otomasi workflow n8n'}>Rencana otomasi</button><button onclick={() => taskInput = 'Buat checklist quality assurance untuk hasil AI'}>Quality checklist</button></div>
           </article>
           <article class="panel pipeline-panel">
@@ -170,7 +188,7 @@
         </div>
       {:else if activeTab === 'Task Center'}
         <section class="page-intro"><div class="eyebrow">WORK QUEUE</div><h1>Task <span>Center</span></h1><p>Draft tugas dan riwayat yang akan dikelola oleh orchestrator.</p></section>
-        <article class="panel task-panel"><div class="panel-heading"><div><span class="eyebrow">NEW TASK</span><h2>Capture an objective</h2></div></div><form onsubmit={createDraft}><label class="sr-only" for="task-input">Describe a task</label><textarea id="task-input" bind:value={taskInput} placeholder="Jelaskan hasil yang ingin kamu capai…" rows="3"></textarea><div class="composer-footer"><span>Belum menjalankan agent</span><button class="primary-button" type="submit" disabled={!taskInput.trim()}>Save draft <span>↗</span></button></div></form></article>
+        <article class="panel task-panel"><div class="panel-heading"><div><span class="eyebrow">NEW TASK</span><h2>Capture an objective</h2></div></div><form onsubmit={createDraft}><label class="sr-only" for="task-input">Describe a task</label><textarea id="task-input" bind:value={taskInput} placeholder="Jelaskan hasil yang ingin kamu capai…" rows="3"></textarea><div class="composer-footer"><span>Belum menjalankan agent</span><button class="primary-button" type="submit" disabled={!taskInput.trim() || taskBusy}>{taskBusy ? 'Saving…' : 'Save draft'} <span>↗</span></button></div></form>{#if taskFeedback}<p class:{"is-error"}={taskFeedbackError} class:{"is-success"}={!taskFeedbackError} class="task-feedback" role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}</article>
         <section class="section-heading"><div><span class="eyebrow">TASK HISTORY</span><h2>Recent tasks</h2></div><span class="muted-label">{tasks.length} DRAFT(S)</span></section>
         {#if tasks.length}
           <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><span class="draft-pill">{task.status}</span></article>{/each}</div>
