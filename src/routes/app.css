@@ -230,3 +230,20 @@ textarea::placeholder{color:#999}
 .ai-answer{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:12px;font-size:12px;line-height:1.75;color:#333}
 .ai-answer h1,.ai-answer h2,.ai-answer h3{font-size:14px}
 .ai-result-card{border-top:3px solid #171717}
+
+
+/* Responsive Recent tasks rows: keep titles readable on phones. */
+.task-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0;min-width:0}
+.task-actions .draft-pill{margin:0}
+.task-title{overflow-wrap:break-word;word-break:normal}
+.task-title strong{overflow-wrap:break-word;word-break:normal;line-height:1.5}
+.task-title small{overflow-wrap:break-word;word-break:normal;line-height:1.5}
+@media(max-width:760px){
+  .task-row{display:grid;grid-template-columns:33px minmax(0,1fr);align-items:start;gap:10px;padding:13px}
+  .task-symbol{grid-column:1;grid-row:1;flex-shrink:0}
+  .task-title{grid-column:2;min-width:0;flex:initial;width:100%}
+  .task-title strong{font-size:13px;overflow-wrap:break-word;word-break:normal}
+  .task-title small{font-size:10px;overflow-wrap:break-word;word-break:normal}
+  .task-actions{grid-column:1/-1;width:100%;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+  .task-actions .run-task-button{margin:0;max-width:100%;white-space:normal;line-height:1.35}
+}
