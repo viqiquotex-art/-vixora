@@ -12,17 +12,13 @@ type Env = {
 type SupabaseConfig = { url: string; key: string };
 type TaskRow = { id: string; title: string; description: string | null; priority: string | null };
 
-// Singapore / International Qwen model. Prefer the dedicated workspace domain when configured.
+// Singapore / International Qwen model. Use the workspace-specific endpoint recommended by Alibaba.
 const MODEL = 'qwen3.8-flash';
-const LEGACY_ALIBABA_CHAT_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
 
-function getAlibabaChatUrl(env: Env): string {
+function getAlibabaChatUrl(env: Env): string | null {
   const workspaceId = env.MODELSTUDIO_WORKSPACE_ID?.trim();
-  if (workspaceId && /^[a-zA-Z0-9-]+$/.test(workspaceId)) {
-    return `https://${workspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`;
-  }
-  // Official legacy Singapore domain remains supported; do not block setup if the workspace ID is not configured yet.
-  return LEGACY_ALIBABA_CHAT_URL;
+  if (!workspaceId || !/^[a-zA-Z0-9-]+$/.test(workspaceId)) return null;
+  return `https://${workspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`;
 }
 const DEFAULT_SUPABASE_URL = 'https://gdxughluqryzlklrnzhz.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImdkeHVnaGx1cXJ5emxrbHJuemh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NjI0ODAsImV4cCI6MjEwMzEzODQ4MH0.YhQaMhH6gwhLZNVem9NR0Ow32iqrgcB3YiAi-WSBKMo';
@@ -93,6 +89,12 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       message: 'Tambahkan DASHSCOPE_API_KEY sebagai secret di Cloudflare Worker staging. Jangan menaruh API key di browser, chat, atau repository.'
     }, { status: 503 });
   }
+  if (!getAlibabaChatUrl(env)) {
+    return json({
+      error: 'ALIBABA_WORKSPACE_NOT_CONFIGURED',
+      message: 'Tambahkan MODELSTUDIO_WORKSPACE_ID untuk workspace Alibaba Model Studio wilayah Singapura yang sama dengan API key. VIXORA tidak memanggil endpoint regional lama.'
+    }, { status: 503 });
+  }
   if (env.DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED?.trim().toLowerCase() !== 'true') {
     return json({
       error: 'FREE_QUOTA_ONLY_NOT_CONFIRMED',
@@ -142,7 +144,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
   let response: Response;
   try {
-    response = await fetch(getAlibabaChatUrl(env), {
+    response = await fetch(getAlibabaChatUrl(env)!, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
