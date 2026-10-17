@@ -2,6 +2,9 @@ name: Deploy VIXORA staging
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - redesign/sveltekit-staging
 
 permissions:
   contents: read
