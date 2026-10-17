@@ -6,6 +6,7 @@
   type Tab = 'Overview' | 'Task Center' | 'Agent Hub' | 'Automations' | 'Integrations';
   type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };
   type AgentRunView = { id: string; task_id: string | null; title: string; status: string; assigned_agent: string | null; executor: string | null; created_at: string; output?: { message?: string; agent_name?: string } | null };
+  type AgentPreview = { mode: string; status: string; externalExecutorCalls: number; executor: string; agentId: string; agentName: string; taskTitle: string; summary: string; steps: string[]; deliverables: string[]; nextAction: string; limitations: string[]; createdAt: string };
 
   let activeTab = $state<Tab>('Overview');
   let taskInput = $state('');
@@ -21,6 +22,9 @@
   let runNotice = $state('');
   let runFeedbackError = $state(false);
   let runBusyTaskId = $state<string | null>(null);
+  let previewBusyTaskId = $state<string | null>(null);
+  let agentPreview = $state<AgentPreview | null>(null);
+  let agentPreviewError = $state('');
 
   async function loadSavedTasks(token: string) {
     try {
@@ -106,6 +110,33 @@
     }
   }
 
+  async function previewAgent(taskId: string) {
+    if (!accessToken) {
+      agentPreviewError = 'Sign in dulu untuk menguji agent.';
+      await goto('/login');
+      return;
+    }
+    if (previewBusyTaskId) return;
+    previewBusyTaskId = taskId;
+    agentPreviewError = '';
+    agentPreview = null;
+    try {
+      const response = await fetch('/api/agent-preview', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ task_id: taskId })
+      });
+      const result = await response.json() as { preview?: AgentPreview; error?: string };
+      if (!response.ok || !result.preview) throw new Error(result.error || 'Preview agent belum berhasil dibuat.');
+      agentPreview = result.preview;
+      activeTab = 'Task Center';
+    } catch (cause) {
+      agentPreviewError = cause instanceof Error ? cause.message : 'Preview agent belum berhasil dibuat.';
+    } finally {
+      previewBusyTaskId = null;
+    }
+  }
+
   const tabs: Tab[] = ['Overview', 'Task Center', 'Agent Hub', 'Automations', 'Integrations'];
 
   async function createDraft(event: SubmitEvent) {
@@ -152,10 +183,10 @@
   }
 
   const agents = [
-    { number: '01', name: 'Strategy & Planner', description: 'Memecah permintaan menjadi rencana kerja', status: 'Blueprint' },
-    { number: '02', name: 'Research Agent', description: 'Riset, sumber, dan ringkasan berbasis bukti', status: 'Blueprint' },
-    { number: '03', name: 'Content Studio', description: 'Ide, skrip, metadata, dan paket konten', status: 'Existing adapter pending audit' },
-    { number: '04', name: 'Quality Gate', description: 'Memeriksa hasil sebelum diserahkan', status: 'Blueprint' }
+    { number: '01', name: 'Strategy & Planner', description: 'Memecah permintaan menjadi rencana kerja', status: 'Local dry-run ready' },
+    { number: '02', name: 'Research Agent', description: 'Rencana riset, matriks bukti, dan kriteria sumber', status: 'Local dry-run ready' },
+    { number: '03', name: 'Content Studio', description: 'Hook, outline konten, metadata, dan review', status: 'Local dry-run ready' },
+    { number: '04', name: 'Workflow Planner', description: 'Blueprint alur n8n/webhook tanpa mengeksekusi workflow', status: 'Local dry-run ready' }
   ];
 </script>
 
@@ -210,7 +241,7 @@
         <section class="section-heading"><div><span class="eyebrow">YOUR OPERATIONS</span><h2>Workspace overview</h2></div><span class="muted-label">PHASE 01 · FOUNDATION</span></section>
         <div class="metric-grid">
           <article class="metric-card"><div class="metric-top"><span>Saved tasks</span><span class="metric-icon purple">⌘</span></div><div class="metric-value">{tasks.length.toString().padStart(2, '0')}</div><div class="metric-foot"><span class="neutral-dot"></span> {signedInEmail ? "Synced with Supabase" : "Sign in required"}</div></article>
-          <article class="metric-card"><div class="metric-top"><span>Agent blueprints</span><span class="metric-icon cyan">✳</span></div><div class="metric-value">04</div><div class="metric-foot"><span class="neutral-dot"></span> Runtime not connected</div></article>
+          <article class="metric-card"><div class="metric-top"><span>Agent blueprints</span><span class="metric-icon cyan">✳</span></div><div class="metric-value">04</div><div class="metric-foot"><span class="neutral-dot"></span> Local dry-run ready · AI runtime not connected</div></article>
           <article class="metric-card"><div class="metric-top"><span>Connected executors</span><span class="metric-icon amber">↗</span></div><div class="metric-value">00</div><div class="metric-foot"><span class="warning-dot"></span> Pending verification</div></article>
           <article class="metric-card"><div class="metric-top"><span>Quality checks</span><span class="metric-icon green">✓</span></div><div class="metric-value">—</div><div class="metric-foot"><span class="neutral-dot"></span> Not run yet</div></article>
         </div>
@@ -245,7 +276,7 @@
         <section class="section-heading agent-heading"><div><span class="eyebrow">SPECIALISTS, NOT JUST BUTTONS</span><h2>Agent roster</h2></div><button class="text-button" onclick={() => activeTab = 'Agent Hub'}>Explore agents <span>→</span></button></section>
         <div class="agent-grid">
           {#each agents.slice(0, 3) as agent}
-            <article class="agent-card"><div class="agent-card-top"><span class="agent-number">{agent.number}</span><span class="blueprint-pill">BLUEPRINT</span></div><h3>{agent.name}</h3><p>{agent.description}</p><div class="agent-card-bottom"><span class="agent-status-dot"></span><span>{agent.status}</span></div></article>
+            <article class="agent-card"><div class="agent-card-top"><span class="agent-number">{agent.number}</span><span class="blueprint-pill">LOCAL DRY-RUN</span></div><h3>{agent.name}</h3><p>{agent.description}</p><div class="agent-card-bottom"><span class="agent-status-dot"></span><span>{agent.status}</span></div></article>
           {/each}
         </div>
       {:else if activeTab === 'Task Center'}
@@ -253,9 +284,24 @@
         <article class="panel task-panel"><div class="panel-heading"><div><span class="eyebrow">NEW TASK</span><h2>Capture an objective</h2></div></div><form onsubmit={createDraft}><label class="sr-only" for="task-input">Describe a task</label><textarea id="task-input" bind:value={taskInput} placeholder="Jelaskan hasil yang ingin kamu capai…" rows="3"></textarea><div class="composer-footer"><span>Belum menjalankan agent</span><button class="primary-button" type="submit" disabled={!taskInput.trim() || taskBusy}>{taskBusy ? 'Saving…' : 'Save draft'} <span>↗</span></button></div></form>{#if taskFeedback}<p class={taskFeedbackError ? 'task-feedback is-error' : 'task-feedback is-success'} role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}</article>
         <section class="section-heading"><div><span class="eyebrow">TASK HISTORY</span><h2>Recent tasks</h2></div><span class="muted-label">{tasks.length} DRAFT(S)</span></section>
         {#if tasks.length}
-          <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><span class="draft-pill">{task.status}</span><button class="run-task-button" type="button" onclick={() => void createAgentRun(task.id)} disabled={runBusyTaskId !== null}>{runBusyTaskId === task.id ? 'Preparing…' : 'Prepare run'}</button></article>{/each}</div>
+          <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><span class="draft-pill">{task.status}</span><button class="run-task-button" type="button" onclick={() => void previewAgent(task.id)} disabled={previewBusyTaskId !== null}>{previewBusyTaskId === task.id ? 'Testing…' : 'Test dry-run'}</button>{#if runStorageReady}<button class="run-task-button secondary-run-button" type="button" onclick={() => void createAgentRun(task.id)} disabled={runBusyTaskId !== null}>{runBusyTaskId === task.id ? 'Preparing…' : 'Prepare run'}</button>{/if}</article>{/each}</div>
         {:else}
           <div class="empty-state"><div class="empty-icon">⌘</div><h3>Belum ada task</h3><p>Tambahkan task pertama. Sign in untuk menyimpan task secara permanen.</p></div>
+        {/if}
+        {#if agentPreviewError}<p class="task-feedback is-error" role="alert">{agentPreviewError}</p>{/if}
+        {#if agentPreview}
+          <section class="section-heading preview-heading"><div><span class="eyebrow">LOCAL TEMPLATE · ZERO EXECUTOR CALLS</span><h2>Dry-run result</h2></div><span class="muted-label">{agentPreview.agentName}</span></section>
+          <article class="preview-card">
+            <div class="preview-meta"><span class="preview-pill">PREVIEW READY</span><span>{new Date(agentPreview.createdAt).toLocaleString('id-ID')}</span><span>External executor calls: {agentPreview.externalExecutorCalls}</span></div>
+            <h3>{agentPreview.taskTitle}</h3>
+            <p class="preview-summary">{agentPreview.summary}</p>
+            <div class="preview-columns">
+              <div><h4>Execution plan</h4><ol>{#each agentPreview.steps as step}<li>{step}</li>{/each}</ol></div>
+              <div><h4>Draft deliverables</h4><ul>{#each agentPreview.deliverables as deliverable}<li>{deliverable}</li>{/each}</ul></div>
+            </div>
+            <div class="preview-next"><strong>Next action</strong><p>{agentPreview.nextAction}</p></div>
+            <details class="preview-limits"><summary>Mode & limitations</summary><ul>{#each agentPreview.limitations as limitation}<li>{limitation}</li>{/each}</ul></details>
+          </article>
         {/if}
         <section class="section-heading run-heading"><div><span class="eyebrow">ORCHESTRATOR</span><h2>Agent run history</h2></div><span class="muted-label">{agentRuns.length} RUN PLAN(S)</span></section>
         {#if runNotice}
