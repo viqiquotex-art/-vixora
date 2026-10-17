@@ -43,13 +43,34 @@ The same test suite runs in GitHub Actions before the staging build.
 Specialist matching uses whole-word matching to avoid overlapping fragments (for example, `hook` inside `webhook`). Regression tests cover this overlap.
 
 
-## Gemini Free Tier — staging setup
+## Alibaba Cloud Model Studio — Qwen3.8-Flash Free Tier
 
-The staging workspace has an authenticated server endpoint at `POST /api/agent-ai`. It routes a task to one of four specialist instructions and calls only `gemini-3.8-flash` with a 1,200-token output cap. It does not enable Google Search grounding, does not invoke CREAO/n8n, and has no provider/model fallback. HTTP 429 or provider errors return a clear error rather than trying a paid alternative.
+The authenticated staging endpoint `POST /api/agent-ai` routes saved tasks to one of four specialist instructions and calls only `qwen3.8-flash` using Alibaba Cloud Model Studio's OpenAI-compatible Chat Completions API in Singapore / International scope.
 
-To connect an account:
-1. In Google AI Studio, create an API key for a project that remains on the Free Tier. Do not attach paid billing if the intention is a strict zero-cost setup. Confirm current model availability and free quota on the official [Gemini API pricing page](https://ai.google.dev/gemini-api/docs/pricing).
-2. Open Cloudflare Dashboard → Workers & Pages → `vixora-workspace-staging` → Settings → Variables and Secrets. Add `GEMINI_API_KEY` as an encrypted Secret (not a plain-text variable).
-3. Save and retry **Run AI Agent** from the Task Center. The key is read only on the server; never put it in client code, Git, or chat.
+### Runtime safeguards
 
-Free-tier requests are still subject to Google's changing limits and data-use terms. Free Tier content may be used to improve Google products. Avoid confidential company, employee, health, or other sensitive data. VIXORA does not automatically upgrade the project or fall back to paid models. If the key is missing, endpoint returns `GEMINI_NOT_CONFIGURED`; if quota is exhausted it returns a quota error.
+- Uses a general-purpose Model Studio API key in the Worker secret `DASHSCOPE_API_KEY`. Never use the DashVector API key in this integration.
+- Uses the workspace-specific Singapore host when `MODELSTUDIO_WORKSPACE_ID` is configured: `https://{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`.
+- If the workspace ID is not configured, uses the official legacy Singapore endpoint `https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions`, which Model Studio documentation says remains supported.
+- Sets `max_completion_tokens: 1200` and `enable_thinking: false` to constrain response size and avoid unnecessary reasoning-token consumption.
+- Before any model request, requires `DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED=true`. This server-side gate is only a confirmation flag; it does **not** enable the Alibaba console setting by itself.
+- Has no provider/model fallback and does not invoke CREAO/n8n, web search, or external tools. The result is text/draft only.
+- Detects Alibaba's `AllocationQuota.FreeTierOnly` response and returns a clear quota-exhausted message, with no retry using another provider.
+
+### Account setup checklist
+
+1. In Alibaba Cloud Model Studio, select **Singapore** region and the **International** service scope for `qwen3.8-flash`.
+2. Check that the model details / Free Quota page shows remaining free quota and a valid expiration date. Free quotas are subject to model and account eligibility and commonly expire 90 days after the applicable start date; confirm the actual amount in this account.
+3. Enable **Free Quota Only** for `qwen3.8-flash` in the console. The setting is disabled by default; after enabling it, wait for the change to take effect before invoking the API. Alibaba documents that the endpoint then returns `AllocationQuota.FreeTierOnly` after free quota runs out instead of charging subsequent inference.
+4. Obtain a **general-purpose Model Studio API key** (not a DashVector key, and not a Token Plan/Coding Plan dedicated key) and add it to Cloudflare staging as encrypted Secret `DASHSCOPE_API_KEY`.
+5. Optionally set `MODELSTUDIO_WORKSPACE_ID` as a regular Worker variable, using the exact ID on Model Studio Workspace Details. If unset, the API uses the documented legacy Singapore host.
+6. Only after step 3 is confirmed in the console, set Worker variable `DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED=true` to unlock the API route. This variable does not replace or modify Alibaba's console setting.
+7. In staging, sign in, save a task, and choose **Run AI Agent**. Check the model and token usage displayed with the result. Do not run this against sensitive company or employee data.
+
+Official references:
+- [OpenAI-compatible Chat API](https://docs.modelstudio.console.alibabacloud.com/en/model-studio/compatibility-of-openai-with-dashscope)
+- [Get API Key](https://www.alibabacloud.com/help/en/model-studio/get-api-key)
+- [Workspace ID](https://www.alibabacloud.com/help/en/model-studio/obtain-the-app-id-and-workspace-id)
+- [Free quota and Free Quota Only](https://www.alibabacloud.com/help/en/model-studio/new-free-quota)
+
+Free quota covers eligible real-time model invocations only; other Cloud resources or services can have separate charges. Protect keys server-side and avoid sending confidential information to external model providers.
