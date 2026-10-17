@@ -275,7 +275,7 @@
 
         <section class="section-heading agent-heading"><div><span class="eyebrow">SPECIALISTS, NOT JUST BUTTONS</span><h2>Agent roster</h2></div><button class="text-button" onclick={() => activeTab = 'Agent Hub'}>Explore agents <span>→</span></button></section>
         <div class="agent-grid">
-          {#each agents.slice(0, 3) as agent}
+          {#each agents.slice(0, 4) as agent}
             <article class="agent-card"><div class="agent-card-top"><span class="agent-number">{agent.number}</span><span class="blueprint-pill">LOCAL DRY-RUN</span></div><h3>{agent.name}</h3><p>{agent.description}</p><div class="agent-card-bottom"><span class="agent-status-dot"></span><span>{agent.status}</span></div></article>
           {/each}
         </div>
@@ -318,14 +318,14 @@
             {/each}
           </div>
         {:else if runStorageReady === false}
-          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>Run storage needs isolated staging DB</h3><p>Agent routing is coded, but the run table has not been applied because this app currently shares a Supabase project with production. No production schema change has been made.</p></div>
+          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>Run storage needs isolated staging DB</h3><p>Riwayat run permanen menunggu database staging yang terpisah. Tombol Test dry-run di atas sudah bisa menampilkan preview lokal tanpa memanggil model AI atau executor. Database produksi tidak diubah.</p></div>
         {:else}
-          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>No agent runs yet</h3><p>Prepare a run from a saved task to route it to the first specialist. This records a plan only; external execution remains disconnected.</p></div>
+          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>No agent runs yet</h3><p>Riwayat run belum tersimpan. Gunakan Test dry-run di atas untuk melihat preview lokal; riwayat agent-run belum ditulis ke database.</p></div>
         {/if}
       {:else if activeTab === 'Agent Hub'}
-        <section class="page-intro"><div class="eyebrow">SPECIALIST NETWORK</div><h1>Agent <span>Hub</span></h1><p>Registry awal untuk peran, kapabilitas, dan quality gate VIXORA.</p></section>
-        <div class="agent-grid expanded">{#each agents as agent}<article class="agent-card"><div class="agent-card-top"><span class="agent-number">{agent.number}</span><span class="blueprint-pill">PLANNED</span></div><h3>{agent.name}</h3><p>{agent.description}</p><div class="agent-card-bottom"><span class="agent-status-dot"></span><span>{agent.status}</span></div></article>{/each}</div>
-        <section class="notice"><span class="notice-icon">i</span><div><strong>Registry only</strong><p>Daftar ini belum mengklaim bahwa agent berjalan. Runtime, routing, retries, dan QA loop akan diimplementasikan setelah task schema serta executor contract ditetapkan.</p></div></section>
+        <section class="page-intro"><div class="eyebrow">SPECIALIST NETWORK</div><h1>Agent <span>Hub</span></h1><p>Empat spesialis dapat diuji dengan dry-run berbasis template lokal. Model AI dan executor eksternal belum tersambung.</p></section>
+        <div class="agent-grid expanded">{#each agents as agent}<article class="agent-card"><div class="agent-card-top"><span class="agent-number">{agent.number}</span><span class="blueprint-pill">LOCAL DRY-RUN</span></div><h3>{agent.name}</h3><p>{agent.description}</p><div class="agent-card-bottom"><span class="agent-status-dot"></span><span>{agent.status}</span></div></article>{/each}</div>
+        <section class="notice"><span class="notice-icon">i</span><div><strong>Dry-run runtime aktif</strong><p>Routing dan preview lokal sudah tersedia untuk empat spesialis. Ini bukan keluaran model AI: belum ada panggilan CREAO, n8n, riset web, atau aksi eksternal. Integrasi nyata menunggu audit koneksi dan biaya.</p></div></section>
       {:else if activeTab === 'Automations'}
         <section class="page-intro"><div class="eyebrow">REPEATABLE WORKFLOWS</div><h1>Auto<span>mations</span></h1><p>Tempat mengelola workflow berulang setelah koneksi runtime siap.</p></section>
         <div class="empty-state"><div class="empty-icon">↗</div><h3>Workflow runtime belum tersambung</h3><p>n8n direncanakan sebagai workflow runtime eksternal. Konfigurasi dan credential tidak akan ditaruh di browser.</p></div>
