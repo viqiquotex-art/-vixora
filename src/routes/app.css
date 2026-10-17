@@ -174,3 +174,10 @@ textarea::placeholder{color:#999}
   .welcome::before{width:220px;height:220px;right:-32px;top:-104px;border-width:31px}
   .welcome::after{width:125px;height:125px;right:13px;bottom:-79px}
 }
+
+
+/* Task create feedback: visible state for pending, success and API errors */
+.task-feedback{margin:12px 0 0;padding:11px 12px;border-radius:8px;font-size:11px;line-height:1.6;overflow-wrap:anywhere}
+.task-feedback.is-success{color:#166534;background:#edf9f0;border:1px solid rgba(22,101,52,.16)}
+.task-feedback.is-error{color:#b91c1c;background:#fff0ef;border:1px solid rgba(185,28,28,.18)}
+.primary-button:disabled{opacity:.55;cursor:wait;transform:none}
