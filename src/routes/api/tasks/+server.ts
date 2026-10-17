@@ -12,7 +12,7 @@ const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3Mi
 
 function getConfig(platform: App.Platform | undefined) {
   const env = (platform?.env ?? {}) as Env;
-  const url = (env.SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\\/$/, '');
+  const url = (env.SUPABASE_URL || DEFAULT_SUPABASE_URL).replace(/\/$/, '');
   const key = env.SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
   return { url, key };
 }
