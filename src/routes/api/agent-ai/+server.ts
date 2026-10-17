@@ -6,14 +6,24 @@ type Env = {
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
   DASHSCOPE_API_KEY?: string;
+  MODELSTUDIO_WORKSPACE_ID?: string;
   DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED?: string;
 };
 type SupabaseConfig = { url: string; key: string };
 type TaskRow = { id: string; title: string; description: string | null; priority: string | null };
 
-// Singapore / International endpoint. Alibaba's workspace-specific endpoint can also be used.
+// Singapore / International Qwen model. Prefer the dedicated workspace domain when configured.
 const MODEL = 'qwen3.8-flash';
-const ALIBABA_CHAT_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
+const LEGACY_ALIBABA_CHAT_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
+
+function getAlibabaChatUrl(env: Env): string {
+  const workspaceId = env.MODELSTUDIO_WORKSPACE_ID?.trim();
+  if (workspaceId && /^[a-zA-Z0-9-]+$/.test(workspaceId)) {
+    return `https://${workspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`;
+  }
+  // Official legacy Singapore domain remains supported; do not block setup if the workspace ID is not configured yet.
+  return LEGACY_ALIBABA_CHAT_URL;
+}
 const DEFAULT_SUPABASE_URL = 'https://gdxughluqryzlklrnzhz.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6ImdkeHVnaGx1cXJ5emxrbHJuemh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NjI0ODAsImV4cCI6MjEwMzEzODQ4MH0.YhQaMhH6gwhLZNVem9NR0Ow32iqrgcB3YiAi-WSBKMo';
 
@@ -132,7 +142,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
   let response: Response;
   try {
-    response = await fetch(ALIBABA_CHAT_URL, {
+    response = await fetch(getAlibabaChatUrl(env), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -145,7 +155,8 @@ export const POST: RequestHandler = async ({ request, platform }) => {
           { role: 'user', content: userPrompt }
         ],
         temperature: 0.4,
-        max_tokens: 1200,
+        max_completion_tokens: 1200,
+        enable_thinking: false,
         stream: false
       }),
       signal: AbortSignal.timeout(25000)
@@ -158,8 +169,25 @@ export const POST: RequestHandler = async ({ request, platform }) => {
   }
 
   if (!response.ok) {
+    // Parse only the provider error code/message to distinguish Free Quota Only exhaustion.
+    // Do not forward provider responses, since they may contain operational details.
+    const providerErrorText = await response.text().catch(() => '');
+    let providerCode = '';
+    try {
+      const providerError = JSON.parse(providerErrorText) as { code?: string; error?: { code?: string; message?: string }; message?: string };
+      providerCode = [providerError.code, providerError.error?.code, providerError.message, providerError.error?.message]
+        .filter((part): part is string => typeof part === 'string')
+        .join(' ');
+    } catch {
+      providerCode = providerErrorText.slice(0, 300);
+    }
+    if (/AllocationQuota\.FreeTierOnly/i.test(providerCode)) {
+      return json({
+        error: 'ALIBABA_FREE_QUOTA_EXHAUSTED',
+        message: 'Kuota gratis Qwen3.8-Flash habis. Karena Free Quota Only aktif, Alibaba menolak permintaan berikutnya tanpa beralih ke penagihan pay-as-you-go.'
+      }, { status: 429 });
+    }
     const mapped = mapAlibabaError(response.status);
-    // Never forward the provider response body; it can contain operational details.
     return json({ error: mapped.error, message: mapped.message, model: MODEL }, { status: mapped.status });
   }
 
