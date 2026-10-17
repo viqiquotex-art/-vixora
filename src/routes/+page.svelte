@@ -7,6 +7,7 @@
   type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };
   type AgentRunView = { id: string; task_id: string | null; title: string; status: string; assigned_agent: string | null; executor: string | null; created_at: string; output?: { message?: string; agent_name?: string } | null };
   type AgentPreview = { mode: string; status: string; externalExecutorCalls: number; executor: string; agentId: string; agentName: string; taskTitle: string; summary: string; steps: string[]; deliverables: string[]; nextAction: string; limitations: string[]; createdAt: string };
+  type AgentAIResult = { mode: string; status: string; model: string; agentId: string; agentName: string; taskTitle: string; answer: string; limitations: string[]; usage?: { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null } | null; createdAt: string };
 
   let activeTab = $state<Tab>('Overview');
   let taskInput = $state('');
@@ -25,6 +26,9 @@
   let previewBusyTaskId = $state<string | null>(null);
   let agentPreview = $state<AgentPreview | null>(null);
   let agentPreviewError = $state('');
+  let aiBusyTaskId = $state<string | null>(null);
+  let agentAIResult = $state<AgentAIResult | null>(null);
+  let agentAIError = $state('');
 
   async function loadSavedTasks(token: string) {
     try {
@@ -134,6 +138,33 @@
       agentPreviewError = cause instanceof Error ? cause.message : 'Preview agent belum berhasil dibuat.';
     } finally {
       previewBusyTaskId = null;
+    }
+  }
+
+  async function runAIAgent(taskId: string) {
+    if (!accessToken) {
+      agentAIError = 'Sign in dulu untuk menjalankan AI Agent.';
+      await goto('/login');
+      return;
+    }
+    if (aiBusyTaskId) return;
+    aiBusyTaskId = taskId;
+    agentAIError = '';
+    agentAIResult = null;
+    try {
+      const response = await fetch('/api/agent-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ task_id: taskId })
+      });
+      const result = await response.json() as { result?: AgentAIResult; error?: string; message?: string };
+      if (!response.ok || !result.result) throw new Error(result.message || result.error || 'AI Agent belum berhasil dijalankan.');
+      agentAIResult = result.result;
+      activeTab = 'Task Center';
+    } catch (cause) {
+      agentAIError = cause instanceof Error ? cause.message : 'AI Agent belum berhasil dijalankan.';
+    } finally {
+      aiBusyTaskId = null;
     }
   }
 
@@ -284,9 +315,19 @@
         <article class="panel task-panel"><div class="panel-heading"><div><span class="eyebrow">NEW TASK</span><h2>Capture an objective</h2></div></div><form onsubmit={createDraft}><label class="sr-only" for="task-input">Describe a task</label><textarea id="task-input" bind:value={taskInput} placeholder="Jelaskan hasil yang ingin kamu capai…" rows="3"></textarea><div class="composer-footer"><span>Belum menjalankan agent</span><button class="primary-button" type="submit" disabled={!taskInput.trim() || taskBusy}>{taskBusy ? 'Saving…' : 'Save draft'} <span>↗</span></button></div></form>{#if taskFeedback}<p class={taskFeedbackError ? 'task-feedback is-error' : 'task-feedback is-success'} role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}</article>
         <section class="section-heading"><div><span class="eyebrow">TASK HISTORY</span><h2>Recent tasks</h2></div><span class="muted-label">{tasks.length} DRAFT(S)</span></section>
         {#if tasks.length}
-          <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><span class="draft-pill">{task.status}</span><button class="run-task-button" type="button" onclick={() => void previewAgent(task.id)} disabled={previewBusyTaskId !== null}>{previewBusyTaskId === task.id ? 'Testing…' : 'Test dry-run'}</button>{#if runStorageReady}<button class="run-task-button secondary-run-button" type="button" onclick={() => void createAgentRun(task.id)} disabled={runBusyTaskId !== null}>{runBusyTaskId === task.id ? 'Preparing…' : 'Prepare run'}</button>{/if}</article>{/each}</div>
+          <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><span class="draft-pill">{task.status}</span><button class="run-task-button" type="button" onclick={() => void previewAgent(task.id)} disabled={previewBusyTaskId !== null || aiBusyTaskId !== null}>{previewBusyTaskId === task.id ? 'Testing…' : 'Test dry-run'}</button><button class="run-task-button live-ai-button" type="button" onclick={() => void runAIAgent(task.id)} disabled={aiBusyTaskId !== null || previewBusyTaskId !== null}>{aiBusyTaskId === task.id ? 'Running AI…' : 'Run AI Agent'}</button>{#if runStorageReady}<button class="run-task-button secondary-run-button" type="button" onclick={() => void createAgentRun(task.id)} disabled={runBusyTaskId !== null}>{runBusyTaskId === task.id ? 'Preparing…' : 'Prepare run'}</button>{/if}</article>{/each}</div>
         {:else}
           <div class="empty-state"><div class="empty-icon">⌘</div><h3>Belum ada task</h3><p>Tambahkan task pertama. Sign in untuk menyimpan task secara permanen.</p></div>
+        {/if}
+        {#if agentAIError}<p class="task-feedback is-error" role="alert">{agentAIError}</p>{/if}
+        {#if agentAIResult}
+          <section class="section-heading ai-result-heading"><div><span class="eyebrow">LIVE MODEL RESPONSE</span><h2>{agentAIResult.agentName}</h2></div><span class="muted-label">{agentAIResult.model}</span></section>
+          <article class="preview-card ai-result-card">
+            <div class="preview-meta"><span class="preview-pill">MODEL RESPONSE</span><span>{new Date(agentAIResult.createdAt).toLocaleString('id-ID')}</span>{#if agentAIResult.usage}<span>Tokens: {agentAIResult.usage.totalTokens ?? 'n/a'}</span>{/if}</div>
+            <h3>{agentAIResult.taskTitle}</h3>
+            <div class="ai-answer">{@html ''}{agentAIResult.answer}</div>
+            <details class="preview-limits"><summary>Model & limitations</summary><ul>{#each agentAIResult.limitations as limitation}<li>{limitation}</li>{/each}</ul></details>
+          </article>
         {/if}
         {#if agentPreviewError}<p class="task-feedback is-error" role="alert">{agentPreviewError}</p>{/if}
         {#if agentPreview}
