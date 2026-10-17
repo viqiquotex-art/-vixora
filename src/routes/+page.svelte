@@ -4,7 +4,8 @@
   import { supabase } from '$lib/supabase';
 
   type Tab = 'Overview' | 'Task Center' | 'Agent Hub' | 'Automations' | 'Integrations';
-  type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };\n  type AgentRunView = { id: string; task_id: string | null; title: string; status: string; assigned_agent: string | null; executor: string | null; created_at: string; output?: { message?: string; agent_name?: string } | null };
+  type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };
+  type AgentRunView = { id: string; task_id: string | null; title: string; status: string; assigned_agent: string | null; executor: string | null; created_at: string; output?: { message?: string; agent_name?: string } | null };
 
   let activeTab = $state<Tab>('Overview');
   let taskInput = $state('');
@@ -14,7 +15,12 @@
   let signedInEmail = $state<string | null>(null);
   let taskBusy = $state(false);
   let taskFeedback = $state('');
-  let taskFeedbackError = $state(false);\n  let agentRuns = $state<AgentRunView[]>([]);\n  let runStorageReady = $state<boolean | null>(null);\n  let runNotice = $state('');\n  let runFeedbackError = $state(false);\n  let runBusyTaskId = $state<string | null>(null);
+  let taskFeedbackError = $state(false);
+  let agentRuns = $state<AgentRunView[]>([]);
+  let runStorageReady = $state<boolean | null>(null);
+  let runNotice = $state('');
+  let runFeedbackError = $state(false);
+  let runBusyTaskId = $state<string | null>(null);
 
   async function loadSavedTasks(token: string) {
     try {
@@ -33,13 +39,20 @@
       if (!active) return;
       accessToken = data.session?.access_token ?? null;
       signedInEmail = data.session?.user.email ?? null;
-      if (data.session) void loadSavedTasks(data.session.access_token);\n      if (data.session) void loadAgentRuns(data.session.access_token);
+      if (data.session) void loadSavedTasks(data.session.access_token);
+      if (data.session) void loadAgentRuns(data.session.access_token);
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       accessToken = session?.access_token ?? null;
       signedInEmail = session?.user.email ?? null;
-      if (session) void loadSavedTasks(session.access_token);\n      if (session) void loadAgentRuns(session.access_token);\n      else { agentRuns = []; runStorageReady = null; }
-      else tasks = [];
+      if (session) {
+        void loadSavedTasks(session.access_token);
+        void loadAgentRuns(session.access_token);
+      } else {
+        tasks = [];
+        agentRuns = [];
+        runStorageReady = null;
+      }
     });
     return () => { active = false; listener.subscription.unsubscribe(); };
   });
