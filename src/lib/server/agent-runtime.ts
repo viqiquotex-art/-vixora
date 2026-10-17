@@ -9,7 +9,7 @@ export type AgentDryRunInput = {
 export type AgentDryRunResult = {
   mode: 'local-template-dry-run';
   status: 'preview_ready';
-  externalCalls: 0;
+  externalExecutorCalls: 0;
   executor: 'none';
   agentId: string;
   agentName: string;
@@ -109,7 +109,7 @@ export function runAgentDryRun(input: AgentDryRunInput): AgentDryRunResult {
   return {
     mode: 'local-template-dry-run',
     status: 'preview_ready',
-    externalCalls: 0,
+    externalExecutorCalls: 0,
     executor: 'none',
     agentId: agent.id,
     agentName: agent.name,
