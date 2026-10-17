@@ -7,6 +7,9 @@ on:
     branches: [main]
     paths:
       - 'src/routes/**'
+      - 'src/lib/**'
+      - 'tests/**'
+      - 'supabase/migrations/**'
       - 'src/app.html'
       - 'svelte.config.js'
       - 'vite.config.ts'
@@ -30,5 +33,7 @@ jobs:
         run: npm install
       - name: Type and Svelte checks
         run: npm run check
+      - name: Agent router unit tests
+        run: npm test
       - name: Production build
         run: npm run build

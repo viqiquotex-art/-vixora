@@ -25,3 +25,14 @@ Future executor callbacks/status transitions must run in a trusted server-side r
 4. Set staging Worker SUPABASE_URL and SUPABASE_ANON_KEY to the isolated DB.
 5. Sign in, create a task, prepare a run, refresh, and verify run history remains account-scoped.
 6. After this passes, define CREAO/n8n adapter contracts and status callbacks.
+
+
+## Automated router tests
+
+Run `npm test` to check:
+- registry contains the four expected initial agents;
+- content, research, and workflow tasks are routed to their specialist;
+- generic requests use the strategy fallback;
+- Unicode-normalized terms route consistently.
+
+The same test suite runs in GitHub Actions before the staging build.
