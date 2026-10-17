@@ -325,7 +325,7 @@
           <article class="preview-card ai-result-card">
             <div class="preview-meta"><span class="preview-pill">MODEL RESPONSE</span><span>{new Date(agentAIResult.createdAt).toLocaleString('id-ID')}</span>{#if agentAIResult.usage}<span>Tokens: {agentAIResult.usage.totalTokens ?? 'n/a'}</span>{/if}</div>
             <h3>{agentAIResult.taskTitle}</h3>
-            <div class="ai-answer">{@html ''}{agentAIResult.answer}</div>
+            <div class="ai-answer">{agentAIResult.answer}</div>
             <details class="preview-limits"><summary>Model & limitations</summary><ul>{#each agentAIResult.limitations as limitation}<li>{limitation}</li>{/each}</ul></details>
           </article>
         {/if}
