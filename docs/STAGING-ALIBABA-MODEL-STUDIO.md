@@ -1,52 +1,59 @@
-# Alibaba Cloud Model Studio — Staging AI Agent
+# Alibaba Cloud Model Studio — VIXORA Staging AI Agent
 
-This setup connects the VIXORA staging Run AI Agent endpoint to Alibaba Cloud Model Studio using the OpenAI-compatible Chat Completions API.
+This connects the VIXORA staging **Run AI Agent** endpoint to Alibaba Cloud Model Studio, using the OpenAI-compatible Chat Completions API.
 
-## Selected model and region
+## Model and region
 
-- Provider: Alibaba Cloud Model Studio
-- Region: Singapore
-- Deployment scope: International
 - Model: `qwen3.8-flash`
-- Endpoint: `https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions`
-- Output: text/draft only; this endpoint does not launch CREAO, n8n, publish content, or perform external actions.
+- Region: **Singapore** (`ap-southeast-1`)
+- Deployment scope: **International**
+- API: OpenAI-compatible `/compatible-mode/v1/chat/completions`
+- Endpoint: workspace-specific, `https://{WorkspaceId}.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1/chat/completions`
+- Output: answer/draft only. It does not publish content or execute CREAO/n8n workflows.
 
-Alibaba documents a 1-million-token free quota for `qwen3.8-flash` in Singapore / International. New-user free quota is time-limited (90 days from the applicable activation/release/approval date); eligibility and remaining quota must be checked in the Model Studio console. Official references:
-- [Free quota for new users](https://www.alibabacloud.com/help/en/model-studio/new-free-quota)
-- [OpenAI-compatible Chat API](https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-chat-completions)
+Official references:
+- [Create an API key](https://www.alibabacloud.com/help/en/model-studio/get-api-key)
+- [Singapore endpoints and API Host](https://www.alibabacloud.com/help/en/model-studio/regions)
+- [OpenAI-compatible Chat API](https://www.alibabacloud.com/help/en/model-studio/compatibility-of-openai-with-dashscope)
+- [Free quota rules](https://www.alibabacloud.com/help/en/model-studio/new-free-quota)
 - [Model pricing and quotas](https://www.alibabacloud.com/help/en/model-studio/model-pricing)
 
-## Mandatory cost guard before the first API call
+Alibaba's documentation lists a 1-million-token free quota for `qwen3.8-flash` in Singapore / International for eligible users. Free quota eligibility, expiration and remaining balance vary by account. Free quota is time-limited. After free quota is depleted, billing can automatically switch to pay-as-you-go unless **Free Quota Only** is enabled. Verify actual quota and switch status in your own console before making an inference request.
 
-Alibaba Cloud's `Free Quota Only` protection is disabled by default; without it, calls can switch to pay-as-you-go after free quota is exhausted/expired. Do not enable the VIXORA API key until this is set:
+## 1. In Alibaba Cloud Model Studio (use desktop)
 
-1. Open Alibaba Cloud Model Studio in the **Singapore** region.
-2. Open the model usage/usage page, then the **Free Quota** tab.
-3. Find `qwen3.8-flash`, confirm there is remaining free quota, and enable **Free Quota Only** for that model.
-4. Wait for the setting to take effect before testing. If the free quota is exhausted/expired or the switch is unavailable, do not call the model.
-5. Never share the API key in chat, a screenshot, browser code, or a repository file.
+1. Open the [Model Studio console](https://modelstudio.console.alibabacloud.com/) on your desktop.
+2. Select **Singapore** at the top-right / region selector.
+3. Open **Free Quota** (or Model Usage → Free Quota). Find `qwen3.8-flash`, confirm it has quota remaining and enable **Free Quota Only** for that model.
+4. Wait for the setting to take effect before making calls. If the quota is empty/expired or Free Quota Only is unavailable, stop here and do not test the API.
+5. Open **Workspace Management** and choose the workspace you will use (the default workspace is fine). Copy its **Workspace ID** / API Host details.
+6. Open **API Key**, ensure the region is still **Singapore**, and create a key in that same workspace. Give it a descriptive label such as `VIXORA staging`.
+7. Copy the full API key immediately to a safe place. Alibaba shows plaintext only once for new keys; do not share it in chat, screenshots or the repository.
 
-## Configure only the staging Cloudflare Worker
+The API key and workspace endpoint must belong to the same region/workspace. A mismatched region is rejected by the provider. Do not use a China-region API key with the Singapore endpoint.
 
-In Cloudflare Dashboard → Workers & Pages → `vixora-workspace-staging` → Settings → Variables and Secrets, add:
+## 2. Configure only the staging Cloudflare Worker
 
-| Name | Kind | Value |
+Open [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Workers & Pages** → `vixora-workspace-staging` → **Settings** → **Variables and Secrets**. Add these bindings:
+
+| Name | Type | Value |
 |---|---|---|
-| `DASHSCOPE_API_KEY` | Secret | General-purpose Model Studio API key for Singapore |
-| `DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED` | Text variable | `true` — only after the model's Free Quota Only switch is enabled in Alibaba |
+| `DASHSCOPE_API_KEY` | **Secret** | The key created for the Singapore workspace |
+| `MODELSTUDIO_WORKSPACE_ID` | Text variable | Workspace ID from that same Singapore workspace |
+| `DASHSCOPE_FREE_QUOTA_ONLY_CONFIRMED` | Text variable | `true`, only after Free Quota Only is visibly enabled for `qwen3.8-flash` |
 
-Then deploy/redeploy the staging Worker.
+Save and click **Deploy** / redeploy the staging Worker so the bindings become active.
 
-The code is deliberately fail-closed: if the API key is missing or the confirmation variable is not exactly `true`, Run AI returns a clear setup message without calling Alibaba. It uses only `qwen3.8-flash`, has no provider fallback, caps output at 1,200 tokens, and times out after 25 seconds. It never puts the API key in the client.
+The code intentionally fails closed: if the key, workspace ID, or quota-confirmation variable is absent, the Run AI endpoint will not invoke Alibaba. The confirmation variable is an operator confirmation—not an automatic check of Alibaba's console—so only set it after you have actually enabled Free Quota Only. The code uses no provider fallback, limits output to 1,200 tokens and times out after 25 seconds. Keep all work on staging; do not touch the production site or production secrets.
 
-## Test plan
+## 3. Test
 
-1. Sign in to [VIXORA staging](https://vixora-workspace-staging.viqiquotex.workers.dev).
-2. Open Task Center and choose a saved task.
-3. Click **Run AI Agent** once.
-4. Confirm the result shows model `qwen3.8-flash`, an answer, timestamp and token usage where returned.
-5. If the free quota is blocked/exhausted, verify a safe error is shown and that no fallback provider is used.
+1. Open [VIXORA staging](https://vixora-workspace-staging.viqiquotex.workers.dev) and sign in.
+2. Open **Task Center** and choose a saved task.
+3. Press **Run AI Agent** once.
+4. A successful run should show a `qwen3.8-flash` response and token usage where returned.
+5. If quota is exhausted while Free Quota Only is active, Alibaba should refuse inference rather than switch to paid usage. VIXORA displays an error and will not fall back to another provider.
 
 ## Isolation
 
-Keep all work on branch `redesign/sveltekit-staging` and Worker `vixora-workspace-staging`. Do not merge to `main`, change the production domain, or use production secrets during this test.
+The integration is on branch `redesign/sveltekit-staging` and deployed to Worker `vixora-workspace-staging`. Do not merge to `main` or route the production domain until the owner has validated staging.
