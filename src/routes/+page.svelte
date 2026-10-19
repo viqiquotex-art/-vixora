@@ -67,7 +67,21 @@
 
   async function loadAgentRuns(token: string) {
     try {
-      const response = await fetch('/api/agent-runs', { headers: { Authorization: `Bearer ${token}` } });
+      let requestToken = token;
+      let response = await fetch('/api/agent-runs', { headers: { Authorization: `Bearer ${requestToken}` } });
+
+      // A sleeping tab can resume with an expired access token while Supabase still has a refresh token.
+      // Refresh once and retry before showing a misleading signed-out warning.
+      if (response.status === 401) {
+        const { data, error } = await supabase.auth.refreshSession();
+        if (!error && data.session?.access_token) {
+          requestToken = data.session.access_token;
+          accessToken = requestToken;
+          signedInEmail = data.session.user.email ?? null;
+          response = await fetch('/api/agent-runs', { headers: { Authorization: `Bearer ${requestToken}` } });
+        }
+      }
+
       const result = await response.json() as { runs?: AgentRunView[]; storageReady?: boolean; message?: string; error?: string };
       if (!response.ok) throw new Error(result.message || result.error || 'Run history belum dapat dimuat.');
       agentRuns = result.runs ?? [];
@@ -75,6 +89,9 @@
       if (!runStorageReady) {
         runNotice = 'Penyimpanan agent run belum dipasang pada database staging terpisah. Database produksi tidak diubah.';
         runFeedbackError = true;
+      } else {
+        runNotice = '';
+        runFeedbackError = false;
       }
     } catch (cause) {
       runStorageReady = false;
@@ -313,7 +330,7 @@
       {:else if activeTab === 'Task Center'}
         <section class="page-intro"><div class="eyebrow">WORK QUEUE</div><h1>Task <span>Center</span></h1><p>Draft tugas dan riwayat yang akan dikelola oleh orchestrator.</p></section>
         <article class="panel task-panel"><div class="panel-heading"><div><span class="eyebrow">NEW TASK</span><h2>Capture an objective</h2></div></div><form onsubmit={createDraft}><label class="sr-only" for="task-input">Describe a task</label><textarea id="task-input" bind:value={taskInput} placeholder="Jelaskan hasil yang ingin kamu capai…" rows="3"></textarea><div class="composer-footer"><span>Belum menjalankan agent</span><button class="primary-button" type="submit" disabled={!taskInput.trim() || taskBusy}>{taskBusy ? 'Saving…' : 'Save draft'} <span>↗</span></button></div></form>{#if taskFeedback}<p class={taskFeedbackError ? 'task-feedback is-error' : 'task-feedback is-success'} role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}</article>
-        <p class="ai-privacy-note">Run AI Agent mengirim isi task ke Alibaba Cloud Model Studio untuk diproses oleh Qwen. Jangan masukkan informasi rahasia perusahaan/karyawan. Pemanggilan dikunci sampai Free Quota Only dikonfirmasi di konfigurasi staging; kuota habis tidak memicu fallback provider.</p>
+        <p class="ai-privacy-note">Run AI Agent mengirim isi task ke Gemini API untuk menghasilkan teks/draft. Jangan masukkan kata sandi, API key, atau data sensitif perusahaan/karyawan. Gunakan hanya project API yang sudah kamu pastikan berada pada Free Tier; jika kuota habis, VIXORA tidak beralih ke provider lain.</p>
         <section class="section-heading"><div><span class="eyebrow">TASK HISTORY</span><h2>Recent tasks</h2></div><span class="muted-label">{tasks.length} DRAFT(S)</span></section>
         {#if tasks.length}
           <div class="task-list">{#each tasks as task}<article class="task-row"><span class="task-symbol">⌘</span><div class="task-title"><strong>{task.title}</strong><small>Created at {task.createdAt} · {task.status === "Saved" ? "Supabase" : "Local"}</small></div><div class="task-actions"><span class="draft-pill">{task.status}</span><button class="run-task-button" type="button" onclick={() => void previewAgent(task.id)} disabled={previewBusyTaskId !== null || aiBusyTaskId !== null}>{previewBusyTaskId === task.id ? 'Testing…' : 'Test dry-run'}</button><button class="run-task-button live-ai-button" type="button" onclick={() => void runAIAgent(task.id)} disabled={aiBusyTaskId !== null || previewBusyTaskId !== null}>{aiBusyTaskId === task.id ? 'Running AI…' : 'Run AI Agent'}</button>{#if runStorageReady}<button class="run-task-button secondary-run-button" type="button" onclick={() => void createAgentRun(task.id)} disabled={runBusyTaskId !== null}>{runBusyTaskId === task.id ? 'Preparing…' : 'Prepare run'}</button>{/if}</div></article>{/each}</div>
@@ -322,9 +339,9 @@
         {/if}
         {#if agentAIError}<p class="task-feedback is-error" role="alert">{agentAIError}</p>{/if}
         {#if agentAIResult}
-          <section class="section-heading ai-result-heading"><div><span class="eyebrow">LIVE QWEN RESPONSE</span><h2>{agentAIResult.agentName}</h2></div><span class="muted-label">{agentAIResult.model}</span></section>
+          <section class="section-heading ai-result-heading"><div><span class="eyebrow">LIVE GEMINI RESPONSE</span><h2>{agentAIResult.agentName}</h2></div><span class="muted-label">{agentAIResult.model}</span></section>
           <article class="preview-card ai-result-card">
-            <div class="preview-meta"><span class="preview-pill">QWEN · FREE-QUOTA GUARD</span><span>{new Date(agentAIResult.createdAt).toLocaleString('id-ID')}</span>{#if agentAIResult.usage}<span>Tokens: {agentAIResult.usage.totalTokens ?? 'n/a'}</span>{/if}</div>
+            <div class="preview-meta"><span class="preview-pill">GEMINI · FREE-TIER GUARD</span><span>{new Date(agentAIResult.createdAt).toLocaleString('id-ID')}</span>{#if agentAIResult.usage}<span>Tokens: {agentAIResult.usage.totalTokens ?? 'n/a'}</span>{/if}</div>
             <h3>{agentAIResult.taskTitle}</h3>
             <div class="ai-answer">{agentAIResult.answer}</div>
             <details class="preview-limits"><summary>Model & limitations</summary><ul>{#each agentAIResult.limitations as limitation}<li>{limitation}</li>{/each}</ul></details>
