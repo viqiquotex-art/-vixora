@@ -767,7 +767,7 @@
                 <div class="run-row-actions">
                   <span class="run-state-pill" class:run-state-success={run.status === 'succeeded'} class:run-state-failed={run.status === 'failed'} class:run-state-running={run.status === 'running'} class:run-state-planned={run.status === 'planned'}>{formatRunStatus(run.status)}</span>
                   {#if run.status === 'failed' && run.task_id}
-                    <button class="run-retry-button" type="button" onclick={() => void run.task_id && runAIAgent(run.task_id)} disabled={aiBusyTaskId !== null || previewBusyTaskId !== null} title="Jalankan lagi task ini">↻ Jalankan lagi</button>
+                    <button class="run-retry-button" type="button" onclick={() => { if (run.task_id) void runAIAgent(run.task_id); }} disabled={aiBusyTaskId !== null || previewBusyTaskId !== null} title="Jalankan lagi task ini">↻ Jalankan lagi</button>
                   {/if}
                 </div>
               </article>
