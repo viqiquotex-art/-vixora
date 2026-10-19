@@ -2,6 +2,9 @@ name = "vixora-workspace-staging"
 main = ".svelte-kit/cloudflare/_worker.js"
 compatibility_date = "2026-10-01"
 
+[vars]
+GEMINI_FREE_TIER_ONLY_CONFIRMED = "true"
+
 [assets]
 directory = ".svelte-kit/cloudflare"
 binding = "ASSETS"
