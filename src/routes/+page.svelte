@@ -30,6 +30,136 @@
   let agentAIResult = $state<AgentAIResult | null>(null);
   let agentAIError = $state('');
 
+  type MarkdownBlock =
+    | { type: 'heading'; level: number; content: string }
+    | { type: 'paragraph'; content: string }
+    | { type: 'ul' | 'ol'; items: string[] }
+    | { type: 'quote'; content: string }
+    | { type: 'code'; content: string }
+    | { type: 'hr' };
+
+  function escapeMarkdownHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  // Render a small, safe Markdown subset. Raw HTML is escaped before we add our own allowed tags.
+  function renderInlineMarkdown(value: string): string {
+    let html = escapeMarkdownHtml(value);
+    const codeSpans: string[] = [];
+    html = html.replace(/`([^`]+)`/g, (_match, code: string) => {
+      const token = `\uE000${codeSpans.length}\uE001`;
+      codeSpans.push(`<code>${code}</code>`);
+      return token;
+    });
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+    html = html.replace(/(^|[^*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+    html = html.replace(/(^|[^_])_([^_\n]+)_(?!_)/g, '$1<em>$2</em>');
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)<>]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+    return html.replace(/\uE000(\d+)\uE001/g, (_match, index: string) => codeSpans[Number(index)] ?? '');
+  }
+
+  function renderMarkdown(markdown: string): string {
+    const blocks: MarkdownBlock[] = [];
+    const paragraph: string[] = [];
+    let listItems: string[] = [];
+    let listType: 'ul' | 'ol' | null = null;
+    let codeLines: string[] = [];
+    let inCodeBlock = false;
+
+    const flushParagraph = () => {
+      if (paragraph.length) {
+        blocks.push({ type: 'paragraph', content: paragraph.join(' ') });
+        paragraph.length = 0;
+      }
+    };
+    const flushList = () => {
+      if (listType && listItems.length) blocks.push({ type: listType, items: listItems });
+      listItems = [];
+      listType = null;
+    };
+
+    for (const line of markdown.replace(/\r\n?/g, '\n').split('\n')) {
+      const trimmed = line.trim();
+      if (inCodeBlock) {
+        if (/^```/.test(trimmed)) {
+          blocks.push({ type: 'code', content: codeLines.join('\n') });
+          codeLines = [];
+          inCodeBlock = false;
+        } else {
+          codeLines.push(line);
+        }
+        continue;
+      }
+      if (/^```/.test(trimmed)) {
+        flushParagraph();
+        flushList();
+        inCodeBlock = true;
+        codeLines = [];
+        continue;
+      }
+      if (!trimmed) {
+        flushParagraph();
+        flushList();
+        continue;
+      }
+      const heading = line.match(/^\s*(#{1,3})\s+(.+?)\s*#*\s*$/);
+      if (heading) {
+        flushParagraph();
+        flushList();
+        blocks.push({ type: 'heading', level: heading[1].length, content: heading[2] });
+        continue;
+      }
+      if (/^(---+|\*\s*)$/.test(trimmed)) {
+        flushParagraph();
+        flushList();
+        blocks.push({ type: 'hr' });
+        continue;
+      }
+      const quote = line.match(/^\s*>\s?(.*)$/);
+      if (quote) {
+        flushParagraph();
+        flushList();
+        blocks.push({ type: 'quote', content: quote[1] });
+        continue;
+      }
+      const bullet = line.match(/^\s*[-*+]\s+(.+)$/);
+      const numbered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+      const nextListType = bullet ? 'ul' : numbered ? 'ol' : null;
+      if (nextListType) {
+        flushParagraph();
+        if (listType && listType !== nextListType) flushList();
+        listType = nextListType;
+        listItems.push(bullet?.[1] ?? numbered?.[1] ?? '');
+        continue;
+      }
+      flushList();
+      paragraph.push(trimmed);
+    }
+    flushParagraph();
+    flushList();
+    if (inCodeBlock) blocks.push({ type: 'code', content: codeLines.join('\n') });
+
+    return blocks.map((block) => {
+      if (block.type === 'heading') return `<h${block.level}>${renderInlineMarkdown(block.content)}</h${block.level}>`;
+      if (block.type === 'paragraph') return `<p>${renderInlineMarkdown(block.content)}</p>`;
+      if (block.type === 'ul' || block.type === 'ol') {
+        const items = block.items.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join('');
+        return block.type === 'ul' ? `<ul>${items}</ul>` : `<ol>${items}</ol>`;
+      }
+      if (block.type === 'quote') return `<blockquote>${renderInlineMarkdown(block.content)}</blockquote>`;
+      if (block.type === 'code') return `<pre><code>${escapeMarkdownHtml(block.content)}</code></pre>`;
+      return '<hr />';
+    }).join('\n');
+  }
+
+
   async function loadSavedTasks(token: string) {
     try {
       const response = await fetch('/api/tasks', { headers: { Authorization: `Bearer ${token}` } });
@@ -392,7 +522,7 @@
           <article class="preview-card ai-result-card">
             <div class="preview-meta"><span class="preview-pill">GEMINI · FREE-TIER GUARD</span><span>{new Date(agentAIResult.createdAt).toLocaleString('id-ID')}</span>{#if agentAIResult.usage}<span>Tokens: {agentAIResult.usage.totalTokens ?? 'n/a'}</span>{/if}</div>
             <h3>{agentAIResult.taskTitle}</h3>
-            <div class="ai-answer">{agentAIResult.answer}</div>
+            <div class="ai-answer">{@html renderMarkdown(agentAIResult.answer)}</div>
             <details class="preview-limits"><summary>Model & limitations</summary><ul>{#each agentAIResult.limitations as limitation}<li>{limitation}</li>{/each}</ul></details>
           </article>
         {/if}
