@@ -283,3 +283,13 @@ textarea::placeholder{color:#999}
 .live-ai-button:disabled:not(.is-running){opacity:1;background:#f3f3f3;color:#777;border-color:rgba(20,20,20,.12);cursor:not-allowed;box-shadow:none}
 .live-ai-button.is-running:disabled{opacity:1;background:#171717;color:#fff;border-color:#171717;cursor:wait}
 .task-row[aria-busy="true"]{border-color:rgba(225,29,46,.28);box-shadow:0 0 0 2px rgba(225,29,46,.045)}
+
+
+/* Persisted Agent Run History */
+.run-output-details{margin-top:9px;font-size:11px;color:#555}
+.run-output-details summary{cursor:pointer;display:inline-flex;align-items:center;gap:6px;color:#c71e2d;font-weight:700;list-style-position:inside}
+.run-history-answer{margin-top:11px;padding:13px;border-radius:9px;background:#fafafa;border:1px solid rgba(20,20,20,.08);max-height:520px;overflow:auto}
+.run-history-answer.ai-answer{font-size:11px;line-height:1.7}
+.run-error-message{padding:8px 9px;border-radius:7px;background:#fff0ef;color:#b91c1c;border:1px solid rgba(185,28,28,.13);overflow-wrap:anywhere}
+.run-state-success{background:#edf9f0;color:#166534;border-color:rgba(22,101,52,.2)}
+.run-state-failed{background:#fff0ef;color:#b91c1c;border-color:rgba(185,28,28,.2)}
