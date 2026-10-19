@@ -247,3 +247,24 @@ textarea::placeholder{color:#999}
   .task-actions{grid-column:1/-1;width:100%;min-width:0;display:flex;align-items:center;flex-wrap:wrap;gap:8px}
   .task-actions .run-task-button{margin:0;max-width:100%;white-space:normal;line-height:1.35}
 }
+
+/* Readable, safe Markdown rendering for Gemini responses */
+.ai-answer{white-space:normal;overflow-wrap:anywhere;margin-top:14px;font-size:13px;line-height:1.8;color:#303030}
+.ai-answer>*:first-child{margin-top:0}
+.ai-answer>*:last-child{margin-bottom:0}
+.ai-answer p{margin:0 0 14px}
+.ai-answer h1,.ai-answer h2,.ai-answer h3{font-weight:750;line-height:1.35;letter-spacing:-.025em;color:#171717;margin:23px 0 10px}
+.ai-answer h1{font-size:22px}
+.ai-answer h2{font-size:18px}
+.ai-answer h3{font-size:15px}
+.ai-answer strong{font-weight:750;color:#171717}
+.ai-answer ul,.ai-answer ol{padding-left:24px;margin:0 0 16px;line-height:1.8}
+.ai-answer li{padding-left:3px}
+.ai-answer li+li{margin-top:5px}
+.ai-answer blockquote{margin:14px 0;padding:10px 14px;border-left:3px solid #e11d2e;border-radius:0 8px 8px 0;background:#fff5f3;color:#555}
+.ai-answer hr{border:0;border-top:1px solid rgba(20,20,20,.13);margin:20px 0}
+.ai-answer code{font-family:'DM Mono',ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.92em;background:#f3f3f3;border:1px solid rgba(20,20,20,.08);border-radius:5px;padding:2px 5px}
+.ai-answer pre{margin:12px 0 16px;padding:13px;border:1px solid rgba(20,20,20,.1);border-radius:9px;background:#f6f6f5;overflow-x:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+.ai-answer pre code{padding:0;border:0;background:transparent;white-space:pre-wrap}
+.ai-answer a{color:#c71e2d;text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
+@media(max-width:760px){.ai-answer{font-size:13px;line-height:1.75}.ai-answer h1{font-size:20px}.ai-answer h2{font-size:17px}.ai-answer h3{font-size:14px}.ai-answer ul,.ai-answer ol{padding-left:22px}}
