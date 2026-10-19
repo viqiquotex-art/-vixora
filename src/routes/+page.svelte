@@ -5,7 +5,29 @@
 
   type Tab = 'Overview' | 'Task Center' | 'Agent Hub' | 'Automations' | 'Integrations';
   type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };
-  type AgentRunView = { id: string; task_id: string | null; title: string; status: string; assigned_agent: string | null; executor: string | null; created_at: string; output?: { message?: string; agent_name?: string } | null };
+  type AgentRunView = {
+    id: string;
+    task_id: string | null;
+    title: string;
+    prompt?: string;
+    status: string;
+    assigned_agent: string | null;
+    executor: string | null;
+    created_at: string;
+    updated_at?: string;
+    started_at?: string | null;
+    finished_at?: string | null;
+    error_message?: string | null;
+    output?: {
+      message?: string;
+      agent_name?: string;
+      model?: string;
+      answer?: string;
+      mode?: string;
+      usage?: { totalTokens?: number | null } | null;
+      limitations?: string[];
+    } | null;
+  };
   type AgentPreview = { mode: string; status: string; externalExecutorCalls: number; executor: string; agentId: string; agentName: string; taskTitle: string; summary: string; steps: string[]; deliverables: string[]; nextAction: string; limitations: string[]; createdAt: string };
   type AgentAIResult = { mode: string; status: string; model: string; agentId: string; agentName: string; taskTitle: string; answer: string; limitations: string[]; usage?: { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null } | null; createdAt: string };
 
