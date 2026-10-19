@@ -54,6 +54,61 @@
   let agentAIResult = $state<AgentAIResult | null>(null);
   let agentAIError = $state('');
 
+  function dateKeyLocal(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function formatDurationSeconds(seconds: number | null): string {
+    if (seconds === null || !Number.isFinite(seconds) || seconds < 0) return '—';
+    if (seconds < 60) return `${Math.round(seconds)} dtk`;
+    const minutes = Math.floor(seconds / 60);
+    const remainder = Math.round(seconds % 60);
+    if (minutes < 60) return `${minutes} m ${remainder} dtk`;
+    return `${Math.floor(minutes / 60)} j ${minutes % 60} m`;
+  }
+
+  let runAnalytics = $derived.by(() => {
+    const succeeded = agentRuns.filter((run) => run.status === 'succeeded').length;
+    const failed = agentRuns.filter((run) => run.status === 'failed').length;
+    const completedCount = succeeded + failed;
+    const durations = agentRuns
+      .filter((run) => (run.status === 'succeeded' || run.status === 'failed') && run.started_at && run.finished_at)
+      .map((run) => (Date.parse(run.finished_at as string) - Date.parse(run.started_at as string)) / 1000)
+      .filter((seconds) => Number.isFinite(seconds) && seconds >= 0);
+    const averageSeconds = durations.length
+      ? durations.reduce((total, seconds) => total + seconds, 0) / durations.length
+      : null;
+    const today = new Date();
+    const activityDays = Array.from({ length: 7 }, (_unused, index) => {
+      const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (6 - index));
+      const key = dateKeyLocal(date);
+      const count = agentRuns.filter((run) => dateKeyLocal(new Date(run.created_at)) === key).length;
+      return {
+        key,
+        label: date.toLocaleDateString('id-ID', { weekday: 'short' }),
+        dateLabel: date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+        count
+      };
+    });
+    const peakActivity = Math.max(0, ...activityDays.map((day) => day.count));
+    return {
+      total: agentRuns.length,
+      succeeded,
+      failed,
+      completedCount,
+      successRate: completedCount ? Math.round((succeeded / completedCount) * 100) : null,
+      averageDuration: formatDurationSeconds(averageSeconds),
+      activityDays: activityDays.map((day) => ({
+        ...day,
+        heightPercent: peakActivity ? (day.count ? Math.max(12, (day.count / peakActivity) * 100) : 4) : 4
+      })),
+      peakActivity
+    };
+  });
+
   let filteredAgentRuns = $derived(agentRuns.filter((run) => {
     const query = runSearch.trim().toLocaleLowerCase('id-ID');
     const searchable = [
@@ -647,10 +702,41 @@
         <section class="section-heading"><div><span class="eyebrow">YOUR OPERATIONS</span><h2>Workspace overview</h2></div><span class="muted-label">PHASE 01 · FOUNDATION</span></section>
         <div class="metric-grid">
           <article class="metric-card"><div class="metric-top"><span>Saved tasks</span><span class="metric-icon purple">⌘</span></div><div class="metric-value">{tasks.length.toString().padStart(2, '0')}</div><div class="metric-foot"><span class="neutral-dot"></span> {signedInEmail ? "Synced with Supabase" : "Sign in required"}</div></article>
-          <article class="metric-card"><div class="metric-top"><span>Agent blueprints</span><span class="metric-icon cyan">✳</span></div><div class="metric-value">04</div><div class="metric-foot"><span class="neutral-dot"></span> Local dry-run ready · AI runtime not connected</div></article>
-          <article class="metric-card"><div class="metric-top"><span>Connected executors</span><span class="metric-icon amber">↗</span></div><div class="metric-value">00</div><div class="metric-foot"><span class="warning-dot"></span> Pending verification</div></article>
+          <article class="metric-card"><div class="metric-top"><span>Agent blueprints</span><span class="metric-icon cyan">✳</span></div><div class="metric-value">04</div><div class="metric-foot"><span class="neutral-dot"></span> Local dry-run ready · AI runtime connected</div></article>
+          <article class="metric-card"><div class="metric-top"><span>Agent runs</span><span class="metric-icon amber">↗</span></div><div class="metric-value">{runStorageReady === true ? runAnalytics.total.toString().padStart(2, '0') : '—'}</div><div class="metric-foot"><span class="neutral-dot"></span> Latest 50 saved records</div></article>
           <article class="metric-card"><div class="metric-top"><span>Quality checks</span><span class="metric-icon green">✓</span></div><div class="metric-value">—</div><div class="metric-foot"><span class="neutral-dot"></span> Not run yet</div></article>
         </div>
+
+        <section class="section-heading analytics-heading">
+          <div><span class="eyebrow">RUN PERFORMANCE</span><h2>Agent analytics</h2><p class="analytics-subtitle">Ringkasan dari maksimum 50 run terbaru di database staging.</p></div>
+          <button class="run-refresh-button" type="button" onclick={() => void refreshAgentRuns()}>↻ Refresh data</button>
+        </section>
+        {#if runStorageReady === true}
+          <div class="analytics-metrics">
+            <article class="analytics-card"><div class="analytics-card-top"><span>Total runs</span><span class="analytics-icon">↗</span></div><strong>{runAnalytics.total}</strong><small>Riwayat tersimpan</small></article>
+            <article class="analytics-card"><div class="analytics-card-top"><span>Success rate</span><span class="analytics-icon success">✓</span></div><strong>{runAnalytics.successRate === null ? '—' : `${runAnalytics.successRate}%`}</strong><small>{runAnalytics.succeeded} berhasil · {runAnalytics.completedCount} selesai</small></article>
+            <article class="analytics-card"><div class="analytics-card-top"><span>Failed runs</span><span class="analytics-icon failure">!</span></div><strong>{runAnalytics.failed}</strong><small>Run yang gagal</small></article>
+            <article class="analytics-card"><div class="analytics-card-top"><span>Avg. duration</span><span class="analytics-icon duration">◷</span></div><strong>{runAnalytics.averageDuration}</strong><small>Run selesai dengan durasi tercatat</small></article>
+          </div>
+          <article class="panel activity-panel">
+            <div class="panel-heading"><div><span class="eyebrow">LAST 7 DAYS</span><h2>Run activity</h2></div><span class="activity-peak">{runAnalytics.total ? `${runAnalytics.total} run dimuat` : 'Belum ada run'}</span></div>
+            <div class="activity-chart" role="img" aria-label="Grafik aktivitas Agent Run tujuh hari terakhir">
+              {#each runAnalytics.activityDays as day (day.key)}
+                <div class="activity-day" aria-label={`${day.dateLabel}: ${day.count} run`}>
+                  <span class="activity-count">{day.count}</span>
+                  <div class="activity-bar-track"><div class="activity-bar-fill" style={`height: ${day.heightPercent}%`}></div></div>
+                  <span class="activity-weekday">{day.label}</span>
+                  <span class="activity-date">{day.dateLabel}</span>
+                </div>
+              {/each}
+            </div>
+            <p class="activity-footnote">Berdasarkan waktu dibuat pada browser lokal; run di luar 50 record terbaru tidak dihitung dalam ringkasan ini.</p>
+          </article>
+        {:else if runStorageReady === false}
+          <div class="analytics-unavailable"><span>i</span><div><strong>Analytics belum tersedia</strong><p>{runNotice || 'Database Agent Run staging belum bisa dimuat.'}</p></div></div>
+        {:else}
+          <div class="analytics-unavailable"><span>◷</span><div><strong>Memuat analytics…</strong><p>Ringkasan akan muncul setelah riwayat Agent Run berhasil dimuat.</p></div></div>
+        {/if}
 
         <section class="work-grid">
           <article class="panel task-panel">
