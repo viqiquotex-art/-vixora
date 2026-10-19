@@ -141,14 +141,27 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       body: JSON.stringify({
         system_instruction: { parts: [{ text: makeSystemPrompt(agent.id, agent.name) }] },
         contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 1200 }
+        generationConfig: {
+          maxOutputTokens: 1200,
+          thinkingConfig: { thinkingLevel: 'low' }
+        }
       }),
-      signal: AbortSignal.timeout(25000)
+      // Keep a generous wall-clock deadline but request low reasoning effort to reduce latency.
+      signal: AbortSignal.timeout(55000)
     });
-  } catch {
+  } catch (cause) {
+    const errorName = cause instanceof Error ? cause.name : '';
+    const errorMessage = cause instanceof Error ? cause.message : '';
+    if (errorName === 'TimeoutError' || errorName === 'AbortError' || /timed? ?out|abort/i.test(errorMessage)) {
+      return json({
+        error: 'GEMINI_TIMEOUT',
+        message: 'Gemini belum mengembalikan jawaban dalam 55 detik. Coba lagi sekali nanti; VIXORA tidak memanggil provider alternatif.'
+      }, { status: 504 });
+    }
     return json({
       error: 'GEMINI_NETWORK_ERROR',
-      message: 'Tidak bisa menghubungi Gemini API sekarang. Tidak ada provider alternatif yang dipanggil.'
+      message: 'Cloudflare Worker tidak berhasil menyelesaikan koneksi ke Gemini API. Periksa secret GEMINI_API_KEY dan coba lagi. VIXORA tidak memanggil provider alternatif.',
+      causeType: errorName || 'UnknownError'
     }, { status: 502 });
   }
 
