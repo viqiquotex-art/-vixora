@@ -411,9 +411,13 @@
 
       let response = await sendRequest(token);
       if (response.status === 401) {
+        const previousToken = token;
         token = await getFreshAccessToken(true);
         if (!token) {
-          await updateRun(token ?? '', runId, 'failed', { error_message: 'Sesi Supabase kedaluwarsa sebelum AI selesai.' });
+          if (previousToken && runId) {
+            const failedRun = await updateRun(previousToken, runId, 'failed', { error_message: 'Sesi Supabase kedaluwarsa sebelum AI selesai.' });
+            if (failedRun) agentRuns = [failedRun, ...agentRuns.filter((run) => run.id !== failedRun.id)];
+          }
           agentAIError = 'Sesi login kedaluwarsa. Silakan login kembali lalu jalankan task ini lagi.';
           await goto('/login');
           return;
@@ -424,8 +428,6 @@
       const result = await response.json() as { result?: AgentAIResult; error?: string; message?: string };
       if (!response.ok || !result.result) {
         const message = result.message || result.error || 'AI Agent belum berhasil dijalankan.';
-        const failedRun = await updateRun(token, runId, 'failed', { error_message: message });
-        if (failedRun) agentRuns = [failedRun, ...agentRuns.filter((run) => run.id !== failedRun.id)];
         throw new Error(message);
       }
 
