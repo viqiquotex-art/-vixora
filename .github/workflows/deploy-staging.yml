@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: vixora-staging-deploy-v2
+  group: vixora-staging-deploy-v3
   cancel-in-progress: true
 
 jobs:
