@@ -36,6 +36,7 @@
     | { type: 'ul' | 'ol'; items: string[] }
     | { type: 'quote'; content: string }
     | { type: 'code'; content: string }
+    | { type: 'table'; headers: string[]; rows: string[][] }
     | { type: 'hr' };
 
   function escapeMarkdownHtml(value: string): string {
@@ -72,6 +73,14 @@
     let listType: 'ul' | 'ol' | null = null;
     let codeLines: string[] = [];
     let inCodeBlock = false;
+    const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
+
+    const splitTableRow = (line: string): string[] =>
+      line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((cell) => cell.trim());
+    const isTableSeparator = (line: string): boolean => {
+      const cells = splitTableRow(line);
+      return cells.length >= 2 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+    };
 
     const flushParagraph = () => {
       if (paragraph.length) {
@@ -85,7 +94,8 @@
       listType = null;
     };
 
-    for (const line of markdown.replace(/\r\n?/g, '\n').split('\n')) {
+    for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+      const line = lines[lineIndex];
       const trimmed = line.trim();
       if (inCodeBlock) {
         if (/^```/.test(trimmed)) {
@@ -107,6 +117,27 @@
       if (!trimmed) {
         flushParagraph();
         flushList();
+        continue;
+      }
+      // GitHub-flavoured Markdown table: header followed by a separator row.
+      if (line.includes('|') && lineIndex + 1 < lines.length && isTableSeparator(lines[lineIndex + 1])) {
+        flushParagraph();
+        flushList();
+        const headers = splitTableRow(line);
+        lineIndex++;
+        const rows: string[][] = [];
+        while (lineIndex + 1 < lines.length) {
+          const rowLine = lines[lineIndex + 1].trim();
+          if (!rowLine || !rowLine.includes('|')) break;
+          if (isTableSeparator(rowLine)) {
+            lineIndex++;
+            continue;
+          }
+          const cells = splitTableRow(rowLine);
+          rows.push(headers.map((_header, cellIndex) => cells[cellIndex] ?? ''));
+          lineIndex++;
+        }
+        blocks.push({ type: 'table', headers, rows });
         continue;
       }
       const heading = line.match(/^\s*(#{1,3})\s+(.+?)\s*#*\s*$/);
@@ -155,6 +186,13 @@
       }
       if (block.type === 'quote') return `<blockquote>${renderInlineMarkdown(block.content)}</blockquote>`;
       if (block.type === 'code') return `<pre><code>${escapeMarkdownHtml(block.content)}</code></pre>`;
+      if (block.type === 'table') {
+        const headers = block.headers.map((header) => `<th scope="col">${renderInlineMarkdown(header)}</th>`).join('');
+        const rows = block.rows.map((row) =>
+          `<tr>${block.headers.map((_header, index) => `<td>${renderInlineMarkdown(row[index] ?? '')}</td>`).join('')}</tr>`
+        ).join('');
+        return `<div class="ai-table-wrap"><table><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
+      }
       return '<hr />';
     }).join('\n');
   }
