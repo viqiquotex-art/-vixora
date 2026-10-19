@@ -167,8 +167,36 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
   if (!response.ok) {
     const mapped = mapGeminiError(response.status);
-    // Do not forward provider response bodies; they can contain sensitive operational details.
-    return json({ error: mapped.error, message: mapped.message, model: MODEL }, { status: mapped.status });
+    let providerDetail = '';
+    if (response.status === 400) {
+      // Return only Google's short public error message; never return request headers or API key.
+      try {
+        const providerError = await response.json() as { error?: { message?: string; status?: string } };
+        providerDetail = typeof providerError.error?.message === 'string'
+          ? providerError.error.message.replace(/[\\r\\n]+/g, ' ').slice(0, 240)
+          : '';
+        if (/api key not valid|api_key_invalid|invalid api key/i.test(providerDetail)) {
+          return json({
+            error: 'GEMINI_INVALID_API_KEY',
+            message: 'Google menolak API key. Pastikan nilai GEMINI_API_KEY di Cloudflare adalah key lengkap dari Google AI Studio untuk project yang memiliki Gemini API aktif.',
+            model: MODEL
+          }, { status: 502 });
+        }
+        if (/not found|not supported for generatecontent|unknown model/i.test(providerDetail)) {
+          return json({
+            error: 'GEMINI_MODEL_OR_METHOD_ERROR',
+            message: `Google menolak model atau endpoint: ${providerDetail}`,
+            model: MODEL
+          }, { status: 502 });
+        }
+      } catch {
+        providerDetail = '';
+      }
+    }
+    const message = providerDetail
+      ? `Gemini menolak request (HTTP ${response.status}): ${providerDetail}`
+      : mapped.message;
+    return json({ error: mapped.error, message, model: MODEL }, { status: mapped.status });
   }
 
   const body = await response.json() as {
