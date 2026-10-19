@@ -1,11 +1,14 @@
--- DRAFT ONLY: do not apply to the connected Supabase project used by production.
--- Apply only to an isolated staging database after its URL/keys have been configured.
--- This records agent execution plans separately from public.tasks (personal task list).
+-- Agent Run History for VIXORA STAGING only.
+-- Apply to the separate project vixora-staging-agent-runs (nuofddhqznewkkryejmu).
+-- The active VIXORA auth + tasks live in another Supabase project, so user_id/task_id
+-- intentionally have no foreign keys into this project's auth.users/public.tasks.
+-- Only the server-side agent-run-storage Edge Function may access this table.
+create extension if not exists pgcrypto;
 
 create table if not exists public.agent_runs (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  task_id uuid references public.tasks(id) on delete set null,
+  user_id uuid not null,
+  task_id uuid,
   title text not null check (char_length(trim(title)) between 1 and 240),
   prompt text not null check (char_length(trim(prompt)) between 1 and 12000),
   status text not null default 'planned'
@@ -30,31 +33,8 @@ create index if not exists agent_runs_status_created_idx on public.agent_runs (s
 create index if not exists agent_runs_task_created_idx on public.agent_runs (task_id, created_at desc);
 
 alter table public.agent_runs enable row level security;
-grant select, insert, delete on public.agent_runs to authenticated;
-
-drop policy if exists "Users can view their own agent runs" on public.agent_runs;
-create policy "Users can view their own agent runs"
-  on public.agent_runs for select to authenticated
-  using (auth.uid() = user_id);
-
-drop policy if exists "Users can create their own agent runs" on public.agent_runs;
-create policy "Users can create their own agent runs"
-  on public.agent_runs for insert to authenticated
-  with check (
-    auth.uid() = user_id
-    and (
-      task_id is null
-      or exists (select 1 from public.tasks t where t.id = task_id and t.user_id = auth.uid())
-    )
-  );
-
-drop policy if exists "Users can delete their own agent runs" on public.agent_runs;
-create policy "Users can delete their own agent runs"
-  on public.agent_runs for delete to authenticated
-  using (auth.uid() = user_id);
-
--- Browsers cannot directly edit status, output, attempts, or executor metadata.
-revoke update on public.agent_runs from authenticated;
+revoke all on public.agent_runs from anon, authenticated;
+grant all on public.agent_runs to service_role;
 
 create or replace function public.set_agent_runs_updated_at()
 returns trigger
@@ -71,3 +51,5 @@ drop trigger if exists agent_runs_updated_at on public.agent_runs;
 create trigger agent_runs_updated_at
   before update on public.agent_runs
   for each row execute function public.set_agent_runs_updated_at();
+
+comment on table public.agent_runs is 'Isolated VIXORA staging agent-run history. All reads/writes are server-side through the agent-run-storage Edge Function after validating the token against the separate VIXORA auth project.';
