@@ -277,3 +277,9 @@ textarea::placeholder{color:#999}
 .ai-answer tbody tr:nth-child(even){background:#fafafa}
 .ai-answer tbody tr:last-child td{border-bottom:0}
 @media(max-width:760px){.ai-table-wrap{margin:12px -1px 16px}.ai-answer table{min-width:500px;font-size:11px}.ai-answer th,.ai-answer td{padding:9px 10px}}
+
+
+/* Make per-task action state clear while serializing AI requests. */
+.live-ai-button:disabled:not(.is-running){opacity:1;background:#f3f3f3;color:#777;border-color:rgba(20,20,20,.12);cursor:not-allowed;box-shadow:none}
+.live-ai-button.is-running:disabled{opacity:1;background:#171717;color:#fff;border-color:#171717;cursor:wait}
+.task-row[aria-busy="true"]{border-color:rgba(225,29,46,.28);box-shadow:0 0 0 2px rgba(225,29,46,.045)}
