@@ -158,24 +158,73 @@
     }
   }
 
-  async function runAIAgent(taskId: string) {
-    if (!accessToken) {
-      agentAIError = 'Sign in dulu untuk menjalankan AI Agent.';
-      await goto('/login');
-      return;
+  async function getFreshAccessToken(forceRefresh = false): Promise<string | null> {
+    const current = await supabase.auth.getSession();
+    let session = current.data.session;
+
+    if (current.error || !session) {
+      accessToken = null;
+      signedInEmail = null;
+      return null;
     }
+
+    const expiresSoon = !session.expires_at || session.expires_at * 1000 <= Date.now() + 60_000;
+    if (forceRefresh || expiresSoon) {
+      const refreshed = await supabase.auth.refreshSession();
+      session = refreshed.data.session;
+      if (refreshed.error || !session) {
+        accessToken = null;
+        signedInEmail = null;
+        return null;
+      }
+    }
+
+    accessToken = session.access_token;
+    signedInEmail = session.user.email ?? null;
+    return session.access_token;
+  }
+
+  async function runAIAgent(taskId: string) {
     if (aiBusyTaskId) return;
     aiBusyTaskId = taskId;
     agentAIError = '';
     agentAIResult = null;
     try {
-      const response = await fetch('/api/agent-ai', {
+      let token = await getFreshAccessToken();
+      if (!token) {
+        agentAIError = 'Sesi login tidak tersedia atau sudah kedaluwarsa. Silakan login kembali.';
+        await goto('/login');
+        return;
+      }
+
+      const sendRequest = (bearer: string) => fetch('/api/agent-ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
         body: JSON.stringify({ task_id: taskId })
       });
+
+      let response = await sendRequest(token);
+      // Recover once from an access token that was revoked/expired between session lookup and the API call.
+      if (response.status === 401) {
+        token = await getFreshAccessToken(true);
+        if (!token) {
+          agentAIError = 'Sesi login ditolak oleh server. Silakan login kembali, lalu coba Run AI Agent lagi.';
+          await goto('/login');
+          return;
+        }
+        response = await sendRequest(token);
+      }
+
       const result = await response.json() as { result?: AgentAIResult; error?: string; message?: string };
-      if (!response.ok || !result.result) throw new Error(result.message || result.error || 'AI Agent belum berhasil dijalankan.');
+      if (!response.ok || !result.result) {
+        if (response.status === 401) {
+          agentAIError = 'Supabase masih menolak sesi setelah refresh. Login ulang dulu; task dan riwayat tetap aman.';
+          await supabase.auth.signOut();
+          await goto('/login');
+          return;
+        }
+        throw new Error(result.message || result.error || 'AI Agent belum berhasil dijalankan.');
+      }
       agentAIResult = result.result;
       activeTab = 'Task Center';
     } catch (cause) {
