@@ -357,13 +357,51 @@
     aiBusyTaskId = taskId;
     agentAIError = '';
     agentAIResult = null;
+    let token: string | null = null;
+    let runId: string | null = null;
+
+    const updateRun = async (
+      bearer: string,
+      id: string,
+      status: 'succeeded' | 'failed',
+      details: { output?: Record<string, unknown>; error_message?: string }
+    ): Promise<AgentRunView | null> => {
+      try {
+        const response = await fetch('/api/agent-runs', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${bearer}` },
+          body: JSON.stringify({ run_id: id, status, ...details })
+        });
+        const payload = await response.json() as { run?: AgentRunView };
+        return response.ok ? payload.run ?? null : null;
+      } catch {
+        return null;
+      }
+    };
+
     try {
-      let token = await getFreshAccessToken();
+      token = await getFreshAccessToken();
       if (!token) {
         agentAIError = 'Sesi login tidak tersedia atau sudah kedaluwarsa. Silakan login kembali.';
         await goto('/login');
         return;
       }
+
+      // Persist the run first, so each AI request has a durable history record.
+      const startResponse = await fetch('/api/agent-runs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ task_id: taskId, run_kind: 'ai' })
+      });
+      const startPayload = await startResponse.json() as { run?: AgentRunView; error?: string; message?: string };
+      if (!startResponse.ok || !startPayload.run?.id) {
+        throw new Error(startPayload.message || startPayload.error || 'Riwayat Agent Run tidak bisa disimpan. AI belum dipanggil.');
+      }
+      runId = startPayload.run.id;
+      agentRuns = [startPayload.run, ...agentRuns.filter((run) => run.id !== runId)];
+      runStorageReady = true;
+      runNotice = '';
+      runFeedbackError = false;
 
       const sendRequest = (bearer: string) => fetch('/api/agent-ai', {
         method: 'POST',
@@ -372,11 +410,11 @@
       });
 
       let response = await sendRequest(token);
-      // Recover once from an access token that was revoked/expired between session lookup and the API call.
       if (response.status === 401) {
         token = await getFreshAccessToken(true);
         if (!token) {
-          agentAIError = 'Sesi login ditolak oleh server. Silakan login kembali, lalu coba Run AI Agent lagi.';
+          await updateRun(token ?? '', runId, 'failed', { error_message: 'Sesi Supabase kedaluwarsa sebelum AI selesai.' });
+          agentAIError = 'Sesi login kedaluwarsa. Silakan login kembali lalu jalankan task ini lagi.';
           await goto('/login');
           return;
         }
@@ -385,23 +423,44 @@
 
       const result = await response.json() as { result?: AgentAIResult; error?: string; message?: string };
       if (!response.ok || !result.result) {
-        if (response.status === 401) {
-          agentAIError = 'Supabase masih menolak sesi setelah refresh. Login ulang dulu; task dan riwayat tetap aman.';
-          await supabase.auth.signOut();
-          await goto('/login');
-          return;
-        }
-        throw new Error(result.message || result.error || 'AI Agent belum berhasil dijalankan.');
+        const message = result.message || result.error || 'AI Agent belum berhasil dijalankan.';
+        const failedRun = await updateRun(token, runId, 'failed', { error_message: message });
+        if (failedRun) agentRuns = [failedRun, ...agentRuns.filter((run) => run.id !== failedRun.id)];
+        throw new Error(message);
       }
+
       agentAIResult = result.result;
       activeTab = 'Task Center';
+      const completedRun = await updateRun(token, runId, 'succeeded', {
+        output: {
+          mode: result.result.mode,
+          model: result.result.model,
+          agent_name: result.result.agentName,
+          answer: result.result.answer,
+          limitations: result.result.limitations,
+          usage: result.result.usage ?? null,
+          message: 'AI run completed successfully.'
+        }
+      });
+      if (completedRun) {
+        agentRuns = [completedRun, ...agentRuns.filter((run) => run.id !== completedRun.id)];
+        runNotice = 'Hasil AI dan status run tersimpan di database staging.';
+        runFeedbackError = false;
+      } else {
+        runNotice = 'Jawaban AI berhasil, tetapi status akhir belum tersimpan. Refresh run history atau coba lagi.';
+        runFeedbackError = true;
+      }
     } catch (cause) {
-      agentAIError = cause instanceof Error ? cause.message : 'AI Agent belum berhasil dijalankan.';
+      const message = cause instanceof Error ? cause.message : 'AI Agent belum berhasil dijalankan.';
+      agentAIError = message;
+      if (runId && token) {
+        const failedRun = await updateRun(token, runId, 'failed', { error_message: message });
+        if (failedRun) agentRuns = [failedRun, ...agentRuns.filter((run) => run.id !== failedRun.id)];
+      }
     } finally {
       aiBusyTaskId = null;
     }
   }
-
   const tabs: Tab[] = ['Overview', 'Task Center', 'Agent Hub', 'Automations', 'Integrations'];
 
   async function createDraft(event: SubmitEvent) {
@@ -588,15 +647,27 @@
             {#each agentRuns as run}
               <article class="run-row">
                 <span class="run-symbol">✳</span>
-                <div class="run-title"><strong>{run.title}</strong><small>{run.output?.agent_name ?? run.assigned_agent ?? 'Agent pending'} · {run.executor ?? 'not connected'} · {new Date(run.created_at).toLocaleString('id-ID')}</small>{#if run.output?.message}<p>{run.output.message}</p>{/if}</div>
-                <span class="run-state-pill">{run.status.replaceAll('_', ' ')}</span>
+                <div class="run-title">
+                  <strong>{run.title}</strong>
+                  <small>{run.output?.agent_name ?? run.assigned_agent ?? 'Agent pending'} · {run.output?.model ?? run.executor ?? 'not connected'} · {new Date(run.created_at).toLocaleString('id-ID')}</small>
+                  {#if run.output?.answer}
+                    <details class="run-output-details">
+                      <summary>Lihat hasil AI{#if run.output?.usage?.totalTokens} · {run.output.usage.totalTokens} tokens{/if}</summary>
+                      <div class="ai-answer run-history-answer">{@html renderMarkdown(run.output.answer)}</div>
+                    </details>
+                  {:else if run.output?.message}
+                    <p>{run.output.message}</p>
+                  {/if}
+                  {#if run.error_message}<p class="run-error-message">{run.error_message}</p>{/if}
+                </div>
+                <span class="run-state-pill" class:run-state-success={run.status === 'succeeded'} class:run-state-failed={run.status === 'failed'}>{run.status.replaceAll('_', ' ')}</span>
               </article>
             {/each}
           </div>
         {:else if runStorageReady === false}
-          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>Run storage needs isolated staging DB</h3><p>Riwayat run permanen menunggu database staging yang terpisah. Tombol Test dry-run di atas sudah bisa menampilkan preview lokal tanpa memanggil model AI atau executor. Database produksi tidak diubah.</p></div>
+          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>Agent run history belum tersedia</h3><p>Penyimpanan staging belum bisa dimuat. Periksa pesan di atas atau coba refresh halaman. Database produksi tidak diubah.</p></div>
         {:else}
-          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>No agent runs yet</h3><p>Riwayat run belum tersimpan. Gunakan Test dry-run di atas untuk melihat preview lokal; riwayat agent-run belum ditulis ke database.</p></div>
+          <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>Belum ada Agent Run</h3><p>Jalankan AI pada salah satu task untuk menyimpan status, waktu, dan hasilnya di database staging.</p></div>
         {/if}
       {:else if activeTab === 'Agent Hub'}
         <section class="page-intro"><div class="eyebrow">SPECIALIST NETWORK</div><h1>Agent <span>Hub</span></h1><p>Empat spesialis dapat diuji dengan dry-run berbasis template lokal. Model AI dan executor eksternal belum tersambung.</p></section>
