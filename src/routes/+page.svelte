@@ -41,6 +41,8 @@
   let taskFeedback = $state('');
   let taskFeedbackError = $state(false);
   let agentRuns = $state<AgentRunView[]>([]);
+  let runSearch = $state('');
+  let runStatusFilter = $state('all');
   let runStorageReady = $state<boolean | null>(null);
   let runNotice = $state('');
   let runFeedbackError = $state(false);
@@ -51,6 +53,21 @@
   let aiBusyTaskId = $state<string | null>(null);
   let agentAIResult = $state<AgentAIResult | null>(null);
   let agentAIError = $state('');
+
+  let filteredAgentRuns = $derived(agentRuns.filter((run) => {
+    const query = runSearch.trim().toLocaleLowerCase('id-ID');
+    const searchable = [
+      run.title,
+      run.prompt ?? '',
+      run.assigned_agent ?? '',
+      run.output?.agent_name ?? '',
+      run.output?.model ?? '',
+      run.error_message ?? ''
+    ].join(' ').toLocaleLowerCase('id-ID');
+    const matchesSearch = !query || searchable.includes(query);
+    const matchesStatus = runStatusFilter === 'all' || run.status === runStatusFilter;
+    return matchesSearch && matchesStatus;
+  }));
 
   type MarkdownBlock =
     | { type: 'heading'; level: number; content: string }
@@ -219,6 +236,47 @@
     }).join('\n');
   }
 
+
+  function formatRunDuration(run: AgentRunView): string {
+    if (!run.started_at) return run.status === 'planned' ? 'Belum dimulai' : 'Durasi tidak tersedia';
+    const start = Date.parse(run.started_at);
+    const end = run.finished_at
+      ? Date.parse(run.finished_at)
+      : run.status === 'running'
+        ? Date.now()
+        : Date.parse(run.updated_at ?? run.created_at);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return 'Durasi tidak tersedia';
+    const seconds = Math.round((end - start) / 1000);
+    if (seconds < 60) return `${seconds} dtk`;
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds % 60;
+    if (minutes < 60) return `${minutes} m ${remainder} dtk`;
+    return `${Math.floor(minutes / 60)} j ${minutes % 60} m`;
+  }
+
+  function formatRunStatus(status: string): string {
+    const labels: Record<string, string> = {
+      planned: 'Rencana',
+      queued: 'Antrean',
+      planning: 'Merencanakan',
+      awaiting_approval: 'Menunggu persetujuan',
+      running: 'Berjalan',
+      succeeded: 'Berhasil',
+      failed: 'Gagal',
+      cancelled: 'Dibatalkan'
+    };
+    return labels[status] ?? status.replaceAll('_', ' ');
+  }
+
+  async function refreshAgentRuns() {
+    const token = await getFreshAccessToken();
+    if (!token) {
+      runNotice = 'Sesi login sudah berakhir. Login kembali untuk memuat riwayat.';
+      runFeedbackError = true;
+      return;
+    }
+    await loadAgentRuns(token);
+  }
 
   async function loadSavedTasks(token: string) {
     try {
@@ -662,18 +720,40 @@
             <details class="preview-limits"><summary>Mode & limitations</summary><ul>{#each agentPreview.limitations as limitation}<li>{limitation}</li>{/each}</ul></details>
           </article>
         {/if}
-        <section class="section-heading run-heading"><div><span class="eyebrow">ORCHESTRATOR</span><h2>Agent run history</h2></div><span class="muted-label">{agentRuns.length} RUN PLAN(S)</span></section>
+        <section class="section-heading run-heading"><div><span class="eyebrow">ORCHESTRATOR</span><h2>Agent run history</h2><p class="run-heading-note">Riwayat permanen dari database staging · maksimal 50 run terbaru</p></div><span class="muted-label">{filteredAgentRuns.length} / {agentRuns.length} RUN</span></section>
         {#if runNotice}
           <p class={runFeedbackError ? 'task-feedback is-error' : 'task-feedback is-success'} role={runFeedbackError ? 'alert' : 'status'}>{runNotice}</p>
         {/if}
         {#if agentRuns.length}
-          <div class="run-list">
-            {#each agentRuns as run}
+          <div class="run-toolbar">
+            <label class="run-search-box">
+              <span aria-hidden="true">⌕</span>
+              <input type="search" bind:value={runSearch} placeholder="Cari task, agent, model, atau error…" aria-label="Cari Agent Run History" />
+            </label>
+            <label class="run-filter-box">
+              <span>Status</span>
+              <select bind:value={runStatusFilter} aria-label="Filter status Agent Run">
+                <option value="all">Semua status</option>
+                <option value="succeeded">Berhasil</option>
+                <option value="failed">Gagal</option>
+                <option value="running">Berjalan</option>
+                <option value="planned">Rencana</option>
+                <option value="queued">Antrean</option>
+                <option value="planning">Merencanakan</option>
+                <option value="awaiting_approval">Menunggu persetujuan</option>
+                <option value="cancelled">Dibatalkan</option>
+              </select>
+            </label>
+            <button class="run-refresh-button" type="button" onclick={() => void refreshAgentRuns()}>↻ Refresh</button>
+          </div>
+          {#if filteredAgentRuns.length}
+            <div class="run-list">
+              {#each filteredAgentRuns as run (run.id)}
               <article class="run-row">
                 <span class="run-symbol">✳</span>
                 <div class="run-title">
                   <strong>{run.title}</strong>
-                  <small>{run.output?.agent_name ?? run.assigned_agent ?? 'Agent pending'} · {run.output?.model ?? run.executor ?? 'not connected'} · {new Date(run.created_at).toLocaleString('id-ID')}</small>
+                  <small>{run.output?.agent_name ?? run.assigned_agent ?? 'Agent pending'} · {run.output?.model ?? run.executor ?? 'not connected'} · {new Date(run.created_at).toLocaleString('id-ID')} · Durasi {formatRunDuration(run)}</small>
                   {#if run.output?.answer}
                     <details class="run-output-details">
                       <summary>Lihat hasil AI{#if run.output?.usage?.totalTokens} · {run.output.usage.totalTokens} tokens{/if}</summary>
@@ -684,10 +764,18 @@
                   {/if}
                   {#if run.error_message}<p class="run-error-message">{run.error_message}</p>{/if}
                 </div>
-                <span class="run-state-pill" class:run-state-success={run.status === 'succeeded'} class:run-state-failed={run.status === 'failed'}>{run.status.replaceAll('_', ' ')}</span>
+                <div class="run-row-actions">
+                  <span class="run-state-pill" class:run-state-success={run.status === 'succeeded'} class:run-state-failed={run.status === 'failed'} class:run-state-running={run.status === 'running'} class:run-state-planned={run.status === 'planned'}>{formatRunStatus(run.status)}</span>
+                  {#if run.status === 'failed' && run.task_id}
+                    <button class="run-retry-button" type="button" onclick={() => void run.task_id && runAIAgent(run.task_id)} disabled={aiBusyTaskId !== null || previewBusyTaskId !== null} title="Jalankan lagi task ini">↻ Jalankan lagi</button>
+                  {/if}
+                </div>
               </article>
             {/each}
-          </div>
+            </div>
+          {:else}
+            <div class="empty-state run-filter-empty"><div class="empty-icon">⌕</div><h3>Tidak ada run yang cocok</h3><p>Coba kata kunci atau filter status yang berbeda.</p><button class="run-refresh-button" type="button" onclick={() => { runSearch = ''; runStatusFilter = 'all'; }}>Reset filter</button></div>
+          {/if}
         {:else if runStorageReady === false}
           <div class="empty-state run-empty"><div class="empty-icon">✳</div><h3>Agent run history belum tersedia</h3><p>Penyimpanan staging belum bisa dimuat. Periksa pesan di atas atau coba refresh halaman. Database produksi tidak diubah.</p></div>
         {:else}
