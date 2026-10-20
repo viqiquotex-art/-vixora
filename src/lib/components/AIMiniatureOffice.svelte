@@ -843,13 +843,15 @@
         ) {
           const start = rig.root.position.clone();
           start.y = 0;
-          const exitZ = Math.max(start.z + .62, 2.92);
+          // Go around either side of the round table, then approach it from the open aisle.
+          const sideX = start.x < 0 ? -1.55 : 1.55;
           rig.deliveryCurve = new THREE.CatmullRomCurve3([
             start,
-            new THREE.Vector3(start.x, 0, exitZ),
-            new THREE.Vector3(start.x * .52, 0, 3.62),
-            new THREE.Vector3(.05, 0, 3.34)
-          ], false, 'centripetal', .35);
+            new THREE.Vector3(sideX, 0, start.z),
+            new THREE.Vector3(sideX, 0, 2.68),
+            new THREE.Vector3(.05, 0, 2.68),
+            new THREE.Vector3(.05, 0, 2.95)
+          ], false, 'centripetal', .25);
           rig.deliveryProgress = 0;
           rig.deliveryPauseUntil = 0;
           rig.deliveryPhase = 'outbound';
@@ -1121,7 +1123,8 @@
         const previousCourierZ = roamer.position.z;
         const travel = (Math.sin(time * .09) + 1) / 2;
         roamer.position.x = -5.3 + travel * 10.3;
-        roamer.position.z = 3.48 + Math.sin(time * .22) * .08;
+        // The courier patrol stays in the foreground aisle, below the shared table footprint.
+        roamer.position.z = 2.72 + Math.sin(time * .22) * .06;
         const courierDx = roamer.position.x - previousCourierX;
         const courierDz = roamer.position.z - previousCourierZ;
         const courierDistance = Math.hypot(courierDx, courierDz);
