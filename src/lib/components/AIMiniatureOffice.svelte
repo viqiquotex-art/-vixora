@@ -202,6 +202,53 @@
     return texture;
   }
 
+  function makeOfficeSignTexture() {
+    const art = document.createElement('canvas');
+    art.width = 1200;
+    art.height = 150;
+    const ctx = art.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(art);
+    ctx.fillStyle = '#fff8ed';
+    ctx.beginPath();
+    ctx.roundRect(2, 2, 1196, 146, 24);
+    ctx.fill();
+    ctx.strokeStyle = '#dfc8a9';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.fillStyle = '#e11d2e';
+    ctx.beginPath();
+    ctx.roundRect(22, 23, 105, 105, 28);
+    ctx.fill();
+    ctx.fillStyle = '#fff8ed';
+    ctx.font = 'bold 73px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('V', 74, 101);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#302923';
+    ctx.font = 'bold 56px sans-serif';
+    ctx.fillText('VIXORA', 154, 78);
+    ctx.fillStyle = '#be2633';
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillText('AI STUDIO', 157, 112);
+    ctx.fillStyle = '#927d65';
+    ctx.font = '20px sans-serif';
+    ctx.fillText('SMALL BOTS  ·  BIG IDEAS', 490, 88);
+    ctx.fillStyle = '#d5bf9f';
+    ctx.fillRect(461, 34, 3, 80);
+    ctx.fillStyle = '#f1ca58';
+    ctx.beginPath();
+    ctx.arc(1136, 43, 10, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#72a48b';
+    ctx.beginPath();
+    ctx.arc(1164, 43, 10, 0, Math.PI * 2);
+    ctx.fill();
+    const texture = new THREE.CanvasTexture(art);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4;
+    return texture;
+  }
+
   function makeNameplateTexture(agent: OfficeAgent) {
     const art = document.createElement('canvas');
     art.width = 640;
@@ -267,7 +314,7 @@
     box(scene, [.12, .15, 9.7], 0x9c7858, [7.02, -.13, .05]);
 
     // Warm back wall and tall window panels.
-    box(scene, [14, 3.15, .2], 0xf8eddb, [0, 1.56, -4.78]);
+    box(scene, [14, 3.6, .2], 0xf8eddb, [0, 1.8, -4.78]);
     for (let i = 0; i < 6; i += 1) {
       const x = -5.65 + i * 2.25;
       const glass = box(scene, [1.92, 1.72, .045], 0xd8e9e4, [x, 2.02, -4.655], { roughness: .23, metalness: .05 });
@@ -285,6 +332,32 @@
         box(scene, [.25, h, .09], [0xb7c6c4, 0xc9b4a0, 0xd8c9ac][b], [bx, .85 + h / 2, -4.58], { castShadow: false });
       }
     }
+
+    // A permanent, readable VIXORA studio sign and small wall details above the pinboard.
+    box(scene, [5.45, .66, .17], 0xb99a79, [0, 3.22, -4.56]);
+    box(scene, [5.33, .56, .11], 0xfff8ed, [0, 3.22, -4.45]);
+    const officeSignTexture = makeOfficeSignTexture();
+    const officeSign = new THREE.Mesh(
+      new THREE.PlaneGeometry(5.15, .48),
+      new THREE.MeshBasicMaterial({ map: officeSignTexture, side: THREE.DoubleSide })
+    );
+    officeSign.position.set(0, 3.22, -4.385);
+    scene.add(officeSign);
+
+    // Wall clock with physical rim and hands.
+    const clock = new THREE.Mesh(new THREE.TorusGeometry(.24, .045, 8, 24), material(0xc6a37f));
+    clock.position.set(-3.75, 3.22, -4.49);
+    scene.add(clock);
+    sphere(scene, .2, 0xfff8ed, [-3.75, 3.22, -4.5], [1, 1, .15]);
+    box(scene, [.025, .14, .025], 0x8c755b, [-3.75, 3.25, -4.465]);
+    box(scene, [.11, .025, .025], 0xe11d2e, [-3.70, 3.19, -4.464]);
+
+    // Framed brand print and warm hanging lamp on the other side of the wall.
+    box(scene, [.76, .64, .13], 0xb99a79, [3.9, 3.22, -4.56]);
+    box(scene, [.64, .52, .06], 0xfff8ed, [3.9, 3.22, -4.47]);
+    box(scene, [.12, .3, .035], 0xe11d2e, [3.76, 3.23, -4.43]);
+    box(scene, [.12, .2, .035], 0xf1ca58, [3.91, 3.18, -4.43]);
+    box(scene, [.12, .36, .035], 0x8fb29a, [4.06, 3.25, -4.43]);
 
     // Pinboard and tiny notes.
     box(scene, [3.7, 1.32, .15], 0xc0a181, [0, 2.28, -4.59]);
