@@ -1369,3 +1369,180 @@ textarea::placeholder{color:#999}
   .ai-office-scene .office-walking-bot{animation:none!important;left:4%;transform:rotateY(15deg) scale(.8)}
 }
 
+
+/* ==========================================================
+   MINIATURE ISOMETRIC OFFICE — scale the whole world down
+   ========================================================== */
+.ai-office-scene{
+  min-height:620px;
+  height:clamp(620px,54vw,760px);
+  perspective:1450px;
+  background:
+    radial-gradient(ellipse at 50% 58%,rgba(225,29,46,.08),transparent 45%),
+    linear-gradient(180deg,#f7efe3 0%,#f1e6d7 45%,#d6c5ae 100%);
+  color:#302922;
+}
+.ai-office-scene::before{opacity:.09}
+.office-backwall{inset:0 0 43%;border-bottom:3px solid #bca286;background:linear-gradient(180deg,#fff9ed,#f3e4d0 78%,#d9c2a6)}
+.office-window-grid{
+  background:
+    linear-gradient(90deg,transparent 0 6%,rgba(159,126,91,.32) 6.2% 6.7%,transparent 6.9% 32%,rgba(159,126,91,.28) 32.2% 32.7%,transparent 32.9% 66%,rgba(159,126,91,.28) 66.2% 66.7%,transparent 66.9% 94%,rgba(159,126,91,.28) 94.2% 94.7%,transparent 94.9%),
+    linear-gradient(180deg,transparent 0 18%,rgba(159,126,91,.24) 18.2% 18.7%,transparent 18.9% 68%,rgba(159,126,91,.2) 68.2% 68.7%,transparent 68.9%),
+    linear-gradient(110deg,#e3edeb,#fff7e8 54%,#ead8c1);
+}
+.office-window-grid::after{background:linear-gradient(180deg,rgba(255,253,245,.05),transparent 55%,rgba(142,108,72,.1))}
+.office-window-glow{background:linear-gradient(90deg,transparent,#facc15 20%,#e11d2e 52%,#facc15 80%,transparent);opacity:.25;box-shadow:none}
+.office-wall-orbit,.office-light-strip{display:none}
+.office-floor-grid{
+  inset:43% -5% -8%;
+  transform:none;
+  transform-origin:center;
+  background-image:linear-gradient(rgba(128,99,69,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(128,99,69,.12) 1px,transparent 1px);
+  background-size:58px 48px;
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.4),transparent 94%);
+}
+.office-floor-glow{bottom:-24%;height:65%;background:radial-gradient(ellipse,rgba(255,250,239,.48),rgba(225,29,46,.035) 40%,transparent 72%)}
+.office-floor-ring{display:none}
+.office-cable{opacity:.25}
+.office-command-display{left:35%;top:5%;width:30%;height:27%;transform:translateZ(10px);opacity:.85}
+.command-display-frame{border-color:#fffaf0;background:linear-gradient(145deg,#fffaf0,#f2e3ce);box-shadow:0 5px 14px rgba(105,76,46,.12)}
+.command-display-header,.command-display-footer{padding:5px 8px;font-size:6px}
+.command-display-content{height:calc(100% - 36px);padding:4% 7%}
+.command-globe{flex-basis:clamp(34px,5vw,62px)}
+.command-globe span{font-size:19px}
+.display-graph{height:33px}
+.display-section-label,.display-readout,.display-readout b{font-size:6px}
+.command-display-stem{height:12%;background:linear-gradient(90deg,#c5ad91,#f7e7d3,#b39a7e)}
+.command-display-plinth{background:linear-gradient(180deg,#fff5e6,#cbb69a)}
+/* Four small stations arranged in a diorama, not four oversized character cards. */
+.office-station{
+  width:22%;
+  height:52%;
+  bottom:2%;
+}
+.station-content-studio{left:5%;bottom:2%;height:49%;z-index:5}
+.station-research-agent{left:27%;bottom:13%;height:45%;z-index:4}
+.station-workflow-planner{left:51%;bottom:3%;height:49%;z-index:5}
+.station-strategy-planner{left:73%;bottom:14%;height:44%;z-index:4}
+.office-station::before{bottom:4%;height:18%;background:radial-gradient(ellipse,rgba(128,95,60,.13),transparent 68%)}
+.station-orbit{display:none}
+.station-number{top:8%;left:5%;font-size:6px;color:#9a8065}
+.office-robot{
+  left:12%;
+  bottom:31%;
+  width:105px;height:158px;
+  transform:scale(.48);
+  transform-origin:bottom left;
+  filter:drop-shadow(0 3px 2px rgba(84,61,40,.16));
+  animation:mini-bot-idle 4.5s ease-in-out infinite;
+}
+.robot-head{box-shadow:inset -5px -5px 9px rgba(126,97,70,.13),inset 4px 4px 6px rgba(255,255,255,.9),0 3px 5px rgba(93,65,40,.1)}
+.robot-face i{width:9px;height:11px}
+.station-chair{left:7%;bottom:32%;transform:scale(.64);transform-origin:bottom left}
+.station-computer{
+  left:39%;bottom:34%;width:48%;height:87px;
+  transform:scale(.72);transform-origin:bottom left;
+}
+.station-monitor{height:62px}
+.station-keyboard{bottom:0}
+.station-desk-top{left:1%;right:1%;bottom:31%;height:10px;border-color:#b9a084;background:linear-gradient(180deg,#fff8ed,#e1cbb1 58%,#bda083);box-shadow:0 3px 5px rgba(105,77,49,.1)}
+.station-desk-front{left:1%;right:1%;bottom:23%;height:8%;border-color:#b79a7b;background:linear-gradient(90deg,#d8bea0,#f7e6cf 40%,#c6a786)}
+.station-desk-leg{bottom:8%;height:15%;width:5px;background:linear-gradient(90deg,#a98d6e,#ead5bb,#a88b6d)}
+.station-task-card{
+  left:3%;right:3%;bottom:0%;
+  padding:5px 7px;gap:2px;
+  border:1px solid #e2d0b9;border-radius:5px;
+  background:linear-gradient(145deg,#fffaf1,#f0e1ce);
+  box-shadow:0 3px 6px rgba(98,70,42,.08);
+  transform:translateZ(12px);
+}
+.station-agent-role{font-size:5px;color:#b37b2e;letter-spacing:.06em}
+.station-task-card strong{font-size:8px;color:#2e2823}
+.station-task-card small{font-size:6px;color:#8b7965}
+.station-status{font-size:5px;color:#83715f}
+.station-status i{width:4px;height:4px;background:#389d70}
+.station-special-prop{right:0;bottom:41%;width:32px;height:32px;transform:scale(.72) translateZ(16px);transform-origin:bottom right}
+.station-coffee-cup{right:2%;bottom:32%;transform:scale(.72) translateZ(18px)}
+.station-content-studio .robot-head::before{left:20px;width:45px;height:19px;border-width:3px}
+.station-workflow-planner .robot-head::before{left:34px;top:-7px}
+.station-strategy-planner .robot-head::before{top:-6px;left:25px;width:29px;height:12px}
+/* Small robots turn their head and move their arms in place; nobody gets paper-flipped. */
+@keyframes mini-bot-idle{
+  0%,100%{transform:scale(.48) translateY(0) rotateY(-5deg)}
+  25%{transform:scale(.48) translateY(-2px) rotateY(0deg)}
+  52%{transform:scale(.48) translateY(-3px) rotateY(7deg)}
+  76%{transform:scale(.48) translateY(-1px) rotateY(1deg)}
+}
+.station-content-studio.robot-state-idle .robot-arm-right{animation:robot-coffee-sip 6.5s ease-in-out infinite}
+.station-workflow-planner.robot-state-idle .robot-arm-left{animation:robot-stretch-left 7.2s ease-in-out infinite}
+.station-workflow-planner.robot-state-idle .robot-arm-right{animation:robot-stretch-right 7.2s ease-in-out infinite}
+.cozy-office-decor{transform-style:preserve-3d}
+.office-sofa{left:5%;bottom:47%;width:18%;transform:scale(.76) translateZ(8px);transform-origin:bottom left}
+.office-coffee-cart{right:5%;bottom:45%;transform:scale(.72) translateZ(8px);transform-origin:bottom right}
+.office-plant{bottom:41%;transform:scale(.7);transform-origin:bottom center}
+.office-plant.plant-right{transform:scale(.64)}
+.office-wall-note{top:18%;right:6%;transform:scale(.72) rotate(3deg) translateZ(8px);transform-origin:top right}
+.office-rug{left:18%;right:18%;bottom:-7%;height:23%;border-color:rgba(174,133,89,.17);background:repeating-linear-gradient(135deg,rgba(250,204,21,.07) 0 10px,rgba(255,250,239,.12) 10px 20px)}
+.office-scene-topline{background:#fffaf0;border-bottom-color:#e8dccb;color:#887a68}
+.office-scene-topline>span:first-child i{background:#e11d2e;box-shadow:none}
+.office-signal{color:#468663}
+.office-scene-legend{background:#fffaf1;border-color:#e4d7c5;color:#7c7164}
+.office-scene-legend .legend-tip{color:#a18e7a}
+.office-floor-mark{bottom:2%;left:2%;font-size:6px;color:rgba(99,77,54,.24)}
+.office-floor-mark span{color:rgba(180,126,28,.46)}
+@media(max-width:800px){
+  .ai-office-scene{min-height:610px;height:610px}
+  .office-command-display{left:31%;width:38%;height:25%}
+  .office-station{width:24%;height:43%}
+  .station-content-studio{left:1%;bottom:2%;height:43%}
+  .station-research-agent{left:26%;bottom:12%;height:41%}
+  .station-workflow-planner{left:51%;bottom:2%;height:43%}
+  .station-strategy-planner{left:75%;bottom:12%;height:41%}
+  .office-robot{transform:scale(.4);transform-origin:bottom left;animation-name:mini-bot-idle-small}
+  .station-chair{transform:scale(.53);transform-origin:bottom left}
+  .station-computer{transform:scale(.61);transform-origin:bottom left}
+  .station-special-prop{transform:scale(.6) translateZ(12px);transform-origin:bottom right}
+  .office-sofa{transform:scale(.58);transform-origin:bottom left}
+  .office-coffee-cart{transform:scale(.56);transform-origin:bottom right}
+  .office-wall-note{transform:scale(.58) rotate(3deg);transform-origin:top right}
+}
+@keyframes mini-bot-idle-small{
+  0%,100%{transform:scale(.4) translateY(0) rotateY(-5deg)}
+  25%{transform:scale(.4) translateY(-2px) rotateY(0)}
+  52%{transform:scale(.4) translateY(-3px) rotateY(7deg)}
+  76%{transform:scale(.4) translateY(-1px) rotateY(1deg)}
+}
+@media(max-width:560px){
+  .ai-office-scene{min-height:650px;height:650px}
+  .office-backwall{inset:0 0 48%}
+  .office-command-display{left:28%;top:5%;width:44%;height:22%}
+  .office-station{width:25%;height:42%}
+  .station-content-studio{left:0%;bottom:2%;height:42%}
+  .station-research-agent{left:25%;bottom:10%;height:40%}
+  .station-workflow-planner{left:50%;bottom:2%;height:42%}
+  .station-strategy-planner{left:75%;bottom:10%;height:40%}
+  .office-robot{transform:scale(.32);transform-origin:bottom left;animation-name:mini-bot-idle-tiny}
+  .station-chair{transform:scale(.43);transform-origin:bottom left}
+  .station-computer{left:38%;bottom:34%;width:50%;transform:scale(.5);transform-origin:bottom left}
+  .station-desk-top{bottom:31%;height:8px}
+  .station-desk-front{bottom:23%;height:8%}
+  .station-desk-leg{bottom:8%;height:15%}
+  .station-task-card{left:1%;right:1%;padding:4px 4px}
+  .station-agent-role{font-size:4px}
+  .station-task-card strong{font-size:6px}
+  .station-task-card small,.station-status{font-size:4px}
+  .station-special-prop{transform:scale(.46) translateZ(10px);transform-origin:bottom right}
+  .office-sofa{bottom:48%;transform:scale(.44);transform-origin:bottom left}
+  .office-coffee-cart{bottom:47%;transform:scale(.43);transform-origin:bottom right}
+  .office-plant{transform:scale(.48);transform-origin:bottom center}
+  .office-plant.plant-right{transform:scale(.44)}
+  .office-wall-note{top:24%;transform:scale(.42) rotate(3deg);transform-origin:top right}
+  .office-scene-legend{flex-wrap:wrap;gap:7px;font-size:9px}
+}
+@keyframes mini-bot-idle-tiny{
+  0%,100%{transform:scale(.32) translateY(0) rotateY(-5deg)}
+  25%{transform:scale(.32) translateY(-2px) rotateY(0)}
+  52%{transform:scale(.32) translateY(-3px) rotateY(7deg)}
+  76%{transform:scale(.32) translateY(-1px) rotateY(1deg)}
+}
+
