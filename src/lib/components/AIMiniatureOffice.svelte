@@ -248,6 +248,89 @@
     return texture;
   }
 
+  function drawTeamSyncTexture(art: HTMLCanvasElement, receiving: boolean, pulse = 0.5) {
+    const ctx = art.getContext('2d');
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, art.width, art.height);
+    ctx.fillStyle = '#172129';
+    ctx.fillRect(0, 0, art.width, art.height);
+
+    const wash = ctx.createLinearGradient(0, 0, art.width, art.height);
+    wash.addColorStop(0, receiving ? '#263b38' : '#263744');
+    wash.addColorStop(1, '#18232b');
+    ctx.fillStyle = wash;
+    ctx.fillRect(0, 0, art.width, art.height);
+
+    ctx.fillStyle = receiving ? '#f0ca69' : '#e11d2e';
+    ctx.fillRect(0, 0, art.width, 12);
+    ctx.fillStyle = '#f8eee0';
+    ctx.font = 'bold 31px sans-serif';
+    ctx.fillText('TEAM SYNC', 27, 55);
+
+    ctx.fillStyle = receiving ? '#f0ca69' : '#9cc8b8';
+    ctx.font = 'bold 17px sans-serif';
+    ctx.fillText(receiving ? 'HANDOFF IN PROGRESS' : 'SHARED REPORT DESK', 28, 84);
+
+    ctx.fillStyle = receiving ? 'rgba(240,202,105,.15)' : 'rgba(138,200,187,.12)';
+    ctx.beginPath();
+    ctx.roundRect(26, 108, 460, 66, 10);
+    ctx.fill();
+    ctx.strokeStyle = receiving
+      ? `rgba(240,202,105,${.58 + Math.max(0, Math.min(1, pulse)) * .38})`
+      : 'rgba(138,200,187,.45)';
+    ctx.lineWidth = receiving ? 2 + Math.max(0, Math.min(1, pulse)) * 1.2 : 1.5;
+    ctx.beginPath();
+    ctx.roundRect(26, 108, 460, 66, 10);
+    ctx.stroke();
+
+    const statusColor = receiving ? '#f0ca69' : '#8ac8bb';
+    ctx.fillStyle = statusColor;
+    ctx.beginPath();
+    ctx.arc(52, 141, receiving ? 7 + pulse * 2 : 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#f5eee3';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.fillText(receiving ? 'RECEIVING RESULT' : 'READY FOR HANDOFF', 72, 148);
+
+    ctx.fillStyle = '#8faaa8';
+    ctx.font = '14px sans-serif';
+    ctx.fillText(receiving ? 'Agent report is at the shared table' : 'A completed run will appear here', 28, 205);
+
+    // A pulsing reception trace is an activity signal, not a fabricated percentage or progress value.
+    ctx.fillStyle = 'rgba(138,200,187,.18)';
+    ctx.beginPath();
+    ctx.roundRect(28, 235, 456, 12, 6);
+    ctx.fill();
+    if (receiving) {
+      const traceWidth = 90 + Math.max(0, Math.min(1, pulse)) * 250;
+      ctx.fillStyle = '#f0ca69';
+      ctx.beginPath();
+      ctx.roundRect(28, 235, traceWidth, 12, 6);
+      ctx.fill();
+    } else {
+      ctx.fillStyle = '#8ac8bb';
+      ctx.beginPath();
+      ctx.arc(39, 241, 4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = '#a7b5b6';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('VIXORA  /  SHARED WORKSPACE', 28, 292);
+  }
+
+  function makeTeamSyncTexture(receiving = false) {
+    const art = document.createElement('canvas');
+    art.width = 512;
+    art.height = 320;
+    drawTeamSyncTexture(art, receiving, 0.5);
+    const texture = new THREE.CanvasTexture(art);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4;
+    return texture;
+  }
+
   function drawCommandWallTexture(
     art: HTMLCanvasElement,
     agents: OfficeAgent[],
@@ -521,7 +604,12 @@
     sphere(scene, .18 * scale, 0x97b98d, [x, 1.04 * scale, z], [.72 * scale, 1.35 * scale, .7 * scale]);
   }
 
-  function addFurniture(scene: THREE.Scene, currentAgents: OfficeAgent[]): THREE.CanvasTexture {
+  function addFurniture(scene: THREE.Scene, currentAgents: OfficeAgent[]): {
+    commandTexture: THREE.CanvasTexture;
+    syncTexture: THREE.CanvasTexture;
+    syncPulseRing: THREE.Mesh;
+    syncBeacon: THREE.Mesh;
+  } {
     // Open studio floor: broad, almost edge-to-edge, with no chunky display-box rim.
     box(scene, [18.8, .12, 12.9], 0xe5d4bd, [0, -.12, .05]);
     box(scene, [18.65, .055, 12.75], 0xf4e9d9, [0, -.035, .05]);
@@ -677,15 +765,35 @@
     cylinder(scene, .39, .42, .09, 0xc1a181, [0, .1, 4.18], 24);
     // Tiny shared monitor and a red/gold beacon make the handoff spot easy to read.
     box(scene, [.8, .58, .075], 0x57534d, [0, 1.12, 4.42], { roughness: .42, metalness: .08 });
-    const syncTexture = makeScreenTexture('strategy');
-    const syncScreen = new THREE.Mesh(new THREE.PlaneGeometry(.7, .45), new THREE.MeshBasicMaterial({ map: syncTexture, side: THREE.DoubleSide }));
+    const syncTexture = makeTeamSyncTexture();
+    const syncScreen = new THREE.Mesh(new THREE.PlaneGeometry(.7, .45), new THREE.MeshBasicMaterial({ map: syncTexture, side: THREE.DoubleSide, toneMapped: false }));
     syncScreen.position.set(0, 1.13, 4.462);
     scene.add(syncScreen);
+
+    // An emissive tabletop ring and beacon react only while a real robot is handing off a result.
+    const syncPulseRing = new THREE.Mesh(
+      new THREE.TorusGeometry(.62, .016, 8, 56),
+      new THREE.MeshStandardMaterial({
+        color: 0xf0ca69,
+        emissive: 0xf0ca69,
+        emissiveIntensity: 0,
+        roughness: .32,
+        transparent: true,
+        opacity: 0.72
+      })
+    );
+    syncPulseRing.position.set(0, .832, 4.18);
+    syncPulseRing.rotation.x = Math.PI / 2;
+    syncPulseRing.visible = false;
+    scene.add(syncPulseRing);
+    const syncBeacon = sphere(scene, .045, 0xe6bb47, [.28, .925, 4.03], [1, .8, 1], {
+      roughness: .22, emissive: 0xe6bb47, emissiveIntensity: .12
+    });
     box(scene, [.26, .035, .2], 0xc9ad8c, [-.32, .84, 4.04]);
     box(scene, [.23, .025, .17], 0xf5d79a, [-.32, .87, 4.04]);
     cylinder(scene, .045, .045, .035, 0xe11d2e, [.28, .85, 4.03], 16);
     cylinder(scene, .028, .028, .02, 0xf1ca58, [.28, .88, 4.03], 16);
-    return commandTexture;
+    return { commandTexture, syncTexture, syncPulseRing, syncBeacon };
   }
 
   function makeRobot(scene: THREE.Scene, agent: OfficeAgent, idx: number, x: number, deskZ: number, tool: string, roamPath: readonly { x: number; z: number }[]): RobotRig {
@@ -1050,7 +1158,7 @@
     fill.position.set(8, 7, -4);
     scene.add(fill);
 
-    const commandTexture = addFurniture(scene, currentAgents);
+    const { commandTexture, syncTexture, syncPulseRing, syncBeacon } = addFurniture(scene, currentAgents);
     const rigs: RobotRig[] = [];
     const ordered = agentPositions.map((pos, idx) => ({ pos, idx, agent: currentAgents.find((a) => a.id === ['content-studio', 'research-agent', 'workflow-planner', 'strategy-planner'][idx]) ?? currentAgents[idx] })).filter((entry) => entry.agent);
     ordered.forEach(({ pos, idx, agent }) => {
@@ -1112,13 +1220,26 @@
     // Shared report sits on the Team Sync island only while a teammate is handing over results.
     const handoffReport = new THREE.Group();
     handoffReport.position.set(.22, .85, 4.13);
-    box(handoffReport, [.34, .045, .24], 0xf2d99e, [0, 0, 0]);
-    box(handoffReport, [.31, .018, .21], 0xfff6e3, [0, .032, 0]);
-    box(handoffReport, [.065, .014, .21], 0xe11d2e, [-.095, .045, 0]);
-    box(handoffReport, [.1, .018, .026], 0xc3a47e, [.075, .045, -.055]);
-    const reportSeal = sphere(handoffReport, .035, 0xe11d2e, [.11, .055, .07], [1, .6, .3], { emissive: 0xe11d2e, emissiveIntensity: .45 });
+    const reportCover = box(handoffReport, [.34, .045, .24], 0xf2d99e, [0, 0, 0]);
+    const reportSheet = box(handoffReport, [.31, .018, .21], 0xfff6e3, [0, .032, 0]);
+    const reportBand = box(handoffReport, [.065, .014, .21], 0xe11d2e, [-.095, .045, 0]);
+    const reportClip = box(handoffReport, [.1, .018, .026], 0xc3a47e, [.075, .045, -.055]);
+    const reportSeal = sphere(handoffReport, .035, 0xe11d2e, [.11, .055, .07], [1, .6, .3], { emissive: 0xe11d2e, emissiveIntensity: .08 });
+    const reportCoverMaterial = reportCover.material as THREE.MeshStandardMaterial;
+    const reportSheetMaterial = reportSheet.material as THREE.MeshStandardMaterial;
+    const reportBandMaterial = reportBand.material as THREE.MeshStandardMaterial;
+    const reportClipMaterial = reportClip.material as THREE.MeshStandardMaterial;
+    reportCoverMaterial.emissive.setHex(0xd4a94f);
+    reportSheetMaterial.emissive.setHex(0xf0ca69);
+    reportBandMaterial.emissive.setHex(0xe11d2e);
+    reportClipMaterial.emissive.setHex(0xf0ca69);
+    [reportCoverMaterial, reportSheetMaterial, reportBandMaterial, reportClipMaterial].forEach((mat) => {
+      mat.emissiveIntensity = 0;
+    });
     scene.add(handoffReport);
     handoffReport.visible = false;
+    let syncReceiving = false;
+    let nextSyncScreenFrameAt = 0;
 
     const camera = new THREE.OrthographicCamera(-8, 8, 5.5, -5.5, .1, 70);
     camera.position.set(10.5, 12.4, 14.5);
@@ -1650,9 +1771,40 @@
           nextDashboardFrameAt = time + 1 / 12;
         }
 
-        handoffReport.visible = rigs.some((rig) => rig.deliveryPhase === 'handoff');
+        const receivingReport = rigs.some((rig) => rig.deliveryPhase === 'handoff');
+        const receptionPulse = (Math.sin(time * 4.8) + 1) * .5;
+        handoffReport.visible = receivingReport;
         handoffReport.rotation.y = Math.sin(time * .7) * .035;
-        reportSeal.material && ((reportSeal.material as THREE.MeshStandardMaterial).emissiveIntensity = .25 + (Math.sin(time * 2.4) + 1) * .12);
+
+        // The document, tabletop halo and beacon respond together only during a real handoff pause.
+        const reportGlow = receivingReport ? .12 + receptionPulse * .34 : 0;
+        reportCoverMaterial.emissiveIntensity = reportGlow * .36;
+        reportSheetMaterial.emissiveIntensity = reportGlow * .58;
+        reportBandMaterial.emissiveIntensity = receivingReport ? .12 + receptionPulse * .18 : 0;
+        reportClipMaterial.emissiveIntensity = reportGlow * .42;
+        const sealMaterial = reportSeal.material as THREE.MeshStandardMaterial;
+        sealMaterial.emissiveIntensity = receivingReport ? .28 + receptionPulse * .62 : .08;
+
+        syncPulseRing.visible = receivingReport;
+        const ringMaterial = syncPulseRing.material as THREE.MeshStandardMaterial;
+        ringMaterial.emissiveIntensity = receivingReport ? .34 + receptionPulse * .88 : 0;
+        ringMaterial.opacity = receivingReport ? .52 + receptionPulse * .38 : 0;
+        syncPulseRing.scale.setScalar(receivingReport ? 1 + receptionPulse * .075 : 1);
+
+        const beaconMaterial = syncBeacon.material as THREE.MeshStandardMaterial;
+        const beaconColor = receivingReport ? 0x37a978 : 0xe6bb47;
+        beaconMaterial.color.setHex(beaconColor);
+        beaconMaterial.emissive.setHex(beaconColor);
+        beaconMaterial.emissiveIntensity = receivingReport ? .42 + receptionPulse * .8 : .12;
+        syncBeacon.scale.setScalar(receivingReport ? 1 + receptionPulse * .18 : 1);
+
+        // Update the tabletop monitor on state transitions and gently pulse its reception trace during handoff.
+        if (receivingReport !== syncReceiving || (receivingReport && time >= nextSyncScreenFrameAt)) {
+          drawTeamSyncTexture(syncTexture.image as HTMLCanvasElement, receivingReport, receptionPulse);
+          syncTexture.needsUpdate = true;
+          syncReceiving = receivingReport;
+          nextSyncScreenFrameAt = time + 1 / 8;
+        }
         // The little courier follows a slower shuttle and turns through the whole arc,
         // rather than instantly flipping its facing direction at each endpoint.
         const previousCourierX = roamer.position.x;
