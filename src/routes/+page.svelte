@@ -752,7 +752,7 @@
   <meta name="description" content="VIXORA Workspace — satu tempat untuk merencanakan, menjalankan, dan memeriksa pekerjaan AI." />
 </svelte:head>
 
-<div class="shell">
+<div class="shell" class:workspace-mode={activeTab === 'AI Workspace'}>
   <aside class="sidebar">
     <a class="brand" href="/" aria-label="VIXORA Workspace home">
       <span class="brand-mark">V</span>
