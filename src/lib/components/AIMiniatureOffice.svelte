@@ -945,9 +945,36 @@
           let targetX = homeX;
           let targetZ = homeZ;
 
-          // Walk the curve at a world-space pace, and take small rests at waypoints.
-          // This keeps foot cadence coupled to distance instead of an independent timer.
-          if (strolling && rig.roamPath.length > 1) {
+          const deliveryActive = rig.deliveryPhase === 'outbound'
+            || rig.deliveryPhase === 'handoff'
+            || rig.deliveryPhase === 'returning';
+
+          // A newly completed run takes its result folder to the shared Team Sync table.
+          if (deliveryActive && rig.deliveryCurve) {
+            const curveLength = Math.max(rig.deliveryCurve.getLength(), .01);
+            if (rig.deliveryPhase === 'outbound') {
+              rig.deliveryProgress = Math.min(1, rig.deliveryProgress + (.62 * delta) / curveLength);
+              if (rig.deliveryProgress >= 1) {
+                rig.deliveryPhase = 'handoff';
+                rig.deliveryPauseUntil = time + 2.6;
+                rig.deliveryFolder.visible = false;
+              }
+            } else if (rig.deliveryPhase === 'handoff' && time >= rig.deliveryPauseUntil) {
+              rig.deliveryPhase = 'returning';
+              rig.deliveryProgress = 1;
+            } else if (rig.deliveryPhase === 'returning') {
+              rig.deliveryProgress = Math.max(0, rig.deliveryProgress - (.62 * delta) / curveLength);
+              if (rig.deliveryProgress <= 0) {
+                rig.deliveryPhase = 'delivered';
+                rig.deliveryCurve = null;
+                rig.deliveryFolder.visible = false;
+              }
+            }
+            const point = rig.deliveryCurve.getPointAt(THREE.MathUtils.clamp(rig.deliveryProgress, 0, 1));
+            targetX = point.x;
+            targetZ = point.z;
+          } else if (strolling && rig.roamPath.length > 1) {
+            // Ordinary idle motion stays on the agent's clear aisle loop.
             if (time >= rig.pauseUntil) {
               const routeLength = Math.max(rig.roamCurve.getLength(), .01);
               rig.routeProgress += (.56 * delta) / routeLength;
@@ -991,6 +1018,14 @@
               Math.cos(desiredYaw - rig.root.rotation.y)
             );
             rig.root.rotation.y += yawDifference * (1 - Math.exp(-delta * 5.2));
+          } else if (rig.deliveryPhase === 'handoff') {
+            // Face the shared table during the handoff pause.
+            const desiredYaw = 0;
+            const yawDifference = Math.atan2(
+              Math.sin(desiredYaw - rig.root.rotation.y),
+              Math.cos(desiredYaw - rig.root.rotation.y)
+            );
+            rig.root.rotation.y += yawDifference * (1 - Math.exp(-delta * 2.6));
           } else if (working || needsAttention) {
             const desiredYaw = Math.PI;
             const yawDifference = Math.atan2(
@@ -1003,7 +1038,8 @@
           // Real travel advances the gait phase: stopped bots stop stepping.
           if (moving) rig.gaitPhase += movedDistance * 14;
           const atDesk = Math.hypot(rig.root.position.x - homeX, rig.root.position.z - homeZ) < .28;
-          rig.chair.visible = atDesk && !moving;
+          rig.chair.visible = atDesk && !moving && !deliveryActive;
+          rig.deliveryFolder.visible = deliveryActive && rig.deliveryPhase === 'outbound';
 
           // Keep the root on the floor; only the swing foot lifts.
           rig.root.position.y = 0;
