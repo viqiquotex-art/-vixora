@@ -1,6 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { routeTaskToAgent } from '$lib/server/agent-registry';
+import { routeTaskToAgent } from '../../../lib/server/agent-registry';
 
 type Env = {
   SUPABASE_URL?: string;
