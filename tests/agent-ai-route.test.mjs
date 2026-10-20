@@ -106,3 +106,88 @@ test('AI route rejects a missing bearer token before contacting the model', asyn
   assert.equal((await response.json()).error, 'Sign in is required.');
   assert.equal(calls, 0);
 });
+
+test('AI route reports Gemini quota exhaustion without trying another provider', async (t) => {
+  const captured = mockSuccessfulFetch(t, {
+    modelResponse: upstream({ error: { message: 'Quota exceeded' } }, 429)
+  });
+  const response = await POST({
+    request: request(),
+    platform: { env: platformEnv() }
+  });
+
+  assert.equal(response.status, 429);
+  const payload = await response.json();
+  assert.equal(payload.error, 'GEMINI_QUOTA_OR_RATE_LIMIT');
+  assert.match(payload.message, /tidak memanggil provider alternatif/i);
+  assert.match(captured.modelUrl, /models\/gemini-3\.6-flash:generateContent$/);
+});
+
+test('AI route identifies an invalid Gemini API key without leaking credentials', async (t) => {
+  const captured = mockSuccessfulFetch(t, {
+    modelResponse: upstream({
+      error: { message: 'API key not valid. Please pass a valid API key.' }
+    }, 400)
+  });
+  const response = await POST({
+    request: request(),
+    platform: { env: platformEnv() }
+  });
+
+  assert.equal(response.status, 502);
+  const payload = await response.json();
+  assert.equal(payload.error, 'GEMINI_INVALID_API_KEY');
+  assert.match(payload.message, /Google menolak API key/i);
+  assert.equal(JSON.stringify(payload).includes('test-gemini-key'), false);
+  assert.ok(captured.modelUrl);
+});
+
+test('AI route handles a timeout as a clear 504 response', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  let modelCalls = 0;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith('/auth/v1/user')) {
+      return upstream({ id: '8efb5e37-9e17-4fb1-91c4-75b4ecf394a1' });
+    }
+    if (url.includes('/rest/v1/tasks?')) {
+      return upstream([{ id: taskId, title: 'hai', description: null, priority: 'medium' }]);
+    }
+    if (url.includes('generativelanguage.googleapis.com')) {
+      modelCalls += 1;
+      throw Object.assign(new Error('request deadline exceeded'), { name: 'TimeoutError' });
+    }
+    throw new Error(`Unexpected fetch URL in test: ${url}`);
+  };
+
+  const response = await POST({
+    request: request(),
+    platform: { env: platformEnv() }
+  });
+
+  assert.equal(response.status, 504);
+  const payload = await response.json();
+  assert.equal(payload.error, 'GEMINI_TIMEOUT');
+  assert.match(payload.message, /55 detik/i);
+  assert.equal(payload.model, 'gemini-3.6-flash');
+  assert.equal(modelCalls, 1);
+});
+
+test('AI route handles a safety-blocked empty answer clearly', async (t) => {
+  mockSuccessfulFetch(t, {
+    modelResponse: upstream({
+      candidates: [],
+      promptFeedback: { blockReason: 'SAFETY' }
+    })
+  });
+  const response = await POST({
+    request: request(),
+    platform: { env: platformEnv() }
+  });
+
+  assert.equal(response.status, 502);
+  const payload = await response.json();
+  assert.equal(payload.error, 'GEMINI_EMPTY_RESPONSE');
+  assert.match(payload.message, /filter keselamatan/i);
+});
