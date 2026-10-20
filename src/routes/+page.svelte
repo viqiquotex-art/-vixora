@@ -1007,13 +1007,29 @@
 
             <div class="office-walking-bot" aria-hidden="true">
               <span class="walker-shadow"></span>
-              <span class="walker-antenna"></span>
-              <span class="walker-head"><i></i><i></i><b></b></span>
-              <span class="walker-body"><i></i></span>
-              <span class="walker-arm walker-arm-left"></span><span class="walker-arm walker-arm-right"></span>
-              <span class="walker-leg walker-leg-left"></span><span class="walker-leg walker-leg-right"></span>
+              <span class="walker-backpack"><i></i><b></b></span>
+              <span class="walker-antenna"><i></i></span>
+              <span class="walker-head">
+                <span class="walker-head-front"><i></i><i></i><b></b></span>
+                <span class="walker-head-back"><i></i><b></b></span>
+                <span class="walker-head-side walker-head-side-left"></span>
+                <span class="walker-head-side walker-head-side-right"></span>
+                <span class="walker-head-top"></span>
+              </span>
+              <span class="walker-neck"></span>
+              <span class="walker-body">
+                <span class="walker-body-front"><i></i><b></b></span>
+                <span class="walker-body-back"></span>
+                <span class="walker-body-side walker-body-side-left"></span>
+                <span class="walker-body-side walker-body-side-right"></span>
+                <span class="walker-body-top"></span>
+              </span>
+              <span class="walker-arm walker-arm-left"><i></i></span>
+              <span class="walker-arm walker-arm-right"><i></i></span>
+              <span class="walker-leg walker-leg-left"><i></i></span>
+              <span class="walker-leg walker-leg-right"><i></i></span>
               <span class="walker-clipboard"><i></i><i></i><i></i></span>
-              <span class="walker-thought">task delivery!</span>
+              <span class="walker-thought">antar task ✦</span>
             </div>
             <div class="office-floor-mark" aria-hidden="true">VIXORA <span>AI OPERATIONS</span></div>
             <div class="office-room-reflection" aria-hidden="true"></div>
