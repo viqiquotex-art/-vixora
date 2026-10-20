@@ -1071,6 +1071,11 @@
           const actualDz = rig.root.position.z - oldZ;
           const movedDistance = Math.hypot(actualDx, actualDz);
           const moving = movedDistance > .0002;
+          // When a thinking agent has returned to its workstation, restart its next idle route at home.
+          if (thinking && !moving && Math.hypot(rig.root.position.x - homeX, rig.root.position.z - homeZ) < .08) {
+            rig.routeProgress = 0;
+            rig.routeDirection = 1;
+          }
           let turnAmount = 0;
 
           // Turn the complete character toward travel direction before it feels like it is sliding sideways.
@@ -1090,7 +1095,8 @@
               Math.cos(desiredYaw - rig.root.rotation.y)
             );
             rig.root.rotation.y += yawDifference * (1 - Math.exp(-delta * 2.6));
-          } else if (working || needsAttention) {
+          } else if (working || needsAttention || thinking) {
+            // At the desk, queued/planned bots face their monitor while thinking.
             const desiredYaw = Math.PI;
             const yawDifference = Math.atan2(
               Math.sin(desiredYaw - rig.root.rotation.y),
