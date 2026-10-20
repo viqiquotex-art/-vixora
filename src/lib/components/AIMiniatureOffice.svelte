@@ -1258,13 +1258,13 @@
               if (lowerLeg) {
                 // Counter-rotate the shin for a vertical lower leg while seated.
                 lowerLeg.rotation.x = moving ? -legAngle * .24 : -rig.sitBlend * .9;
-                lowerLeg.position.y = -.22 - rig.sitBlend * .09;
+                lowerLeg.position.y = -.22;
                 const shin = lowerLeg.userData.shin as THREE.Mesh | undefined;
                 if (shin) {
                   shin.position.y = -.105 - rig.sitBlend * .045;
                   shin.scale.y = 1.3 + rig.sitBlend * .5;
                 }
-                foot.position.y = -.22 - rig.sitBlend * .09 + (moving ? swing * .045 : 0);
+                foot.position.y = -.22 - rig.sitBlend * .05 + (moving ? swing * .045 : 0);
                 foot.rotation.x = -(legAngle + lowerLeg.rotation.x);
               }
               foot.rotation.z = -leg.rotation.z;
