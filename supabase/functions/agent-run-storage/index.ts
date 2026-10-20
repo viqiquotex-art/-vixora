@@ -177,13 +177,15 @@ Deno.serve(async (request: Request) => {
       updates.error_message = null;
     }
     try {
+      // Only running executions may transition to a terminal state. This prevents late
+      // callbacks or duplicate requests from rewriting a completed/cancelled run.
       const response = await adminRest(
-        `agent_runs?id=eq.${encodeURIComponent(body.run_id)}&user_id=eq.${encodeURIComponent(user.id)}`,
+        `agent_runs?id=eq.${encodeURIComponent(body.run_id)}&user_id=eq.${encodeURIComponent(user.id)}&status=eq.running`,
         { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(updates) },
       );
       if (!response.ok) return reply({ error: "Could not update staging agent run." }, 502);
       const rows = await response.json() as Array<Record<string, unknown>>;
-      if (!rows[0]) return reply({ error: "Agent run was not found for this account." }, 404);
+      if (!rows[0]) return reply({ error: "Agent run was not found for this account or is no longer running." }, 404);
       return reply({ run: rows[0], storageReady: true });
     } catch {
       return reply({ error: "Staging agent-run storage is not configured." }, 503);
