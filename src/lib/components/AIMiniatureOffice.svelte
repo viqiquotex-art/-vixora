@@ -29,6 +29,12 @@
     nextPauseAt: number;
     pauseUntil: number;
     gaitPhase: number;
+    deliveryPhase: 'idle' | 'outbound' | 'handoff' | 'returning' | 'delivered';
+    deliveryCurve: THREE.CatmullRomCurve3 | null;
+    deliveryProgress: number;
+    deliveryPauseUntil: number;
+    deliveryRunId: string | null;
+    deliveryFolder: THREE.Group;
     chair: THREE.Group;
     statusLight: THREE.Mesh;
     statusRing: THREE.Mesh;
@@ -407,6 +413,22 @@
     for (let i = 0; i < 7; i += 1) {
       box(scene, [13.1, .018, .018], i % 2 ? 0xe5d5c0 : 0xdfcbb1, [0, .035, -3.9 + i * 1.12], { castShadow: false });
     }
+
+    // Shared team-sync island: a physical round table and small screen for report handoffs.
+    cylinder(scene, .82, .88, .13, 0xb78f6c, [0, .7, 4.18], 32);
+    cylinder(scene, .78, .8, .055, 0xfff2df, [0, .79, 4.18], 32);
+    cylinder(scene, .14, .2, .62, 0xa88a6a, [0, .38, 4.18], 16);
+    cylinder(scene, .39, .42, .09, 0xc1a181, [0, .1, 4.18], 24);
+    // Tiny shared monitor and a red/gold beacon make the handoff spot easy to read.
+    box(scene, [.8, .58, .075], 0x57534d, [0, 1.12, 4.42], { roughness: .42, metalness: .08 });
+    const syncTexture = makeScreenTexture('strategy');
+    const syncScreen = new THREE.Mesh(new THREE.PlaneGeometry(.7, .45), new THREE.MeshBasicMaterial({ map: syncTexture, side: THREE.DoubleSide }));
+    syncScreen.position.set(0, 1.13, 4.462);
+    scene.add(syncScreen);
+    box(scene, [.26, .035, .2], 0xc9ad8c, [-.32, .84, 4.04]);
+    box(scene, [.23, .025, .17], 0xf5d79a, [-.32, .87, 4.04]);
+    cylinder(scene, .045, .045, .035, 0xe11d2e, [.28, .85, 4.03], 16);
+    cylinder(scene, .028, .028, .02, 0xf1ca58, [.28, .88, 4.03], 16);
   }
 
   function makeRobot(scene: THREE.Scene, agent: OfficeAgent, idx: number, x: number, deskZ: number, tool: string, roamPath: readonly { x: number; z: number }[]): RobotRig {
@@ -626,6 +648,16 @@
     label.position.set(x, .45, deskZ + .56);
     scene.add(label);
 
+    // Small result folder carried only while an agent is delivering a completed run.
+    const deliveryFolder = new THREE.Group();
+    deliveryFolder.position.set(.31, .72, .26);
+    root.add(deliveryFolder);
+    box(deliveryFolder, [.25, .045, .19], 0xf1d594, [0, 0, 0]);
+    box(deliveryFolder, [.23, .018, .17], 0xfff6df, [0, .032, 0]);
+    box(deliveryFolder, [.065, .014, .17], 0xe11d2e, [-.065, .045, 0]);
+    box(deliveryFolder, [.105, .018, .024], 0xc2a176, [.055, .045, -.045]);
+    deliveryFolder.visible = false;
+
     const hitArea = new THREE.Mesh(
       new THREE.BoxGeometry(2.45, 2.35, 2.6),
       new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })
@@ -642,6 +674,12 @@
       nextPauseAt: Math.min(.22, 1 / roamPath.length),
       pauseUntil: 0,
       gaitPhase: idx * .9,
+      deliveryPhase: agent.state === 'done' ? 'delivered' : 'idle',
+      deliveryCurve: null,
+      deliveryProgress: 0,
+      deliveryPauseUntil: 0,
+      deliveryRunId: agent.state === 'done' ? agent.runId : null,
+      deliveryFolder,
       chair, statusLight, statusRing, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7
     };
   }
