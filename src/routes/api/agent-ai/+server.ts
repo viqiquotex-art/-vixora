@@ -199,7 +199,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     const message = providerDetail
       ? `Gemini menolak request (HTTP ${response.status}): ${providerDetail}`
       : mapped.message;
-    return json({ error: mapped.error, message, model: MODEL }, { status: mapped.status });
+    return json({ error: mapped.error, message, model }, { status: mapped.status });
   }
 
   const body = await response.json() as {
@@ -214,7 +214,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       message: body.promptFeedback?.blockReason
         ? 'Permintaan diblokir oleh filter keselamatan model. Coba ubah isi task.'
         : 'Gemini tidak mengembalikan teks. Silakan coba lagi.',
-      model: MODEL
+      model
     }, { status: 502 });
   }
 
