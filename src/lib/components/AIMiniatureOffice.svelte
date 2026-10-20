@@ -23,6 +23,7 @@
     faceEyes: THREE.Mesh[];
     legs: THREE.Group[];
     roamPath: readonly { x: number; z: number }[];
+    roamCurve: THREE.CatmullRomCurve3;
     chair: THREE.Group;
     screen: THREE.Mesh;
     label: THREE.Sprite;
@@ -50,23 +51,23 @@
   let sceneReady = $state(false);
   let controller: { syncAgents: (next: OfficeAgent[]) => void; dispose: () => void } | null = null;
 
-  // Safe idle loops are laid out in the open aisle, outside desk/chair footprints.
+  // Each loop begins at that agent's desk exit and stays in open aisles, clear of desk footprints.
   const agentPositions = [
     {
       x: -4.45, z: 1.25, color: 0xe11d2e, tool: 'content',
-      roam: [{ x: -4.25, z: 2.25 }, { x: -3.5, z: 2.75 }, { x: -3.35, z: 3.45 }, { x: -4.15, z: 3.9 }, { x: -5.0, z: 3.65 }, { x: -5.15, z: 2.85 }]
+      roam: [{ x: -4.45, z: 2.3 }, { x: -3.9, z: 2.6 }, { x: -3.5, z: 3.25 }, { x: -4.0, z: 3.9 }, { x: -4.9, z: 3.8 }, { x: -5.25, z: 3.15 }, { x: -4.95, z: 2.55 }]
     },
     {
       x: -1.55, z: -0.65, color: 0x83b6b0, tool: 'research',
-      roam: [{ x: -3.0, z: .25 }, { x: -3.25, z: 1.15 }, { x: -2.85, z: 2.05 }, { x: -2.1, z: 2.65 }, { x: -1.15, z: 2.95 }, { x: -.55, z: 2.35 }, { x: -.8, z: 1.4 }]
+      roam: [{ x: -1.55, z: .4 }, { x: -2.35, z: .38 }, { x: -2.8, z: .85 }, { x: -2.8, z: 1.55 }, { x: -2.4, z: 2.25 }, { x: -1.5, z: 2.65 }, { x: -.75, z: 2.45 }, { x: -.55, z: 1.7 }, { x: -.9, z: 1.05 }]
     },
     {
       x: 1.6, z: 1.15, color: 0xe7b94e, tool: 'workflow',
-      roam: [{ x: 1.0, z: 2.25 }, { x: .2, z: 2.85 }, { x: .55, z: 3.6 }, { x: 1.55, z: 3.85 }, { x: 2.65, z: 3.35 }, { x: 2.85, z: 2.65 }, { x: 2.25, z: 2.25 }]
+      roam: [{ x: 1.6, z: 2.15 }, { x: .9, z: 2.5 }, { x: .35, z: 3.1 }, { x: .9, z: 3.75 }, { x: 1.9, z: 3.85 }, { x: 2.65, z: 3.25 }, { x: 2.75, z: 2.65 }, { x: 2.15, z: 2.3 }]
     },
     {
       x: 4.35, z: -0.65, color: 0x9eb991, tool: 'strategy',
-      roam: [{ x: 5.75, z: .25 }, { x: 5.7, z: 1.25 }, { x: 5.1, z: 2.15 }, { x: 4.5, z: 2.9 }, { x: 3.7, z: 3.15 }, { x: 3.35, z: 2.4 }, { x: 3.75, z: 1.35 }]
+      roam: [{ x: 4.35, z: .35 }, { x: 5.25, z: .45 }, { x: 5.5, z: 1.2 }, { x: 5.15, z: 2.05 }, { x: 4.6, z: 2.8 }, { x: 3.9, z: 3.05 }, { x: 3.5, z: 2.4 }, { x: 3.8, z: 1.4 }]
     }
   ] as const;
 
@@ -334,7 +335,7 @@
   function makeRobot(scene: THREE.Scene, agent: OfficeAgent, idx: number, x: number, deskZ: number, tool: string, roamPath: readonly { x: number; z: number }[]): RobotRig {
     const root = new THREE.Group();
     // Robot works on the near side of the desk, facing the monitor.
-    root.position.set(x, 0, deskZ + 1.0);
+    root.position.set(x, 0, deskZ + 1.05);
     root.rotation.y = Math.PI;
     scene.add(root);
 
@@ -508,7 +509,7 @@
 
     // Grouped rolling chair: hidden while the agent strolls, visible when seated at its desk.
     const chair = new THREE.Group();
-    chair.position.set(x, 0, deskZ + 1.08);
+    chair.position.set(x, 0, deskZ + 1.28);
     scene.add(chair);
     cylinder(chair, .21, .24, .1, 0xb9a084, [0, .43, 0], 16);
     box(chair, [.09, .3, .09], 0x9e8467, [0, .25, 0]);
@@ -531,7 +532,8 @@
     hitArea.userData.pickable = true;
     scene.add(hitArea);
 
-    return { root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, chair, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7 };
+    const roamCurve = new THREE.CatmullRomCurve3(roamPath.map((point) => new THREE.Vector3(point.x, 0, point.z)), true, 'centripetal', .5);
+    return { root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, roamCurve, chair, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7 };
   }
 
   function addRoamingBuddy(scene: THREE.Scene) {
@@ -719,21 +721,17 @@
           const working = rig.agent.state === 'working';
           const needsAttention = rig.agent.state === 'attention' || rig.agent.state === 'failed';
           const finished = rig.agent.state === 'done';
-          const idle = rig.agent.state === 'idle' || rig.agent.state === 'ready' || rig.agent.state === 'queued' || finished;
           const strolling = !working && !needsAttention;
-          let targetX = rig.baseX;
-          let targetZ = rig.deskZ - .98;
+          const homeZ = rig.deskZ + 1.05;
 
-          // Idle teammates wander around the studio, then calmly return when a task starts.
+          // A centripetal Catmull-Rom loop keeps strolls slow and rounded instead of snapping at corners.
+          let targetX = rig.baseX;
+          let targetZ = homeZ;
           if (strolling && rig.roamPath.length > 1) {
-            const routePosition = ((time * .105 + rig.phase * .11) % 1) * rig.roamPath.length;
-            const segment = Math.floor(routePosition);
-            const progress = routePosition - segment;
-            const eased = progress * progress * (3 - 2 * progress);
-            const from = rig.roamPath[segment];
-            const to = rig.roamPath[(segment + 1) % rig.roamPath.length];
-            targetX = from.x + (to.x - from.x) * eased;
-            targetZ = from.z + (to.z - from.z) * eased;
+            const pathProgress = (time * .018 + rig.phase * .0007) % 1;
+            const point = rig.roamCurve.getPointAt(pathProgress);
+            targetX = point.x;
+            targetZ = point.z;
           }
 
           const oldX = rig.root.position.x;
@@ -741,75 +739,75 @@
           const dx = targetX - oldX;
           const dz = targetZ - oldZ;
           const distance = Math.hypot(dx, dz);
-          const moveBlend = 1 - Math.exp(-delta * (working || needsAttention ? 2.7 : 1.35));
+          const moveBlend = 1 - Math.exp(-delta * 1.6);
           rig.root.position.x += dx * moveBlend;
           rig.root.position.z += dz * moveBlend;
           const actualDx = rig.root.position.x - oldX;
           const actualDz = rig.root.position.z - oldZ;
-          const moving = strolling && distance > .035;
+          const moving = distance > .09;
 
-          if (moving && Math.hypot(actualDx, actualDz) > .0005) {
+          if (moving && Math.hypot(actualDx, actualDz) > .0004) {
             const desiredYaw = Math.atan2(actualDx, actualDz);
             const yawDifference = Math.atan2(
               Math.sin(desiredYaw - rig.root.rotation.y),
               Math.cos(desiredYaw - rig.root.rotation.y)
             );
-            rig.root.rotation.y += yawDifference * Math.min(1, delta * 3.6);
+            rig.root.rotation.y += yawDifference * Math.min(1, delta * 2.4);
           } else if (!strolling) {
+            const desiredYaw = Math.PI;
             const yawDifference = Math.atan2(
-              Math.sin(-rig.root.rotation.y),
-              Math.cos(-rig.root.rotation.y)
+              Math.sin(desiredYaw - rig.root.rotation.y),
+              Math.cos(desiredYaw - rig.root.rotation.y)
             );
-            rig.root.rotation.y += yawDifference * Math.min(1, delta * 2.8);
+            rig.root.rotation.y += yawDifference * Math.min(1, delta * 2.2);
           }
 
-          const walkingCycle = time * 7.6 + rig.phase;
+          // The chair is a real object, but it clears out while its owner is walking.
+          const atDesk = Math.hypot(rig.root.position.x - rig.baseX, rig.root.position.z - homeZ) < .28;
+          rig.chair.visible = atDesk && !moving;
+
+          const walkingCycle = time * 4.6 + rig.phase;
           rig.root.position.y = moving
-            ? Math.abs(Math.sin(walkingCycle * 2)) * .045
-            : Math.sin(time * 2.0 + rig.phase) * (working ? .012 : .018);
-          rig.head.rotation.y = Math.sin(time * .75 + rig.phase) * (idle ? .14 : .055);
+            ? Math.abs(Math.sin(walkingCycle * 2)) * .028
+            : Math.sin(time * 1.7 + rig.phase) * (working ? .009 : .014);
+          rig.head.rotation.y = Math.sin(time * .55 + rig.phase) * (strolling ? .12 : .045);
           rig.head.rotation.z = moving
-            ? Math.sin(walkingCycle) * .035
-            : Math.sin(time * 1.1 + rig.phase) * (idle ? .025 : .01);
+            ? Math.sin(walkingCycle) * .025
+            : Math.sin(time * .9 + rig.phase) * (strolling ? .018 : .008);
 
-          rig.leftArm.rotation.x = working
-            ? -.58 + Math.sin(time * 10 + rig.phase) * .18
-            : moving
-              ? Math.sin(walkingCycle + Math.PI) * .35
-              : idle
-                ? -.42 + Math.sin(time * 1.2 + rig.phase) * .08
-                : finished ? -.35 : -.5;
-          rig.rightArm.rotation.x = working
-            ? -.58 + Math.sin(time * 10 + rig.phase + 1) * .18
-            : moving
-              ? Math.sin(walkingCycle) * .35
-              : idle
-                ? -.45 + Math.sin(time * 1.1 + rig.phase + 1) * .09
-                : finished ? -1.3 + Math.sin(time * 2) * .1 : -.5;
+          rig.leftArm.rotation.x = moving
+            ? Math.sin(walkingCycle + Math.PI) * .24
+            : working
+              ? -.58 + Math.sin(time * 8.2 + rig.phase) * .14
+              : finished ? -.3 : -.4 + Math.sin(time * .8 + rig.phase) * .055;
+          rig.rightArm.rotation.x = moving
+            ? Math.sin(walkingCycle) * .24
+            : working
+              ? -.58 + Math.sin(time * 8.2 + rig.phase + 1) * .14
+              : finished ? -1.1 + Math.sin(time * 1.4) * .08 : -.42 + Math.sin(time * .85 + rig.phase + 1) * .06;
           rig.leftArm.rotation.z = moving
-            ? -.1 + Math.sin(walkingCycle + Math.PI) * .13
-            : -.1 + Math.sin(time * (working ? 9 : 1.2) + rig.phase) * (working ? .2 : .06);
+            ? Math.sin(walkingCycle + Math.PI) * .1
+            : -.1 + Math.sin(time * (working ? 8 : .8) + rig.phase) * (working ? .16 : .045);
           rig.rightArm.rotation.z = moving
-            ? .1 + Math.sin(walkingCycle) * .13
-            : .1 + Math.sin(time * (working ? 9 : 1.3) + rig.phase + 2) * (working ? .2 : .06);
-
+            ? Math.sin(walkingCycle) * .1
+            : .1 + Math.sin(time * (working ? 8 : .9) + rig.phase + 2) * (working ? .16 : .045);
           rig.legs.forEach((leg, index) => {
-            leg.rotation.x = moving ? Math.sin(walkingCycle + index * Math.PI) * .48 : Math.sin(time * 1.2 + rig.phase + index) * .025;
-            leg.rotation.z = moving ? Math.sin(walkingCycle + index * Math.PI) * .08 : 0;
+            leg.rotation.x = moving ? Math.sin(walkingCycle + index * Math.PI) * .31 : Math.sin(time * .8 + rig.phase + index) * .012;
+            leg.rotation.z = moving ? Math.sin(walkingCycle + index * Math.PI) * .045 : 0;
           });
 
           const eyeMaterial = rig.faceEyes[0]?.material as THREE.MeshStandardMaterial | undefined;
-          if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .95 + Math.sin(time * 5) * .22 : .65;
+          if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .85 + Math.sin(time * 4) * .13 : .58;
         });
-        const travel = (Math.sin(time * .2) + 1) / 2;
+        const travel = (Math.sin(time * .12) + 1) / 2;
         roamer.position.x = -5.3 + travel * 10.3;
-        roamer.position.z = 3.35 + Math.sin(time * .4) * .14;
-        const direction = Math.cos(time * .2) >= 0 ? 1 : -1;
+        roamer.position.z = 3.35 + Math.sin(time * .25) * .12;
+        const direction = Math.cos(time * .12) >= 0 ? 1 : -1;
         roamer.rotation.y = direction > 0 ? Math.PI / 2 : -Math.PI / 2;
         const limbs = roamer.userData as { legs: THREE.Group[]; arms: THREE.Group[]; head: THREE.Group };
-        limbs.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(time * 8 + i * Math.PI) * .42; });
-        limbs.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(time * 8 + i * Math.PI + .6) * .23; });
-        limbs.head.rotation.y = Math.sin(time * 1.6) * .12;
+        limbs.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(time * 4.8 + i * Math.PI) * .3; });
+        limbs.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(time * 4.8 + i * Math.PI + .6) * .18; });
+        limbs.head.rotation.y = Math.sin(time * .8) * .09;
       }
       controls.update();
       renderer.render(scene, camera);
