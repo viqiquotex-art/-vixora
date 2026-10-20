@@ -1020,7 +1020,8 @@
             // and return along the route. This is an open itinerary, not a tiny closed loop.
             if (time >= rig.pauseUntil) {
               const routeLength = Math.max(rig.roamCurve.getLength(), .01);
-              // Move the path target a little slower than the robot's stride so it can track the curve instead of cutting corners.\n              rig.routeProgress += rig.routeDirection * ((.46 * delta) / routeLength);
+              // Move the path target a little slower than the robot's stride so it can track the curve instead of cutting corners.
+              rig.routeProgress += rig.routeDirection * ((.46 * delta) / routeLength);
               if (rig.routeProgress >= 1) {
                 rig.routeProgress = 1;
                 rig.routeDirection = -1;
