@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { supabase } from '$lib/supabase';
+  import AIMiniatureOffice from '$lib/components/AIMiniatureOffice.svelte';
 
   type Tab = 'Overview' | 'AI Workspace' | 'Task Center' | 'Agent Hub' | 'Automations' | 'Integrations';
   type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };
@@ -918,97 +919,18 @@
           </div>
         </section>
 
-        <section class="ai-office-shell" aria-label="Animated AI team room">
-          <div class="office-scene-topline"><span><i></i> DIGITAL FLOOR / 01</span><span>VIXORA LITTLE AI STUDIO</span><span class="office-signal">● SIGNAL STABLE</span></div>
-          <div class="ai-office-scene" class:motion-paused={!workspaceMotion}>
-            <div class="office-backwall">
-              <div class="office-window-grid"></div>
-              <div class="office-window-glow"></div>
-              <div class="office-wall-orbit orbit-one"></div>
-              <div class="office-wall-orbit orbit-two"></div>
-            </div>
-
-            <div class="office-wall-workboard" aria-hidden="true">
-              <div class="wall-board-header"><span>TEAM NOTEBOOK</span><span>✦ take it easy</span></div>
-              <div class="wall-board-body">
-                <div class="wall-board-calendar"><span class="board-subtitle">TODAY'S LITTLE PLAN</span><i></i><i></i><i></i><i></i><i></i></div>
-                <div class="wall-board-sticky sticky-red"><i></i><i></i><span>make cool stuff</span></div>
-                <div class="wall-board-sticky sticky-yellow"><i></i><i></i><span>research ✦</span></div>
-                <div class="wall-board-sticky sticky-green"><i></i><i></i><span>one step at a time</span></div>
-                <div class="wall-board-mini-chart"><i></i><i></i><i></i><i></i><i></i></div>
-              </div>
-            </div>
-            <div class="office-wall-shelf shelf-left" aria-hidden="true"><i></i><i></i><span></span><b></b></div>
-            <div class="office-wall-shelf shelf-right" aria-hidden="true"><i></i><i></i><span></span><b></b></div>
-
-            <div class="office-light-strip"></div>
-            <div class="office-floor-grid"></div>
-            <div class="office-floor-glow"></div>
-            <div class="office-floor-ring ring-large"></div><div class="office-floor-ring ring-small"></div>
-            <div class="office-cable cable-one"></div><div class="office-cable cable-two"></div>
-
-            <div class="cozy-office-decor" aria-hidden="true">
-              <div class="office-window-sun"><i></i><b></b></div>
-              <div class="office-sofa"><span></span><i></i><b></b></div>
-              <div class="office-plant plant-left"><i></i><i></i><i></i><i></i><i></i><span></span></div>
-              <div class="office-plant plant-right"><i></i><i></i><i></i><i></i><i></i><span></span></div>
-              <div class="office-coffee-cart"><span class="cart-shelf"></span><span class="cart-leg cart-leg-left"></span><span class="cart-leg cart-leg-right"></span><span class="cart-mug mug-one"><i></i></span><span class="cart-mug mug-two"><i></i></span><span class="cart-jar"></span></div>
-              <div class="office-wall-note"><i></i><i></i><span>one task at a time ✦</span></div>
-              <div class="office-rug"></div>
-            </div>
-
-            {#each roomAgents as agent, index (agent.id)}
-              <button
-                type="button"
-                class={`office-station station-${agent.id} robot-state-${agent.state}`}
-                aria-label={`Buka riwayat ${agent.name}; status ${agent.statusLabel}`}
-                onclick={() => { runSearch = agent.id; activeTab = 'Task Center'; }}
-              >
-                <span class="station-orbit" aria-hidden="true"></span>
-                <span class="station-number">0{index + 1}</span>
-                <span class="station-coffee-cup" aria-hidden="true"><i></i><b></b></span>
-                <div class="station-chair" aria-hidden="true"><span></span><i></i><b></b></div>
-                <div class="office-robot" aria-hidden="true">
-                  <span class="robot-shadow"></span>
-                  <span class="robot-antenna"><i></i></span>
-                  <span class="robot-head">
-                    <span class="robot-ear robot-ear-left"></span><span class="robot-ear robot-ear-right"></span>
-                    <span class="robot-face"><i></i><i></i><b></b></span>
-                  </span>
-                  <span class="robot-neck"></span>
-                  <span class="robot-body"><i class="robot-chest-light"></i><b></b></span>
-                  <span class="robot-arm robot-arm-left"><i></i><b></b></span>
-                  <span class="robot-arm robot-arm-right"><i></i><b></b></span>
-                  <span class="robot-leg robot-leg-left"><i></i></span><span class="robot-leg robot-leg-right"><i></i></span>
-                </div>
-                {#if agent.id === 'content-studio'}
-                  <div class="station-special-prop prop-content" aria-hidden="true"><span class="content-canvas"><i></i><b></b><em></em></span><span class="content-swatch swatch-one"></span><span class="content-swatch swatch-two"></span><span class="content-swatch swatch-three"></span><span class="content-pencil"></span></div>
-                {:else if agent.id === 'research-agent'}
-                  <div class="station-special-prop prop-research" aria-hidden="true"><span class="research-chart"><i></i><i></i><i></i><i></i><i></i></span><span class="research-lens"></span><span class="research-notes"><i></i><i></i><i></i></span></div>
-                {:else if agent.id === 'workflow-planner'}
-                  <div class="station-special-prop prop-workflow" aria-hidden="true"><span class="flow-node node-one"></span><span class="flow-node node-two"></span><span class="flow-node node-three"></span><span class="flow-node node-four"></span><span class="flow-link link-one"></span><span class="flow-link link-two"></span><span class="flow-link link-three"></span></div>
-                {:else}
-                  <div class="station-special-prop prop-strategy" aria-hidden="true"><span class="strategy-note note-one"></span><span class="strategy-note note-two"></span><span class="strategy-note note-three"></span><span class="strategy-chart"><i></i><i></i><i></i><i></i></span><span class="strategy-pencil"></span></div>
-                {/if}
-                <div class="station-computer" aria-hidden="true">
-                  <div class="station-monitor"><div class="monitor-camera"></div><div class="monitor-screen"><span></span><i></i><i></i><b></b><i></i></div><div class="monitor-neck"></div></div>
-                  <div class="station-keyboard"><i></i><i></i><i></i><i></i></div>
-                </div>
-                <span class="station-desk-top" aria-hidden="true"></span><span class="station-desk-front" aria-hidden="true"></span><span class="station-desk-leg desk-leg-left" aria-hidden="true"></span><span class="station-desk-leg desk-leg-right" aria-hidden="true"></span>
-                <span class="station-task-card">
-                  <span class="station-agent-role">{agent.role}</span>
-                  <strong>{agent.name}</strong>
-                  <small>{agent.taskTitle}</small>
-                  <span class="station-status"><i></i>{agent.statusLabel}</span>
-                </span>
-                <span class="station-open-hint">TAP TO SEE TASK ↗</span>
-              </button>
-            {/each}
-
-            <div class="office-floor-mark" aria-hidden="true">VIXORA <span>AI OPERATIONS</span></div>
-            <div class="office-room-reflection" aria-hidden="true"></div>
-          </div>
-          <div class="office-scene-legend"><span><i class="legend-working"></i> Working</span><span><i class="legend-done"></i> Completed</span><span><i class="legend-attention"></i> Needs attention</span><span class="legend-tip">Klik workstation untuk membuka Task Center agent tersebut.</span></div>
+        <section class="ai-office-shell ai-office-3d-shell" aria-label="Interactive isometric AI mini office">
+          <div class="office-scene-topline"><span><i></i> MINIATURE FLOOR / 01</span><span>VIXORA LITTLE AI STUDIO</span><span class="office-signal">● 3D SCENE LIVE</span></div>
+          <AIMiniatureOffice
+            agents={roomAgents}
+            motionEnabled={workspaceMotion}
+            onAgentSelect={(agentId) => {
+              const selectedAgent = roomAgents.find((agent) => agent.id === agentId);
+              runSearch = selectedAgent?.name ?? agentId;
+              activeTab = 'Task Center';
+            }}
+          />
+          <div class="office-scene-legend"><span><i class="legend-working"></i> Working</span><span><i class="legend-done"></i> Completed</span><span><i class="legend-attention"></i> Needs attention</span><span class="legend-tip">Drag untuk memutar ruang · scroll untuk zoom · klik meja untuk membuka task agent.</span></div>
         </section>
 
         <section class="workspace-agent-roster">
