@@ -81,6 +81,48 @@
     const averageSeconds = durations.length
       ? durations.reduce((total, seconds) => total + seconds, 0) / durations.length
       : null;
+
+    const modelGroups = new Map<string, {
+      model: string;
+      total: number;
+      succeeded: number;
+      failed: number;
+      durations: number[];
+    }>();
+    for (const run of agentRuns) {
+      if (run.executor !== 'gemini-api' && !run.output?.model) continue;
+      const model = run.output?.model?.trim() || 'Model belum tercatat';
+      let group = modelGroups.get(model);
+      if (!group) {
+        group = { model, total: 0, succeeded: 0, failed: 0, durations: [] };
+        modelGroups.set(model, group);
+      }
+      group.total += 1;
+      if (run.status === 'succeeded') group.succeeded += 1;
+      if (run.status === 'failed') group.failed += 1;
+      if ((run.status === 'succeeded' || run.status === 'failed') && run.started_at && run.finished_at) {
+        const seconds = (Date.parse(run.finished_at) - Date.parse(run.started_at)) / 1000;
+        if (Number.isFinite(seconds) && seconds >= 0) group.durations.push(seconds);
+      }
+    }
+    const modelStats = [...modelGroups.values()]
+      .map((group) => {
+        const completed = group.succeeded + group.failed;
+        const average = group.durations.length
+          ? group.durations.reduce((total, seconds) => total + seconds, 0) / group.durations.length
+          : null;
+        return {
+          model: group.model,
+          total: group.total,
+          succeeded: group.succeeded,
+          failed: group.failed,
+          completed,
+          successRate: completed ? Math.round((group.succeeded / completed) * 100) : null,
+          averageDuration: formatDurationSeconds(average)
+        };
+      })
+      .sort((a, b) => b.total - a.total || a.model.localeCompare(b.model));
+
     const today = new Date();
     const activityDays = Array.from({ length: 7 }, (_unused, index) => {
       const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - (6 - index));
@@ -101,6 +143,7 @@
       completedCount,
       successRate: completedCount ? Math.round((succeeded / completedCount) * 100) : null,
       averageDuration: formatDurationSeconds(averageSeconds),
+      modelStats,
       activityDays: activityDays.map((day) => ({
         ...day,
         heightPercent: peakActivity ? (day.count ? Math.max(12, (day.count / peakActivity) * 100) : 4) : 4
@@ -494,6 +537,8 @@
     agentAIResult = null;
     let token: string | null = null;
     let runId: string | null = null;
+    let attemptedModel: string | null = null;
+    let startedAgentName = 'AI Agent';
 
     const updateRun = async (
       bearer: string,
@@ -533,6 +578,7 @@
         throw new Error(startPayload.message || startPayload.error || 'Riwayat Agent Run tidak bisa disimpan. AI belum dipanggil.');
       }
       runId = startPayload.run.id;
+      startedAgentName = startPayload.run.output?.agent_name ?? startPayload.run.assigned_agent ?? 'AI Agent';
       agentRuns = [startPayload.run, ...agentRuns.filter((run) => run.id !== runId)];
       runStorageReady = true;
       runNotice = '';
@@ -560,7 +606,8 @@
         response = await sendRequest(token);
       }
 
-      const result = await response.json() as { result?: AgentAIResult; error?: string; message?: string };
+      const result = await response.json() as { result?: AgentAIResult; error?: string; message?: string; model?: string };
+      if (typeof result.model === 'string' && result.model.trim()) attemptedModel = result.model.trim();
       if (!response.ok || !result.result) {
         const message = result.message || result.error || 'AI Agent belum berhasil dijalankan.';
         throw new Error(message);
@@ -591,7 +638,10 @@
       const message = cause instanceof Error ? cause.message : 'AI Agent belum berhasil dijalankan.';
       agentAIError = message;
       if (runId && token) {
-        const failedRun = await updateRun(token, runId, 'failed', { error_message: message });
+        const failedRun = await updateRun(token, runId, 'failed', {
+          error_message: message,
+          ...(attemptedModel ? { output: { mode: 'live-ai', model: attemptedModel, agent_name: startedAgentName, message: 'Gemini request failed; model and failure recorded.' } } : {})
+        });
         if (failedRun) agentRuns = [failedRun, ...agentRuns.filter((run) => run.id !== failedRun.id)];
       }
     } finally {
