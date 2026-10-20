@@ -6,6 +6,7 @@ type Env = {
   SUPABASE_URL?: string;
   SUPABASE_ANON_KEY?: string;
   GEMINI_API_KEY?: string;
+  GEMINI_MODEL?: string;
   GEMINI_FREE_TIER_ONLY_CONFIRMED?: string;
 };
 type SupabaseConfig = { url: string; key: string };
