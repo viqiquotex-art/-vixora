@@ -711,22 +711,93 @@
       if (motionEnabled) {
         rigs.forEach((rig) => {
           const working = rig.agent.state === 'working';
+          const needsAttention = rig.agent.state === 'attention' || rig.agent.state === 'failed';
           const finished = rig.agent.state === 'done';
-          const idle = rig.agent.state === 'idle' || rig.agent.state === 'ready';
-          rig.root.position.y = Math.sin(time * 2.3 + rig.phase) * (working ? .018 : .027);
-          rig.head.rotation.y = Math.sin(time * .75 + rig.phase) * (idle ? .11 : .055);
-          rig.head.rotation.z = Math.sin(time * 1.4 + rig.phase) * (idle ? .025 : .01);
-          rig.leftArm.rotation.x = working ? -.58 + Math.sin(time * 10 + rig.phase) * .18 : idle ? -.42 + Math.sin(time * 1.2 + rig.phase) * .08 : finished ? -.35 : -.5;
-          rig.rightArm.rotation.x = working ? -.58 + Math.sin(time * 10 + rig.phase + 1) * .18 : idle ? -.45 + Math.sin(time * 1.1 + rig.phase + 1) * .09 : finished ? -1.3 + Math.sin(time * 2) * .1 : -.5;
-          rig.leftArm.rotation.z = -.1 + Math.sin(time * (working ? 9 : 1.2) + rig.phase) * (working ? .2 : .06);
-          rig.rightArm.rotation.z = .1 + Math.sin(time * (working ? 9 : 1.3) + rig.phase + 2) * (working ? .2 : .06);
+          const idle = rig.agent.state === 'idle' || rig.agent.state === 'ready' || rig.agent.state === 'queued' || finished;
+          const strolling = !working && !needsAttention;
+          let targetX = rig.baseX;
+          let targetZ = rig.deskZ - .98;
+
+          // Idle teammates wander around the studio, then calmly return when a task starts.
+          if (strolling && rig.roamPath.length > 1) {
+            const routePosition = ((time * .105 + rig.phase * .11) % 1) * rig.roamPath.length;
+            const segment = Math.floor(routePosition);
+            const progress = routePosition - segment;
+            const eased = progress * progress * (3 - 2 * progress);
+            const from = rig.roamPath[segment];
+            const to = rig.roamPath[(segment + 1) % rig.roamPath.length];
+            targetX = from.x + (to.x - from.x) * eased;
+            targetZ = from.z + (to.z - from.z) * eased;
+          }
+
+          const oldX = rig.root.position.x;
+          const oldZ = rig.root.position.z;
+          const dx = targetX - oldX;
+          const dz = targetZ - oldZ;
+          const distance = Math.hypot(dx, dz);
+          const moveBlend = 1 - Math.exp(-delta * (working || needsAttention ? 2.7 : 1.35));
+          rig.root.position.x += dx * moveBlend;
+          rig.root.position.z += dz * moveBlend;
+          const actualDx = rig.root.position.x - oldX;
+          const actualDz = rig.root.position.z - oldZ;
+          const moving = strolling && distance > .035;
+
+          if (moving && Math.hypot(actualDx, actualDz) > .0005) {
+            const desiredYaw = Math.atan2(actualDx, actualDz);
+            const yawDifference = Math.atan2(
+              Math.sin(desiredYaw - rig.root.rotation.y),
+              Math.cos(desiredYaw - rig.root.rotation.y)
+            );
+            rig.root.rotation.y += yawDifference * Math.min(1, delta * 3.6);
+          } else if (!strolling) {
+            const yawDifference = Math.atan2(
+              Math.sin(-rig.root.rotation.y),
+              Math.cos(-rig.root.rotation.y)
+            );
+            rig.root.rotation.y += yawDifference * Math.min(1, delta * 2.8);
+          }
+
+          const walkingCycle = time * 7.6 + rig.phase;
+          rig.root.position.y = moving
+            ? Math.abs(Math.sin(walkingCycle * 2)) * .045
+            : Math.sin(time * 2.0 + rig.phase) * (working ? .012 : .018);
+          rig.head.rotation.y = Math.sin(time * .75 + rig.phase) * (idle ? .14 : .055);
+          rig.head.rotation.z = moving
+            ? Math.sin(walkingCycle) * .035
+            : Math.sin(time * 1.1 + rig.phase) * (idle ? .025 : .01);
+
+          rig.leftArm.rotation.x = working
+            ? -.58 + Math.sin(time * 10 + rig.phase) * .18
+            : moving
+              ? Math.sin(walkingCycle + Math.PI) * .35
+              : idle
+                ? -.42 + Math.sin(time * 1.2 + rig.phase) * .08
+                : finished ? -.35 : -.5;
+          rig.rightArm.rotation.x = working
+            ? -.58 + Math.sin(time * 10 + rig.phase + 1) * .18
+            : moving
+              ? Math.sin(walkingCycle) * .35
+              : idle
+                ? -.45 + Math.sin(time * 1.1 + rig.phase + 1) * .09
+                : finished ? -1.3 + Math.sin(time * 2) * .1 : -.5;
+          rig.leftArm.rotation.z = moving
+            ? -.1 + Math.sin(walkingCycle + Math.PI) * .13
+            : -.1 + Math.sin(time * (working ? 9 : 1.2) + rig.phase) * (working ? .2 : .06);
+          rig.rightArm.rotation.z = moving
+            ? .1 + Math.sin(walkingCycle) * .13
+            : .1 + Math.sin(time * (working ? 9 : 1.3) + rig.phase + 2) * (working ? .2 : .06);
+
+          rig.legs.forEach((leg, index) => {
+            leg.rotation.x = moving ? Math.sin(walkingCycle + index * Math.PI) * .48 : Math.sin(time * 1.2 + rig.phase + index) * .025;
+            leg.rotation.z = moving ? Math.sin(walkingCycle + index * Math.PI) * .08 : 0;
+          });
+
           const eyeMaterial = rig.faceEyes[0]?.material as THREE.MeshStandardMaterial | undefined;
           if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .95 + Math.sin(time * 5) * .22 : .65;
         });
         const travel = (Math.sin(time * .2) + 1) / 2;
         roamer.position.x = -5.3 + travel * 10.3;
         roamer.position.z = 3.35 + Math.sin(time * .4) * .14;
-        // Actual yaw turn: head, chest, back and backpack rotate as one solid 3D character.
         const direction = Math.cos(time * .2) >= 0 ? 1 : -1;
         roamer.rotation.y = direction > 0 ? Math.PI / 2 : -Math.PI / 2;
         const limbs = roamer.userData as { legs: THREE.Group[]; arms: THREE.Group[]; head: THREE.Group };
