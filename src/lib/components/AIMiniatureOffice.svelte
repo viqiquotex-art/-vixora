@@ -108,6 +108,15 @@
     }
   ] as const;
 
+  function agentStatusColor(state: string): number {
+    if (state === 'working' || state === 'running') return 0x37a978;
+    if (state === 'attention' || state === 'failed') return 0xe11d2e;
+    if (state === 'done') return 0xe6bb47;
+    if (state === 'queued') return 0x83b6b0;
+    if (state === 'ready') return 0x9eb991;
+    return 0xb7a58e;
+  }
+
   function material(color: THREE.ColorRepresentation, roughness = 0.72, metalness = 0) {
     return new THREE.MeshStandardMaterial({ color, roughness, metalness });
   }
@@ -1004,6 +1013,32 @@
       const rig = makeRobot(scene, agent, idx, pos.x, pos.z, pos.tool, pos.roam);
       rigs.push(rig);
     });
+
+    // Four physical indicators align with the four agent cards on the wall monitor.
+    // Their colors and pulses are driven only by the same live state used by the robots.
+    const panelStatusLights = rigs.map((rig, index) => {
+      const color = agentStatusColor(rig.agent.state);
+      const x = [-1.55, -.52, .52, 1.55][index] ?? 0;
+      const light = sphere(scene, .052, color, [x, 1.215, -3.865], [1, .7, .65], {
+        roughness: .22, metalness: .04, emissive: color, emissiveIntensity: .22
+      });
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(.085, .012, 7, 24),
+        material(color, .3, .08)
+      );
+      ring.position.set(x, 1.205, -3.865);
+      ring.rotation.x = Math.PI / 2;
+      scene.add(ring);
+      return {
+        agentId: rig.agent.id,
+        light,
+        ring,
+        currentColor: new THREE.Color(color),
+        targetColor: new THREE.Color(color),
+        pulseUntil: 0
+      };
+    });
+
     const roamer = addRoamingBuddy(scene);
 
     // Shared report sits on the Team Sync island only while a teammate is handing over results.
@@ -1118,6 +1153,14 @@
           ringMaterial.color.setHex(statusColor);
           ringMaterial.emissive.setHex(statusColor);
           rig.root.scale.setScalar(1);
+        }
+        const panelLight = panelStatusLights.find((item) => item.agentId === rig.agent.id);
+        if (panelLight) {
+          panelLight.targetColor.setHex(agentStatusColor(nextAgent.state));
+          if (nextAgent.state !== previousAgent.state || nextAgent.runId !== previousAgent.runId) {
+            // Brief confirmation pulse on real state/run changes; no fabricated progress or output.
+            panelLight.pulseUntil = timer.elapsedTime + (nextAgent.state === 'done' ? 2.8 : 1.35);
+          }
         }
       });
       // Redraw the wall display from actual statuses and current task titles whenever agent data changes.
@@ -1478,6 +1521,39 @@
           rig.statusRing.scale.setScalar(1 + (pulsing ? .08 * (Math.sin(time * 2.5 + rig.phase) + 1) : 0));
           rig.root.scale.setScalar(rig.agent.id === hoveredAgentId ? 1.055 : 1);
         });
+
+        // Ease the physical console indicators into their new state colors.
+        panelStatusLights.forEach((indicator) => {
+          const agent = rigs.find((rig) => rig.agent.id === indicator.agentId)?.agent;
+          if (!agent) return;
+          indicator.currentColor.lerp(indicator.targetColor, 1 - Math.exp(-delta * 5.5));
+          const isWorking = agent.state === 'working' || agent.state === 'running';
+          const needsReview = agent.state === 'attention' || agent.state === 'failed';
+          const completed = agent.state === 'done';
+          const transitionPulse = time < indicator.pulseUntil
+            ? Math.sin(((indicator.pulseUntil - time) / (completed ? 2.8 : 1.35)) * Math.PI) * .5 + .5
+            : 0;
+          const activePulse = isWorking ? (Math.sin(time * 3.2 + rigs.findIndex((rig) => rig.agent.id === indicator.agentId)) + 1) * .5 : 0;
+          const alertPulse = needsReview ? (Math.sin(time * 6.2) + 1) * .5 : 0;
+          const intensity = isWorking
+            ? .45 + activePulse * .38
+            : needsReview
+              ? .42 + alertPulse * .5
+              : completed
+                ? .22 + transitionPulse * .78
+                : .12 + transitionPulse * .25;
+          const lightMaterial = indicator.light.material as THREE.MeshStandardMaterial;
+          lightMaterial.color.copy(indicator.currentColor);
+          lightMaterial.emissive.copy(indicator.currentColor);
+          lightMaterial.emissiveIntensity = intensity;
+          const ringMaterial = indicator.ring.material as THREE.MeshStandardMaterial;
+          ringMaterial.color.copy(indicator.currentColor);
+          ringMaterial.emissive.copy(indicator.currentColor);
+          ringMaterial.emissiveIntensity = isWorking || needsReview ? .12 + intensity * .35 : transitionPulse * .18;
+          const pulseScale = isWorking || needsReview ? 1 + .09 * (isWorking ? activePulse : alertPulse) : 1 + .08 * transitionPulse;
+          indicator.ring.scale.setScalar(pulseScale);
+        });
+
         handoffReport.visible = rigs.some((rig) => rig.deliveryPhase === 'handoff');
         handoffReport.rotation.y = Math.sin(time * .7) * .035;
         reportSeal.material && ((reportSeal.material as THREE.MeshStandardMaterial).emissiveIntensity = .25 + (Math.sin(time * 2.4) + 1) * .12);
