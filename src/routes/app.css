@@ -1303,3 +1303,69 @@ textarea::placeholder{color:#999}
   .ai-office-scene .walker-leg,.ai-office-scene .walker-arm{animation:none!important}
 }
 
+
+/* Miniature scale pass: robots are tiny coworkers within the room, not giant mascots. */
+.ai-office-scene .office-station{overflow:visible}
+.ai-office-scene .office-station .office-robot{
+  left:9%;
+  bottom:37%;
+  transform:scale(.62);
+  transform-origin:bottom center;
+}
+.ai-office-scene .office-station .station-chair{
+  left:10%;
+  bottom:37%;
+  transform:scale(.67);
+  transform-origin:bottom left;
+}
+.ai-office-scene .office-station .station-computer{
+  left:40%;
+  bottom:38%;
+  width:45%;
+  height:92px;
+  transform:scale(.83);
+  transform-origin:bottom left;
+}
+.ai-office-scene .office-station .station-special-prop{
+  right:0;
+  bottom:45%;
+  transform:scale(.78) translateZ(12px);
+  transform-origin:bottom right;
+}
+.ai-office-scene .office-station .station-coffee-cup{bottom:37%;right:2%;transform:scale(.83) translateZ(18px)}
+/* Keep the roving bot toy-sized with a visible walk cycle and genuine yaw turns. */
+.ai-office-scene .office-walking-bot{
+  width:48px;
+  height:81px;
+  transform-origin:50% 82%;
+  animation-name:office-walk-yaw-three-d;
+}
+.ai-office-scene .walker-head{transform-style:preserve-3d}
+.ai-office-scene .walker-body{transform-style:preserve-3d}
+.ai-office-scene .walker-arm-left{animation:walker-arm-swing .72s ease-in-out infinite alternate}
+.ai-office-scene .walker-arm-right{animation:walker-arm-swing .72s ease-in-out infinite alternate-reverse}
+.ai-office-scene .walker-leg-left{animation:walker-leg-swing .72s ease-in-out infinite alternate}
+.ai-office-scene .walker-leg-right{animation:walker-leg-swing .72s ease-in-out infinite alternate-reverse}
+@media(max-width:1100px){
+  .ai-office-scene .office-station .office-robot{left:5%;bottom:38%;transform:scale(.56);transform-origin:bottom center}
+  .ai-office-scene .office-station .station-chair{left:6%;bottom:37%;transform:scale(.59);transform-origin:bottom left}
+  .ai-office-scene .office-station .station-computer{left:37%;bottom:38%;width:49%;transform:scale(.76);transform-origin:bottom left}
+}
+@media(max-width:800px){
+  .ai-office-scene .office-station .office-robot{left:4%;bottom:39%;transform:scale(.52);transform-origin:bottom center}
+  .ai-office-scene .office-station .station-chair{left:5%;bottom:37%;transform:scale(.52);transform-origin:bottom left}
+  .ai-office-scene .office-station .station-computer{left:35%;bottom:39%;width:52%;height:84px;transform:scale(.69);transform-origin:bottom left}
+  .ai-office-scene .office-station .station-special-prop{right:0;bottom:45%;transform:scale(.62) translateZ(12px);transform-origin:bottom right}
+  .ai-office-scene .office-walking-bot{animation-name:office-walk-yaw-three-d}
+}
+@media(max-width:560px){
+  .ai-office-scene .office-station .office-robot{left:0%;bottom:39%;transform:scale(.44);transform-origin:bottom center}
+  .ai-office-scene .office-station .station-chair{left:2%;bottom:37%;transform:scale(.43);transform-origin:bottom left}
+  .ai-office-scene .office-station .station-computer{left:31%;bottom:39%;width:55%;height:80px;transform:scale(.62);transform-origin:bottom left}
+  .ai-office-scene .office-station .station-special-prop{right:0;bottom:45%;transform:scale(.5) translateZ(10px);transform-origin:bottom right}
+  .ai-office-scene .office-walking-bot{width:45px;height:76px;animation-name:office-walk-yaw-three-d}
+}
+@media(prefers-reduced-motion:reduce){
+  .ai-office-scene .office-walking-bot{animation:none!important;left:4%;transform:rotateY(15deg) scale(.8)}
+}
+
