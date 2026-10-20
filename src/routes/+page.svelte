@@ -1005,6 +1005,16 @@
               </button>
             {/each}
 
+            <div class="office-walking-bot" aria-hidden="true">
+              <span class="walker-shadow"></span>
+              <span class="walker-antenna"></span>
+              <span class="walker-head"><i></i><i></i><b></b></span>
+              <span class="walker-body"><i></i></span>
+              <span class="walker-arm walker-arm-left"></span><span class="walker-arm walker-arm-right"></span>
+              <span class="walker-leg walker-leg-left"></span><span class="walker-leg walker-leg-right"></span>
+              <span class="walker-clipboard"><i></i><i></i><i></i></span>
+              <span class="walker-thought">task delivery!</span>
+            </div>
             <div class="office-floor-mark" aria-hidden="true">VIXORA <span>AI OPERATIONS</span></div>
             <div class="office-room-reflection" aria-hidden="true"></div>
           </div>
