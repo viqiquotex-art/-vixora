@@ -248,7 +248,13 @@
     return texture;
   }
 
-  function drawCommandWallTexture(art: HTMLCanvasElement, agents: OfficeAgent[], highlights: Partial<Record<string, number>> = {}) {
+  function drawCommandWallTexture(
+    art: HTMLCanvasElement,
+    agents: OfficeAgent[],
+    highlights: Partial<Record<string, number>> = {},
+    deliveryFocusId: string | null = null,
+    deliveryPulse = 0.5
+  ) {
     const ctx = art.getContext('2d');
     if (!ctx) return;
 
@@ -323,7 +329,11 @@
         : agent?.state === 'attention' || agent?.state === 'failed'
           ? .34
           : 0;
-      const highlight = Math.max(transitionHighlight, persistentHighlight);
+      const isDeliveryFocus = card.id === deliveryFocusId;
+      const deliveryHighlight = isDeliveryFocus
+        ? .8 + Math.max(0, Math.min(1, deliveryPulse)) * .16
+        : 0;
+      const highlight = Math.max(transitionHighlight, persistentHighlight, deliveryHighlight);
 
       ctx.fillStyle = 'rgba(8,14,21,.58)';
       ctx.beginPath(); ctx.roundRect(x, 132, 258, 242, 16); ctx.fill();
@@ -335,9 +345,9 @@
         ctx.restore();
       }
       ctx.save();
-      ctx.shadowColor = state.color;
+      ctx.shadowColor = isDeliveryFocus ? '#f0ca69' : state.color;
       ctx.shadowBlur = highlight > 0 ? 5 + highlight * 22 : 0;
-      ctx.strokeStyle = highlight > 0 ? state.color : 'rgba(218,232,224,.19)';
+      ctx.strokeStyle = isDeliveryFocus ? '#f0ca69' : highlight > 0 ? state.color : 'rgba(218,232,224,.19)';
       ctx.globalAlpha = highlight > 0 ? .62 + highlight * .38 : 1;
       ctx.lineWidth = highlight > 0 ? 1.6 + highlight * 2.4 : 2;
       ctx.beginPath(); ctx.roundRect(x, 132, 258, 242, 16); ctx.stroke();
@@ -370,11 +380,25 @@
       ctx.fillStyle = '#f5eee3';
       ctx.font = 'bold 14px sans-serif';
       ctx.fillText(task, x + 18, 299);
+      if (isDeliveryFocus) {
+        const pulseAlpha = .62 + Math.max(0, Math.min(1, deliveryPulse)) * .32;
+        ctx.save();
+        ctx.fillStyle = 'rgba(240,202,105,.13)';
+        ctx.beginPath(); ctx.roundRect(x + 18, 308, 222, 25, 7); ctx.fill();
+        ctx.strokeStyle = `rgba(240,202,105,${pulseAlpha})`;
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.roundRect(x + 18, 308, 222, 25, 7); ctx.stroke();
+        ctx.fillStyle = '#f0ca69';
+        ctx.beginPath(); ctx.arc(x + 30, 320.5, 3.5 + deliveryPulse * 1.2, 0, Math.PI * 2); ctx.fill();
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('RESULT → TEAM SYNC', x + 42, 324);
+        ctx.restore();
+      }
       ctx.fillStyle = '#8faaa8';
       ctx.font = '12px sans-serif';
-      ctx.fillText(agent?.runId ? `RUN ${agent.runId.slice(0, 8)}` : 'NO ACTIVE RUN', x + 18, 340);
-      ctx.fillStyle = state.color;
-      ctx.fillRect(x + 18, 356, agent ? 222 : 0, 3);
+      ctx.fillText(agent?.runId ? `RUN ${agent.runId.slice(0, 8)}` : 'NO ACTIVE RUN', x + 18, 352);
+      ctx.fillStyle = isDeliveryFocus ? '#f0ca69' : state.color;
+      ctx.fillRect(x + 18, 363, agent ? 222 : 0, 3);
     }
 
     ctx.fillStyle = '#a7b5b6';
@@ -1075,6 +1099,12 @@
       });
       return highlights;
     };
+    const getDeliveryFocusId = () => rigs.find((rig) =>
+      rig.deliveryPhase === 'outbound'
+      || rig.deliveryPhase === 'handoff'
+      || rig.deliveryPhase === 'returning'
+    )?.agent.id ?? null;
+    let dashboardDeliveryFocusId: string | null = getDeliveryFocusId();
     let nextDashboardFrameAt = 0;
 
     const roamer = addRoamingBuddy(scene);
@@ -1202,8 +1232,15 @@
           }
         }
       });
-      // Redraw the wall display from actual statuses and current task titles whenever agent data changes.
-      drawCommandWallTexture(commandTexture.image as HTMLCanvasElement, next, readPanelHighlights(timer.elapsedTime));
+      // Keep the display synchronized with live task data and the robot's actual delivery phase.
+      dashboardDeliveryFocusId = getDeliveryFocusId();
+      drawCommandWallTexture(
+        commandTexture.image as HTMLCanvasElement,
+        rigs.map((rig) => rig.agent),
+        readPanelHighlights(timer.elapsedTime),
+        dashboardDeliveryFocusId,
+        (Math.sin(timer.elapsedTime * 4.6) + 1) * .5
+      );
       commandTexture.needsUpdate = true;
     };
 
@@ -1591,14 +1628,23 @@
           indicator.ring.scale.setScalar(pulseScale);
         });
 
-        // Animate the highlight directly on the dashboard cards, redrawing only during brief
-        // real status/run transitions (12 fps, at most a few seconds) to avoid a constant canvas upload.
+        // Follow a completed run from its workstation to Team Sync on the monitor itself.
+        // The selected card breathes gently during delivery, and is removed as soon as the robot returns.
+        const currentDeliveryFocusId = getDeliveryFocusId();
+        const deliveryFocusChanged = currentDeliveryFocusId !== dashboardDeliveryFocusId;
+        if (deliveryFocusChanged) dashboardDeliveryFocusId = currentDeliveryFocusId;
         const dashboardTransitionActive = panelStatusLights.some((indicator) => time < indicator.pulseUntil);
-        if (dashboardTransitionActive && time >= nextDashboardFrameAt) {
+        const dashboardDeliveryActive = dashboardDeliveryFocusId !== null;
+        if (
+          deliveryFocusChanged
+          || ((dashboardTransitionActive || dashboardDeliveryActive) && time >= nextDashboardFrameAt)
+        ) {
           drawCommandWallTexture(
             commandTexture.image as HTMLCanvasElement,
             rigs.map((rig) => rig.agent),
-            readPanelHighlights(time)
+            readPanelHighlights(time),
+            dashboardDeliveryFocusId,
+            (Math.sin(time * 4.6) + 1) * .5
           );
           commandTexture.needsUpdate = true;
           nextDashboardFrameAt = time + 1 / 12;
