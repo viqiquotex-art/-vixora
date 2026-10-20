@@ -18,6 +18,7 @@
   type RobotRig = {
     root: THREE.Group;
     head: THREE.Group;
+    body: THREE.Mesh;
     leftArm: THREE.Group;
     rightArm: THREE.Group;
     faceEyes: THREE.Mesh[];
@@ -697,7 +698,7 @@
 
     const roamCurve = new THREE.CatmullRomCurve3(roamPath.map((point) => new THREE.Vector3(point.x, 0, point.z)), false, 'centripetal', .5);
     return {
-      root, head, leftArm: arms[0], rightArm: arms[1], legs, feet, roamPath, roamCurve,
+      root, head, body, leftArm: arms[0], rightArm: arms[1], legs, feet, roamPath, roamCurve,
       routeProgress: 0,
       routeDirection: 1,
       pauseUntil: 0,
@@ -980,7 +981,10 @@
           const working = rig.agent.state === 'running' || rig.agent.state === 'working';
           const needsAttention = rig.agent.state === 'attention' || rig.agent.state === 'failed';
           const finished = rig.agent.state === 'done';
-          const strolling = !working && !needsAttention;
+          const thinking = rig.agent.state === 'queued' || rig.agent.state === 'ready';
+          const handoffPose = rig.deliveryPhase === 'handoff';
+          // Queued/planned bots return to their desks and visibly think instead of aimlessly roaming.
+          const strolling = !working && !needsAttention && !thinking;
           const homeX = rig.baseX;
           const homeZ = rig.deskZ + 1.05;
           let targetX = homeX;
@@ -1101,32 +1105,107 @@
           rig.chair.visible = true;
           rig.deliveryFolder.visible = deliveryActive && rig.deliveryPhase === 'outbound';
 
-          // A tiny synchronized body bounce makes footsteps feel weighted rather than gliding.
+          // Keep the root grounded, with a soft gait bounce and a tiny weight shift on turns.
           rig.root.position.y = moving
             ? Math.pow(Math.max(0, Math.sin(rig.gaitPhase * 2)), 1.4) * .024
             : Math.sin(time * 2 + rig.phase) * .008;
-          rig.head.rotation.y = Math.sin(time * (moving ? .45 : .7) + rig.phase) * (strolling ? .105 : .035);
-          rig.head.rotation.z = moving
-            ? Math.sin(rig.gaitPhase) * .018
-            : Math.sin(time * .7 + rig.phase) * (strolling ? .015 : .006);
-          rig.root.rotation.z = moving ? Math.sin(rig.gaitPhase) * .012 - turnAmount * .035 : 0;
+          rig.root.rotation.z = moving
+            ? Math.sin(rig.gaitPhase) * .012 - turnAmount * .035
+            : 0;
 
-          rig.leftArm.rotation.x = moving
-            ? Math.sin(rig.gaitPhase + Math.PI) * .20
-            : working
-              ? -.58 + Math.sin(time * 8.2 + rig.phase) * .13
-              : finished ? -.28 : -.34 + Math.sin(time * .75 + rig.phase) * .045;
-          rig.rightArm.rotation.x = moving
-            ? Math.sin(rig.gaitPhase) * .20
-            : working
-              ? -.58 + Math.sin(time * 8.2 + rig.phase + 1) * .13
-              : finished ? -1.0 + Math.sin(time * 1.1) * .07 : -.36 + Math.sin(time * .8 + rig.phase + 1) * .05;
-          rig.leftArm.rotation.z = moving
-            ? -.1 + Math.sin(rig.gaitPhase + Math.PI) * .075
-            : -.1 + Math.sin(time * (working ? 8 : .75) + rig.phase) * (working ? .15 : .035);
-          rig.rightArm.rotation.z = moving
-            ? .1 + Math.sin(rig.gaitPhase) * .075
-            : .1 + Math.sin(time * (working ? 8 : .8) + rig.phase + 2) * (working ? .15 : .035);
+          // Four readable body languages: focused typing, thoughtful pause, travel, and delivery.
+          // Smooth each pose so real status changes don't snap the robot's joints.
+          const poseEase = 1 - Math.exp(-delta * 7.5);
+          const idleBreath = Math.sin(time * 1.8 + rig.phase);
+          let leftArmX: number;
+          let rightArmX: number;
+          let leftArmZ: number;
+          let rightArmZ: number;
+
+          if (moving) {
+            // Walking: opposite arm swing to the legs, relaxed shoulders, and a curious head scan.
+            leftArmX = Math.sin(rig.gaitPhase + Math.PI) * .25;
+            rightArmX = Math.sin(rig.gaitPhase) * .25;
+            leftArmZ = -.1 + Math.sin(rig.gaitPhase + Math.PI) * .08;
+            rightArmZ = .1 + Math.sin(rig.gaitPhase) * .08;
+            rig.head.rotation.x += (-.015 - rig.head.rotation.x) * poseEase;
+            rig.head.rotation.y += (Math.sin(time * .8 + rig.phase) * .09 - rig.head.rotation.y) * poseEase;
+            rig.head.rotation.z += (Math.sin(rig.gaitPhase) * .025 - rig.head.rotation.z) * poseEase;
+            rig.body.rotation.x += (Math.sin(rig.gaitPhase * 2) * .025 - rig.body.rotation.x) * poseEase;
+            rig.body.rotation.z += (Math.sin(rig.gaitPhase) * .035 - rig.body.rotation.z) * poseEase;
+          } else if (handoffPose) {
+            // Handoff: face the teammate, extend both hands toward the shared table, and hold the gesture.
+            leftArmX = -.34 + Math.sin(time * 2.6 + rig.phase) * .045;
+            rightArmX = -.42 + Math.sin(time * 2.6 + rig.phase + .6) * .045;
+            leftArmZ = -.34;
+            rightArmZ = .34;
+            rig.head.rotation.x += (-.08 - rig.head.rotation.x) * poseEase;
+            rig.head.rotation.y += (Math.sin(time * 1.8 + rig.phase) * .035 - rig.head.rotation.y) * poseEase;
+            rig.head.rotation.z += (Math.sin(time * 2.2 + rig.phase) * .018 - rig.head.rotation.z) * poseEase;
+            rig.body.rotation.x += ((-.035 + idleBreath * .008) - rig.body.rotation.x) * poseEase;
+            rig.body.rotation.z += (0 - rig.body.rotation.z) * poseEase;
+          } else if (working) {
+            // Working: lean toward the monitor and alternate tiny typing motions at the keyboard.
+            const typing = Math.sin(time * 10.5 + rig.phase);
+            leftArmX = -.73 + typing * .11;
+            rightArmX = -.73 + Math.sin(time * 10.5 + rig.phase + Math.PI * .7) * .11;
+            leftArmZ = -.13 + Math.sin(time * 10.5 + rig.phase) * .055;
+            rightArmZ = .13 + Math.sin(time * 10.5 + rig.phase + 1.2) * .055;
+            rig.head.rotation.x += (.14 + Math.sin(time * 1.5 + rig.phase) * .018 - rig.head.rotation.x) * poseEase;
+            rig.head.rotation.y += (Math.sin(time * .65 + rig.phase) * .025 - rig.head.rotation.y) * poseEase;
+            rig.head.rotation.z += (Math.sin(time * 7.5 + rig.phase) * .012 - rig.head.rotation.z) * poseEase;
+            rig.body.rotation.x += ((-.07 + idleBreath * .012) - rig.body.rotation.x) * poseEase;
+            rig.body.rotation.z += (Math.sin(time * 8 + rig.phase) * .012 - rig.body.rotation.z) * poseEase;
+          } else if (thinking) {
+            // Thinking/queued: glance upward, tilt the head, and bring one hand near the chin.
+            leftArmX = -.22 + Math.sin(time * .9 + rig.phase) * .035;
+            rightArmX = -.98 + Math.sin(time * 1.1 + rig.phase) * .045;
+            leftArmZ = -.06;
+            rightArmZ = -.28;
+            rig.head.rotation.x += (-.045 + Math.sin(time * .9 + rig.phase) * .035 - rig.head.rotation.x) * poseEase;
+            rig.head.rotation.y += (Math.sin(time * .7 + rig.phase) * .19 - rig.head.rotation.y) * poseEase;
+            rig.head.rotation.z += (.09 + Math.sin(time * .75 + rig.phase) * .025 - rig.head.rotation.z) * poseEase;
+            rig.body.rotation.x += ((-.018 + idleBreath * .009) - rig.body.rotation.x) * poseEase;
+            rig.body.rotation.z += (Math.sin(time * .65 + rig.phase) * .018 - rig.body.rotation.z) * poseEase;
+          } else if (needsAttention) {
+            // Needs attention: look alert with elbows lifted, without jittering the whole character.
+            leftArmX = -.72 + Math.sin(time * 2.1 + rig.phase) * .045;
+            rightArmX = -.78 + Math.sin(time * 2.1 + rig.phase + .6) * .045;
+            leftArmZ = -.24;
+            rightArmZ = .24;
+            rig.head.rotation.x += (-.015 - rig.head.rotation.x) * poseEase;
+            rig.head.rotation.y += (Math.sin(time * 1.8 + rig.phase) * .12 - rig.head.rotation.y) * poseEase;
+            rig.head.rotation.z += (-.07 + Math.sin(time * 2 + rig.phase) * .018 - rig.head.rotation.z) * poseEase;
+            rig.body.rotation.x += (-.02 - rig.body.rotation.x) * poseEase;
+            rig.body.rotation.z += (0 - rig.body.rotation.z) * poseEase;
+          } else if (finished) {
+            // Completed: a small, friendly raised-arm acknowledgement.
+            leftArmX = -.23 + Math.sin(time * 1.3 + rig.phase) * .035;
+            rightArmX = -1.02 + Math.sin(time * 1.4 + rig.phase) * .07;
+            leftArmZ = -.08;
+            rightArmZ = .2;
+            rig.head.rotation.x += (-.015 - rig.head.rotation.x) * poseEase;
+            rig.head.rotation.y += (Math.sin(time * .9 + rig.phase) * .055 - rig.head.rotation.y) * poseEase;
+            rig.head.rotation.z += (Math.sin(time * 1.3 + rig.phase) * .025 - rig.head.rotation.z) * poseEase;
+            rig.body.rotation.x += ((-.015 + idleBreath * .008) - rig.body.rotation.x) * poseEase;
+            rig.body.rotation.z += (0 - rig.body.rotation.z) * poseEase;
+          } else {
+            // Standby: gentle breathing and occasional curious looks, arms relaxed.
+            leftArmX = -.32 + Math.sin(time * .8 + rig.phase) * .035;
+            rightArmX = -.34 + Math.sin(time * .8 + rig.phase + 1) * .035;
+            leftArmZ = -.1 + Math.sin(time * .75 + rig.phase) * .025;
+            rightArmZ = .1 + Math.sin(time * .8 + rig.phase + 1) * .025;
+            rig.head.rotation.x += (Math.sin(time * .75 + rig.phase) * .025 - rig.head.rotation.x) * poseEase;
+            rig.head.rotation.y += (Math.sin(time * .42 + rig.phase) * .095 - rig.head.rotation.y) * poseEase;
+            rig.head.rotation.z += (Math.sin(time * .65 + rig.phase) * .012 - rig.head.rotation.z) * poseEase;
+            rig.body.rotation.x += (idleBreath * .012 - rig.body.rotation.x) * poseEase;
+            rig.body.rotation.z += (Math.sin(time * .65 + rig.phase) * .012 - rig.body.rotation.z) * poseEase;
+          }
+
+          rig.leftArm.rotation.x += (leftArmX - rig.leftArm.rotation.x) * poseEase;
+          rig.rightArm.rotation.x += (rightArmX - rig.rightArm.rotation.x) * poseEase;
+          rig.leftArm.rotation.z += (leftArmZ - rig.leftArm.rotation.z) * poseEase;
+          rig.rightArm.rotation.z += (rightArmZ - rig.rightArm.rotation.z) * poseEase;
 
           rig.legs.forEach((leg, index) => {
             const stride = Math.sin(rig.gaitPhase + index * Math.PI);
