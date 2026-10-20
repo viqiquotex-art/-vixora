@@ -49,22 +49,23 @@
   let sceneReady = $state(false);
   let controller: { syncAgents: (next: OfficeAgent[]) => void; dispose: () => void } | null = null;
 
+  // Safe idle loops are laid out in the open aisle, outside desk/chair footprints.
   const agentPositions = [
     {
       x: -4.45, z: 1.25, color: 0xe11d2e, tool: 'content',
-      roam: [{ x: -4.9, z: .75 }, { x: -5.2, z: .05 }, { x: -5.05, z: -.9 }, { x: -4.3, z: -1.3 }, { x: -3.55, z: -.65 }, { x: -3.9, z: .1 }]
+      roam: [{ x: -4.25, z: 2.25 }, { x: -3.5, z: 2.75 }, { x: -3.35, z: 3.45 }, { x: -4.15, z: 3.9 }, { x: -5.0, z: 3.65 }, { x: -5.15, z: 2.85 }]
     },
     {
       x: -1.55, z: -0.65, color: 0x83b6b0, tool: 'research',
-      roam: [{ x: -2.15, z: -1.1 }, { x: -2.85, z: -1.9 }, { x: -1.95, z: -2.75 }, { x: -.8, z: -2.35 }, { x: -.55, z: -1.45 }]
+      roam: [{ x: -3.0, z: .25 }, { x: -3.25, z: 1.15 }, { x: -2.85, z: 2.05 }, { x: -2.1, z: 2.65 }, { x: -1.15, z: 2.95 }, { x: -.55, z: 2.35 }, { x: -.8, z: 1.4 }]
     },
     {
       x: 1.6, z: 1.15, color: 0xe7b94e, tool: 'workflow',
-      roam: [{ x: 1.05, z: .85 }, { x: .25, z: 1.55 }, { x: 1.2, z: 2.2 }, { x: 2.65, z: 1.6 }, { x: 2.25, z: .65 }]
+      roam: [{ x: 1.0, z: 2.25 }, { x: .2, z: 2.85 }, { x: .55, z: 3.6 }, { x: 1.55, z: 3.85 }, { x: 2.65, z: 3.35 }, { x: 2.85, z: 2.65 }, { x: 2.25, z: 2.25 }]
     },
     {
       x: 4.35, z: -0.65, color: 0x9eb991, tool: 'strategy',
-      roam: [{ x: 4.85, z: -.95 }, { x: 5.15, z: -.05 }, { x: 4.45, z: .9 }, { x: 3.45, z: .5 }, { x: 3.7, z: -.65 }]
+      roam: [{ x: 5.75, z: .25 }, { x: 5.7, z: 1.25 }, { x: 5.1, z: 2.15 }, { x: 4.5, z: 2.9 }, { x: 3.7, z: 3.15 }, { x: 3.35, z: 2.4 }, { x: 3.75, z: 1.35 }]
     }
   ] as const;
 
