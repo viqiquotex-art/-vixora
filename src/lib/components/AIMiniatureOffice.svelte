@@ -1929,5 +1929,9 @@
   .mini-fallback-roster strong{font-size:11px;color:#322c26}
   .mini-fallback-roster small{overflow:hidden;color:#8a7b68;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
   @media(max-width:680px){.miniature-office{height:680px;min-height:680px}.miniature-office-hint{font-size:8px;left:8px;bottom:7px;gap:5px;padding:7px}.mini-fallback-roster{grid-template-columns:1fr}}
+
+  @media(min-width:761px){
+    .miniature-office{height:clamp(260px,calc(100vh - 345px),620px);min-height:260px}
+  }
   @media(prefers-reduced-motion:reduce){.miniature-office *{scroll-behavior:auto}}
 </style>
