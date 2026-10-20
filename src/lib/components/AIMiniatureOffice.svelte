@@ -22,6 +22,7 @@
     rightArm: THREE.Group;
     faceEyes: THREE.Mesh[];
     legs: THREE.Group[];
+    feet: THREE.Group[];
     roamPath: readonly { x: number; z: number }[];
     roamCurve: THREE.CatmullRomCurve3;
     routeProgress: number;
@@ -59,19 +60,19 @@
   const agentPositions = [
     {
       x: -4.45, z: 1.25, color: 0xe11d2e, tool: 'content',
-      roam: [{ x: -4.45, z: 2.3 }, { x: -3.9, z: 2.6 }, { x: -3.5, z: 3.25 }, { x: -4.0, z: 3.9 }, { x: -4.9, z: 3.8 }, { x: -5.25, z: 3.15 }, { x: -4.95, z: 2.55 }]
+      roam: [{ x: -4.45, z: 3.28 }, { x: -3.85, z: 3.38 }, { x: -3.45, z: 3.78 }, { x: -4.05, z: 4.12 }, { x: -4.95, z: 4.08 }, { x: -5.35, z: 3.68 }, { x: -5.05, z: 3.35 }]
     },
     {
       x: -1.55, z: -0.65, color: 0x83b6b0, tool: 'research',
-      roam: [{ x: -1.55, z: .4 }, { x: -2.35, z: .38 }, { x: -2.8, z: .85 }, { x: -2.8, z: 1.55 }, { x: -2.4, z: 2.25 }, { x: -1.5, z: 2.65 }, { x: -.75, z: 2.45 }, { x: -.55, z: 1.7 }, { x: -.9, z: 1.05 }]
+      roam: [{ x: -1.55, z: 1.38 }, { x: -2.25, z: 1.48 }, { x: -2.75, z: 1.82 }, { x: -2.55, z: 2.35 }, { x: -1.8, z: 2.62 }, { x: -.9, z: 2.42 }, { x: -.55, z: 1.82 }, { x: -.9, z: 1.48 }]
     },
     {
       x: 1.6, z: 1.15, color: 0xe7b94e, tool: 'workflow',
-      roam: [{ x: 1.6, z: 2.15 }, { x: .9, z: 2.5 }, { x: .35, z: 3.1 }, { x: .9, z: 3.75 }, { x: 1.9, z: 3.85 }, { x: 2.65, z: 3.25 }, { x: 2.75, z: 2.65 }, { x: 2.15, z: 2.3 }]
+      roam: [{ x: 1.6, z: 3.18 }, { x: .95, z: 3.32 }, { x: .38, z: 3.72 }, { x: .88, z: 4.12 }, { x: 1.85, z: 4.18 }, { x: 2.65, z: 3.88 }, { x: 2.75, z: 3.45 }, { x: 2.15, z: 3.22 }]
     },
     {
       x: 4.35, z: -0.65, color: 0x9eb991, tool: 'strategy',
-      roam: [{ x: 4.35, z: .35 }, { x: 5.25, z: .45 }, { x: 5.5, z: 1.2 }, { x: 5.15, z: 2.05 }, { x: 4.6, z: 2.8 }, { x: 3.9, z: 3.05 }, { x: 3.5, z: 2.4 }, { x: 3.8, z: 1.4 }]
+      roam: [{ x: 4.35, z: 1.38 }, { x: 5.1, z: 1.5 }, { x: 5.55, z: 2.0 }, { x: 5.1, z: 2.62 }, { x: 4.45, z: 3.08 }, { x: 3.75, z: 2.88 }, { x: 3.45, z: 2.24 }, { x: 3.8, z: 1.65 }]
     }
   ] as const;
 
@@ -423,14 +424,20 @@
     sphere(root, .12, 0xd3c1ab, [0, 1.08, 0], [1, .62, .78]);
 
     const legs: THREE.Group[] = [];
+    const feet: THREE.Group[] = [];
     for (const side of [-1, 1]) {
       const leg = new THREE.Group();
       leg.position.set(side * .14, .52, .08);
       root.add(leg);
       const upperLeg = sphere(leg, .12, 0xd6c5b0, [0, -.12, 0], [.8, 1.45, .78]);
       upperLeg.rotation.x = -.4;
-      sphere(leg, .14, 0xf9f3e8, [side * .01, -.21, .17], [1.05, .58, 1.4]);
-      sphere(leg, .045, 0xbba58a, [side * .01, -.23, .26], [1, .55, .7]);
+      // Separate ankles let the soles stay flat and planted while the knees swing.
+      const foot = new THREE.Group();
+      foot.position.set(side * .01, -.44, .17);
+      leg.add(foot);
+      sphere(foot, .14, 0xf9f3e8, [0, 0, 0], [1.05, .58, 1.4]);
+      sphere(foot, .045, 0xbba58a, [0, -.01, .09], [1, .55, .7]);
+      feet.push(foot);
       legs.push(leg);
     }
 
@@ -611,7 +618,7 @@
 
     const roamCurve = new THREE.CatmullRomCurve3(roamPath.map((point) => new THREE.Vector3(point.x, 0, point.z)), true, 'centripetal', .5);
     return {
-      root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, roamCurve,
+      root, head, leftArm: arms[0], rightArm: arms[1], legs, feet, roamPath, roamCurve,
       routeProgress: 0,
       nextPauseAt: Math.min(.22, 1 / roamPath.length),
       pauseUntil: 0,
@@ -656,13 +663,18 @@
     root.add(body);
     sphere(root, .065, 0xe11d2e, [0, .69, .18], [1, 1, .5], { emissive: 0xe11d2e, emissiveIntensity: .25 });
     const legs: THREE.Group[] = [];
+    const feet: THREE.Group[] = [];
     const arms: THREE.Group[] = [];
     for (const side of [-1, 1]) {
       const leg = new THREE.Group();
-      leg.position.set(side * .12, .49, .03);
+      leg.position.set(side * .12, .41, .03);
       root.add(leg);
-      cylinder(leg, .06, .07, .25, 0xd4c0a8, [0, -.1, 0], 10);
-      sphere(leg, .085, 0xf8efe2, [0, -.22, .08], [1, .6, 1.25]);
+      cylinder(leg, .06, .07, .35, 0xd4c0a8, [0, -.16, 0], 10);
+      const foot = new THREE.Group();
+      foot.position.set(0, -.36, .08);
+      leg.add(foot);
+      sphere(foot, .085, 0xf8efe2, [0, 0, 0], [1, .6, 1.25]);
+      feet.push(foot);
       legs.push(leg);
       const arm = new THREE.Group();
       arm.position.set(side * .19, .8, .02);
@@ -674,7 +686,9 @@
     // Parcel on the courier's back, with a little red delivery seal.
     box(root, [.25, .27, .18], 0xc9ab87, [-.2, .66, -.17]);
     box(root, [.13, .12, .015], 0xe11d2e, [-.2, .68, -.27]);
-    (root as THREE.Group & { userData: { legs: THREE.Group[]; arms: THREE.Group[]; head: THREE.Group } }).userData.legs = legs;
+    (root as THREE.Group & { userData: { legs: THREE.Group[]; feet: THREE.Group[]; arms: THREE.Group[]; head: THREE.Group } }).userData.legs = legs;
+    root.userData.legs = legs;
+    root.userData.feet = feet;
     root.userData.arms = arms;
     root.userData.head = head;
     return root;
@@ -816,14 +830,14 @@
           if (strolling && rig.roamPath.length > 1) {
             if (time >= rig.pauseUntil) {
               const routeLength = Math.max(rig.roamCurve.getLength(), .01);
-              rig.routeProgress += (.16 * delta) / routeLength;
+              rig.routeProgress += (.56 * delta) / routeLength;
               if (rig.routeProgress >= 1) {
                 rig.routeProgress %= 1;
                 rig.nextPauseAt = Math.min(.22, 1 / rig.roamPath.length);
               }
               if (rig.routeProgress >= rig.nextPauseAt) {
                 const pauseVariation = Math.abs(Math.sin(rig.phase * 1.7));
-                rig.pauseUntil = time + 1.4 + pauseVariation * 1.5;
+                rig.pauseUntil = time + .3 + pauseVariation * .55;
                 rig.nextPauseAt += 1 / rig.roamPath.length;
                 if (rig.nextPauseAt >= 1) rig.nextPauseAt = .999;
               }
@@ -838,7 +852,7 @@
           const dx = targetX - oldX;
           const dz = targetZ - oldZ;
           const distanceToTarget = Math.hypot(dx, dz);
-          const walkSpeed = strolling ? .18 : .28;
+          const walkSpeed = strolling ? .54 : .62;
           const travelDistance = Math.min(distanceToTarget, walkSpeed * delta);
           if (distanceToTarget > .00001) {
             rig.root.position.x += (dx / distanceToTarget) * travelDistance;
@@ -867,13 +881,12 @@
           }
 
           // Real travel advances the gait phase: stopped bots stop stepping.
-          if (moving) rig.gaitPhase += movedDistance * 18;
+          if (moving) rig.gaitPhase += movedDistance * 14;
           const atDesk = Math.hypot(rig.root.position.x - homeX, rig.root.position.z - homeZ) < .28;
           rig.chair.visible = atDesk && !moving;
 
-          rig.root.position.y = moving
-            ? Math.abs(Math.sin(rig.gaitPhase * 2)) * .014
-            : Math.sin(time * 1.15 + rig.phase) * (working ? .007 : .009);
+          // Keep the root on the floor; only the swing foot lifts.
+          rig.root.position.y = 0;
           rig.head.rotation.y = Math.sin(time * (moving ? .45 : .7) + rig.phase) * (strolling ? .105 : .035);
           rig.head.rotation.z = moving
             ? Math.sin(rig.gaitPhase) * .018
@@ -898,8 +911,20 @@
             : .1 + Math.sin(time * (working ? 8 : .8) + rig.phase + 2) * (working ? .15 : .035);
 
           rig.legs.forEach((leg, index) => {
-            leg.rotation.x = moving ? Math.sin(rig.gaitPhase + index * Math.PI) * .43 : Math.sin(time * .65 + rig.phase + index) * .008;
-            leg.rotation.z = moving ? Math.sin(rig.gaitPhase + index * Math.PI) * .035 : 0;
+            const stride = Math.sin(rig.gaitPhase + index * Math.PI);
+            const swing = Math.max(0, stride);
+            const legAngle = moving ? stride * .36 : 0;
+            leg.rotation.x = legAngle;
+            leg.rotation.z = moving ? stride * .025 : 0;
+
+            const foot = rig.feet[index];
+            if (foot) {
+              const footHeight = .082 + (moving ? swing * .105 : 0);
+              const footZ = foot.position.z;
+              foot.position.y = (footHeight - leg.position.y + footZ * Math.sin(legAngle)) / Math.max(.92, Math.cos(legAngle));
+              foot.rotation.x = -legAngle;
+              foot.rotation.z = -leg.rotation.z;
+            }
           });
 
           const eyeMaterial = rig.faceEyes[0]?.material as THREE.MeshStandardMaterial | undefined;
@@ -909,9 +934,9 @@
         // rather than instantly flipping its facing direction at each endpoint.
         const previousCourierX = roamer.position.x;
         const previousCourierZ = roamer.position.z;
-        const travel = (Math.sin(time * .045) + 1) / 2;
+        const travel = (Math.sin(time * .09) + 1) / 2;
         roamer.position.x = -5.3 + travel * 10.3;
-        roamer.position.z = 3.48 + Math.sin(time * .11) * .08;
+        roamer.position.z = 3.48 + Math.sin(time * .22) * .08;
         const courierDx = roamer.position.x - previousCourierX;
         const courierDz = roamer.position.z - previousCourierZ;
         const courierDistance = Math.hypot(courierDx, courierDz);
@@ -924,9 +949,21 @@
           );
           roamer.rotation.y += yawDifference * (1 - Math.exp(-delta * 4.2));
         }
-        roamer.position.y = Math.abs(Math.sin(roamerGaitPhase * 2)) * .014;
-        const limbs = roamer.userData as { legs: THREE.Group[]; arms: THREE.Group[]; head: THREE.Group };
-        limbs.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(roamerGaitPhase + i * Math.PI) * .28; });
+        // Keep the courier chassis grounded; lift only its swing foot.
+        roamer.position.y = 0;
+        const limbs = roamer.userData as { legs: THREE.Group[]; feet: THREE.Group[]; arms: THREE.Group[]; head: THREE.Group };
+        limbs.legs.forEach((leg, i) => {
+          const stride = Math.sin(roamerGaitPhase + i * Math.PI);
+          const legAngle = stride * .24;
+          leg.rotation.x = legAngle;
+          const foot = limbs.feet[i];
+          if (foot) {
+            const lift = Math.max(0, stride) * .075;
+            const footZ = foot.position.z;
+            foot.position.y = (.053 + lift - leg.position.y + footZ * Math.sin(legAngle)) / Math.max(.94, Math.cos(legAngle));
+            foot.rotation.x = -legAngle;
+          }
+        });
         limbs.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(roamerGaitPhase + i * Math.PI + .6) * .15; });
         limbs.head.rotation.y = Math.sin(time * .65) * .075;
       }
