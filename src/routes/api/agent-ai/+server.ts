@@ -12,8 +12,7 @@ type SupabaseConfig = { url: string; key: string };
 type TaskRow = { id: string; title: string; description: string | null; priority: string | null };
 
 // Google AI Studio Gemini API. This route is only enabled after the operator confirms a Free Tier key/project.
-const MODEL = 'gemini-3.8-flash';
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`;
+const DEFAULT_MODEL = 'gemini-3.6-flash';
 const DEFAULT_SUPABASE_URL = 'https://gdxughluqryzlklrnzhz.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkeHVnaGx1cXJ5emxrbHJuemh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NjI0ODAsImV4cCI6MjEwMzEzODQ4MH0.YhQaMhH6gwhLZNVem9NR0Ow32iqrgcB3YiAi-WSBKMo';
 
@@ -77,6 +76,9 @@ export const POST: RequestHandler = async ({ request, platform }) => {
   const token = getBearer(request);
   if (!token) return json({ error: 'Sign in is required.' }, { status: 401 });
 
+  const model = env.GEMINI_MODEL?.trim() || DEFAULT_MODEL;
+  const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
   if (!env.GEMINI_API_KEY?.trim()) {
     return json({
       error: 'GEMINI_NOT_CONFIGURED',
@@ -132,7 +134,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
 
   let response: Response;
   try {
-    response = await fetch(GEMINI_URL, {
+    response = await fetch(geminiUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -155,7 +157,8 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     if (errorName === 'TimeoutError' || errorName === 'AbortError' || /timed? ?out|abort/i.test(errorMessage)) {
       return json({
         error: 'GEMINI_TIMEOUT',
-        message: 'Gemini belum mengembalikan jawaban dalam 55 detik. Coba lagi sekali nanti; VIXORA tidak memanggil provider alternatif.'
+        message: `Gemini (${model}) belum merespons dalam 55 detik. Coba lagi nanti; VIXORA tetap menggunakan Google Gemini dan tidak memanggil provider alternatif.`,
+        model
       }, { status: 504 });
     }
     return json({
@@ -179,14 +182,14 @@ export const POST: RequestHandler = async ({ request, platform }) => {
           return json({
             error: 'GEMINI_INVALID_API_KEY',
             message: 'Google menolak API key. Pastikan nilai GEMINI_API_KEY di Cloudflare adalah key lengkap dari Google AI Studio untuk project yang memiliki Gemini API aktif.',
-            model: MODEL
+            model
           }, { status: 502 });
         }
         if (/not found|not supported for generatecontent|unknown model/i.test(providerDetail)) {
           return json({
             error: 'GEMINI_MODEL_OR_METHOD_ERROR',
             message: `Google menolak model atau endpoint: ${providerDetail}`,
-            model: MODEL
+            model
           }, { status: 502 });
         }
       } catch {
@@ -219,7 +222,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     result: {
       mode: 'google-ai-studio-free-tier',
       status: 'completed',
-      model: MODEL,
+      model,
       agentId: agent.id,
       agentName: agent.name,
       taskTitle: task.title,
