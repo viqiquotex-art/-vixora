@@ -50,10 +50,22 @@
   let controller: { syncAgents: (next: OfficeAgent[]) => void; dispose: () => void } | null = null;
 
   const agentPositions = [
-    { x: -4.45, z: 1.25, color: 0xe11d2e, tool: 'content' },
-    { x: -1.55, z: -0.65, color: 0x83b6b0, tool: 'research' },
-    { x: 1.6, z: 1.15, color: 0xe7b94e, tool: 'workflow' },
-    { x: 4.35, z: -0.65, color: 0x9eb991, tool: 'strategy' }
+    {
+      x: -4.45, z: 1.25, color: 0xe11d2e, tool: 'content',
+      roam: [{ x: -4.9, z: .75 }, { x: -5.2, z: .05 }, { x: -5.05, z: -.9 }, { x: -4.3, z: -1.3 }, { x: -3.55, z: -.65 }, { x: -3.9, z: .1 }]
+    },
+    {
+      x: -1.55, z: -0.65, color: 0x83b6b0, tool: 'research',
+      roam: [{ x: -2.15, z: -1.1 }, { x: -2.85, z: -1.9 }, { x: -1.95, z: -2.75 }, { x: -.8, z: -2.35 }, { x: -.55, z: -1.45 }]
+    },
+    {
+      x: 1.6, z: 1.15, color: 0xe7b94e, tool: 'workflow',
+      roam: [{ x: 1.05, z: .85 }, { x: .25, z: 1.55 }, { x: 1.2, z: 2.2 }, { x: 2.65, z: 1.6 }, { x: 2.25, z: .65 }]
+    },
+    {
+      x: 4.35, z: -0.65, color: 0x9eb991, tool: 'strategy',
+      roam: [{ x: 4.85, z: -.95 }, { x: 5.15, z: -.05 }, { x: 4.45, z: .9 }, { x: 3.45, z: .5 }, { x: 3.7, z: -.65 }]
+    }
   ] as const;
 
   function material(color: THREE.ColorRepresentation, roughness = 0.72, metalness = 0) {
