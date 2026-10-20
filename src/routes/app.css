@@ -676,3 +676,186 @@ textarea::placeholder{color:#999}
 @media(prefers-reduced-motion:reduce){
   .floor-live-dot,.office-command-display *,.office-station *,.office-wall-orbit,.station-orbit{animation:none!important;transition:none!important}
 }
+
+
+/* ==========================================================
+   COZY OFFICE ART DIRECTION — pastel props + cute chibi bots
+   ========================================================== */
+.ai-office-scene{
+  background:
+    radial-gradient(ellipse at 48% 42%,rgba(250,204,21,.17),transparent 33%),
+    radial-gradient(ellipse at 88% 31%,rgba(225,29,46,.08),transparent 25%),
+    linear-gradient(180deg,#f8f0e4 0%,#f2e8d9 47%,#dfd5c7 48%,#d4c9ba 100%);
+  color:#202027;
+}
+.ai-office-scene::before{opacity:.12;background-image:radial-gradient(circle at 16% 17%,#e11d2e 0 1px,transparent 1.5px),radial-gradient(circle at 82% 13%,#a67c3b 0 1px,transparent 1.5px),radial-gradient(circle at 66% 27%,#facc15 0 1px,transparent 1.5px),radial-gradient(circle at 27% 35%,#e11d2e 0 1px,transparent 1.5px)}
+.office-backwall{background:linear-gradient(180deg,#fffaf0 0%,#f9f0e1 65%,#e9dfd1 100%);border-bottom:2px solid rgba(105,79,53,.13)}
+.office-window-grid{
+  background:
+    linear-gradient(90deg,transparent 0 9.5%,rgba(169,145,112,.35) 9.6% 9.9%,transparent 10% 24.7%,rgba(169,145,112,.32) 24.8% 25.1%,transparent 25.2% 49.7%,rgba(169,145,112,.3) 49.8% 50.1%,transparent 50.2% 74.7%,rgba(169,145,112,.28) 74.8% 75.1%,transparent 75.2% 90%,rgba(169,145,112,.28) 90.1% 90.3%,transparent 90.4%),
+    linear-gradient(180deg,transparent 0 16%,rgba(169,145,112,.24) 16.2% 16.5%,transparent 16.7% 59%,rgba(169,145,112,.2) 59.2% 59.5%,transparent 59.7%),
+    radial-gradient(ellipse at 35% 8%,#fffdf5,transparent 42%),
+    linear-gradient(120deg,#e0ebeb,#fff8e7 52%,#ece2d1);
+}
+.office-window-grid::after{background:linear-gradient(180deg,rgba(255,253,245,.08),rgba(255,250,239,.03) 55%,rgba(154,125,91,.11))}
+.office-window-glow{background:linear-gradient(90deg,transparent,#facc15 22%,#e11d2e 51%,#facc15 78%,transparent);opacity:.42;box-shadow:0 0 12px rgba(225,29,46,.12)}
+.office-wall-orbit{border-color:rgba(225,29,46,.1)}
+.orbit-two{border-color:rgba(250,204,21,.18)}
+.office-light-strip{height:3px;background:linear-gradient(90deg,transparent,rgba(250,204,21,.8) 18%,rgba(225,29,46,.48) 50%,rgba(250,204,21,.75) 82%,transparent);box-shadow:0 0 11px rgba(250,204,21,.25)}
+.office-floor-grid{background-image:linear-gradient(rgba(119,92,65,.13) 1px,transparent 1px),linear-gradient(90deg,rgba(119,92,65,.12) 1px,transparent 1px);mask-image:linear-gradient(180deg,rgba(0,0,0,.45),transparent 87%)}
+.office-floor-glow{background:radial-gradient(ellipse,rgba(255,248,230,.65),rgba(225,29,46,.045) 36%,transparent 69%)}
+.office-floor-ring{border-color:rgba(125,98,69,.16);box-shadow:none}
+.ring-small{border-color:rgba(225,29,46,.15)}
+.office-cable{border-color:rgba(164,127,86,.28)}
+.cable-two{border-color:rgba(225,29,46,.15)}
+/* A wall-mounted team board rather than a cold sci-fi command console */
+.office-command-display{filter:drop-shadow(0 10px 14px rgba(94,65,37,.13))}
+.command-display-frame{border:3px solid #fffdf5;border-radius:12px;background:linear-gradient(145deg,#fffdf7,#f5e9d5);box-shadow:inset 0 0 0 1px rgba(139,103,65,.12),0 6px 18px rgba(115,82,47,.12)}
+.command-display-frame::before{background:linear-gradient(120deg,rgba(255,255,255,.55),transparent 38%,rgba(225,29,46,.025))}
+.command-display-header,.command-display-footer{border-color:rgba(120,92,66,.12);color:#797064}
+.command-display-header>span:last-child{color:#27885e}
+.command-display-header i{background:#2da36f;box-shadow:0 0 7px rgba(45,163,111,.3)}
+.command-display-content{color:#302b28}
+.command-globe{border-color:rgba(225,29,46,.27);background:radial-gradient(circle at 36% 26%,rgba(250,204,21,.32),transparent 45%),radial-gradient(circle,rgba(225,29,46,.09),rgba(225,29,46,.015) 63%,transparent 64%);box-shadow:0 0 20px rgba(225,29,46,.07),inset 0 0 18px rgba(250,204,21,.1)}
+.command-globe span{color:#e11d2e;text-shadow:0 1px 0 white}
+.globe-latitude{border-color:rgba(225,29,46,.18)}.globe-longitude{border-color:rgba(225,29,46,.24)}
+.display-section-label{color:#bd1c2b}
+.display-graph{border-color:rgba(120,92,66,.15);background:repeating-linear-gradient(0deg,transparent 0 15px,rgba(120,92,66,.05) 16px)}
+.display-graph i{background:linear-gradient(180deg,#facc15,#e11d2e)}
+.display-readout{color:#8b8175}.display-readout b{color:#342d28}
+.display-code-lines i{background:linear-gradient(90deg,rgba(225,29,46,.6),rgba(250,204,21,.6),transparent)}
+.command-display-footer{border-color:rgba(120,92,66,.12)}
+.command-display-footer span:last-child{color:#e11d2e}
+.command-display-stem{background:linear-gradient(90deg,#ab9a84,#f4e7d6,#a28b70);box-shadow:0 5px 8px rgba(85,61,37,.13)}
+.command-display-plinth{border-color:rgba(130,94,58,.15);background:linear-gradient(180deg,#fdf5e8,#cfc0aa);box-shadow:0 7px 11px rgba(85,61,37,.13)}
+/* Soft furnishings and little office comforts */
+.cozy-office-decor{position:absolute;inset:0;z-index:2;pointer-events:none;transform-style:preserve-3d}
+.office-window-sun{position:absolute;top:8%;left:8%;width:66px;height:66px;border-radius:50%;background:radial-gradient(circle,#fff8ce 0 22%,rgba(250,204,21,.25) 24% 56%,transparent 69%);filter:blur(.2px);opacity:.9}
+.office-window-sun::after{position:absolute;content:"";left:50%;top:88%;width:2px;height:74px;background:linear-gradient(#facc15,transparent);opacity:.22;transform:rotate(25deg)}
+.office-window-sun i,.office-window-sun b{position:absolute;inset:12px;border:1px solid rgba(225,29,46,.11);border-radius:50%}
+.office-window-sun b{inset:23px;border-color:rgba(225,29,46,.2)}
+.office-sofa{position:absolute;left:8%;bottom:43%;width:17%;height:48px;border:2px solid #d7bca6;border-radius:13px 13px 7px 7px;background:linear-gradient(180deg,#f7e4d0,#d8b79c);box-shadow:0 7px 10px rgba(105,77,49,.08);transform:translateZ(12px)}
+.office-sofa::before{position:absolute;left:-5px;right:-5px;bottom:-7px;height:10px;content:"";border-radius:3px 3px 5px 5px;background:#ae8870}
+.office-sofa::after{position:absolute;left:14%;right:14%;top:12%;height:63%;content:"";border-radius:7px;background:linear-gradient(90deg,#faeee0 0 47%,#e8d2be 48% 53%,#faeee0 54%)}
+.office-sofa span,.office-sofa i,.office-sofa b{position:absolute;z-index:1;top:16px;width:18px;height:15px;border-radius:4px;background:#e11d2e;transform:rotate(-8deg)}
+.office-sofa span{left:20%}.office-sofa i{left:44%;background:#facc15;transform:rotate(7deg)}.office-sofa b{right:15%;background:#d4e2dc}
+.office-plant{position:absolute;bottom:31%;width:47px;height:90px;filter:drop-shadow(0 7px 5px rgba(95,70,45,.08))}
+.plant-left{left:3%}.plant-right{right:3%;transform:scale(.85)}
+.office-plant::before{position:absolute;left:14px;bottom:0;width:26px;height:29px;content:"";border-radius:3px 3px 8px 8px;background:linear-gradient(90deg,#ad6c49,#dfaa7a 45%,#b87c57);box-shadow:inset 0 5px 0 rgba(91,60,37,.12)}
+.office-plant::after{position:absolute;left:10px;bottom:26px;width:34px;height:6px;content:"";border-radius:50%;background:#8b5738}
+.office-plant i{position:absolute;bottom:29px;left:22px;width:15px;height:36px;border-radius:100% 0 100% 0;background:linear-gradient(90deg,#4e8661,#8cb48b);transform-origin:bottom center;animation:plant-sway 4.5s ease-in-out infinite}
+.office-plant i:nth-child(1){transform:rotate(-47deg);height:28px;left:17px}
+.office-plant i:nth-child(2){transform:rotate(38deg);height:32px;left:26px;animation-delay:-2s}
+.office-plant i:nth-child(3){transform:rotate(-21deg);height:40px;left:11px;animation-delay:-1s}
+.office-plant i:nth-child(4){transform:rotate(20deg);height:43px;left:29px;animation-delay:-2.6s}
+.office-plant i:nth-child(5){transform:rotate(-2deg);height:49px;left:21px;background:linear-gradient(90deg,#4c825d,#abcaa3)}
+.office-coffee-cart{position:absolute;right:8%;bottom:40%;width:64px;height:48px;border:2px solid #c5ab8f;border-radius:5px;background:linear-gradient(180deg,#f5e7d6,#ddc3a5);box-shadow:0 5px 8px rgba(95,70,45,.1);transform:translateZ(8px)}
+.cart-shelf{position:absolute;left:-6px;right:-6px;top:11px;height:5px;border-radius:2px;background:#bd9975;box-shadow:0 22px 0 #bd9975}
+.cart-leg{position:absolute;top:47px;width:4px;height:13px;background:#99765b}
+.cart-leg-left{left:8px}.cart-leg-right{right:8px}
+.cart-mug{position:absolute;top:-10px;width:17px;height:14px;border:1px solid #c9b9a7;border-radius:3px 3px 7px 7px;background:linear-gradient(90deg,#fff,#e4d7c6);box-shadow:0 2px 2px rgba(80,55,32,.12)}
+.cart-mug::after{position:absolute;right:-6px;top:2px;width:7px;height:7px;content:"";border:2px solid #e6d7c4;border-left:0;border-radius:0 6px 6px 0}
+.cart-mug i{position:absolute;top:2px;left:2px;right:2px;height:2px;border-radius:50%;background:#885237}
+.mug-one{left:8px}.mug-two{right:8px;background:linear-gradient(90deg,#fbdc83,#f4bd56)}
+.cart-jar{position:absolute;right:7px;bottom:5px;width:12px;height:12px;border:1px solid #d4baa0;border-radius:3px;background:rgba(255,255,255,.45)}
+.office-wall-note{position:absolute;top:17%;right:7%;display:grid;gap:5px;min-width:95px;padding:9px 12px;border:1px solid #e8d9a1;border-radius:4px;background:#fff4bf;box-shadow:0 5px 11px rgba(114,84,40,.08);transform:rotate(3deg) translateZ(8px)}
+.office-wall-note i{display:block;width:50%;height:3px;border-radius:3px;background:#e7bc48}
+.office-wall-note i:nth-child(2){width:75%;background:#e8a8a3}
+.office-wall-note span{margin-top:2px;color:#9d6d22;font-family:ui-rounded,system-ui,sans-serif;font-size:8px;font-weight:750}
+.office-rug{position:absolute;left:18%;right:18%;bottom:-8%;height:27%;border:2px solid rgba(225,29,46,.14);border-radius:50%;background:repeating-linear-gradient(135deg,rgba(250,204,21,.12) 0 10px,rgba(255,250,239,.14) 10px 20px);transform:rotateX(66deg)}
+/* Make the bots look like tiny friendly desk buddies, not industrial androids */
+.office-robot{filter:drop-shadow(0 6px 4px rgba(92,66,42,.15));animation:robot-bob 3.4s ease-in-out infinite}
+.robot-head{top:4px;left:8px;width:88px;height:72px;border:2px solid #fff;border-radius:31px 31px 25px 25px;background:linear-gradient(145deg,#fffefa 0%,#f2e6d6 57%,#d4c6b7 100%);box-shadow:inset -6px -6px 10px rgba(126,97,70,.15),inset 4px 4px 7px rgba(255,255,255,.95),0 6px 9px rgba(93,65,40,.13);transform-origin:50% 70%}
+.robot-ear{top:22px;width:9px;height:19px;border:2px solid #e3d5c6;border-radius:50%;background:linear-gradient(90deg,#fff8ef,#ccbbaa);box-shadow:none}
+.robot-ear-left{left:-7px}.robot-ear-right{right:-7px}
+.robot-face{inset:10px 8px 8px;gap:13px;border:1px solid rgba(255,255,255,.16);border-radius:20px 20px 16px 16px;background:linear-gradient(165deg,#343642,#20212a);box-shadow:inset 0 0 9px rgba(0,0,0,.25)}
+.robot-face i{width:10px;height:13px;border-radius:50% 50% 45% 45%;background:#facc15;box-shadow:0 0 5px rgba(250,204,21,.95),0 0 11px rgba(250,204,21,.35);animation:robot-eyes 4.1s ease-in-out infinite}
+.robot-face b{bottom:4px;width:14px;height:5px;border:0;border-bottom:2px solid #f1a2a6;border-radius:0 0 12px 12px;background:transparent;box-shadow:none}
+.robot-face::before,.robot-face::after{position:absolute;bottom:8px;width:9px;height:5px;content:"";border-radius:50%;background:#f29da2;opacity:.85;box-shadow:0 0 5px rgba(242,157,162,.18)}
+.robot-face::before{left:4px}.robot-face::after{right:4px}
+.robot-neck{top:72px;left:44px;width:15px;height:8px;border-radius:3px;background:linear-gradient(90deg,#a58e76,#fff1df,#b39a81)}
+.robot-body{top:78px;left:31px;width:46px;height:42px;border:2px solid #fff5eb;border-radius:18px 18px 15px 15px;background:linear-gradient(140deg,#fffdf8,#e5d5c3 69%,#c4ae99);box-shadow:inset -4px -3px 6px rgba(92,69,46,.13),inset 3px 3px 6px rgba(255,255,255,.85);transform:rotateY(-4deg)}
+.robot-body::before{top:5px;left:14px;width:15px;height:19px;border:1px solid rgba(40,43,52,.1);border-radius:7px;background:linear-gradient(160deg,#3a3b45,#1b1d25);box-shadow:inset 0 0 7px rgba(250,204,21,.08)}
+.robot-chest-light{top:10px;left:20px;width:6px;height:6px;background:#e11d2e;box-shadow:0 0 6px rgba(225,29,46,.6)}
+.robot-body>b{left:13px;bottom:3px;width:17px;height:2px;background:#b9a58e}
+.robot-arm{top:81px;width:14px;height:34px;border:1px solid #e1d5c7;border-radius:9px;background:linear-gradient(90deg,#c3b09c,#fffaf0 48%,#d7c7b6)}
+.robot-arm::before{top:15px;left:-2px;width:17px;height:5px;background:linear-gradient(90deg,#d0bca8,#fffaf4,#c5b19d)}
+.robot-arm>i{right:0;bottom:-6px;width:12px;height:12px;border:1px solid #d7c7b6;border-radius:5px;background:linear-gradient(135deg,#fff8ee,#d7c6b5)}
+.robot-arm>b{top:9px;left:2px;width:8px;height:4px;border-radius:5px;background:#facc15}
+.robot-arm-left{left:18px;transform:rotate(26deg)}
+.robot-arm-right{left:72px;transform:rotate(-26deg)}
+.robot-leg{top:113px;width:14px;height:28px;border:1px solid #d7c7b6;border-radius:6px 6px 8px 8px;background:linear-gradient(90deg,#c3b09d,#fff9ef,#ccbaa6)}
+.robot-leg::after{bottom:-3px;left:-4px;width:21px;height:8px;border-radius:8px 8px 5px 5px;background:linear-gradient(180deg,#fffaf0,#b7a18b);box-shadow:0 2px 2px rgba(93,65,40,.1)}
+.robot-leg-left{left:34px;transform:rotate(1deg)}.robot-leg-right{left:58px;transform:rotate(-1deg)}
+.robot-shadow{background:rgba(91,67,45,.16);filter:blur(6px)}
+.robot-antenna{height:12px;background:linear-gradient(90deg,#bba48e,#fff2de,#c1ab96)}
+.robot-antenna i{background:#e11d2e;box-shadow:0 0 8px rgba(225,29,46,.45)}
+/* Personal accessories give each little teammate its own personality */
+.station-content-studio .robot-head::before{position:absolute;z-index:3;top:-6px;left:18px;width:51px;height:24px;content:"";border:4px solid #e11d2e;border-bottom:0;border-radius:28px 28px 0 0;background:transparent}
+.station-content-studio .robot-head::after{position:absolute;z-index:3;right:7px;top:0;width:13px;height:8px;content:"";border-radius:4px 9px 4px 9px;background:#facc15;transform:rotate(28deg)}
+.station-research-agent .robot-head{background:linear-gradient(145deg,#fff,#dbe7eb 60%,#adc5cb)}
+.station-research-agent .robot-face i{background:#d3e7ec;box-shadow:0 0 7px rgba(190,226,234,.95),0 0 11px rgba(190,226,234,.3)}
+.station-research-agent .robot-ear{background:linear-gradient(90deg,#e8f4f5,#a9c3c9)}
+.station-workflow-planner .robot-head{background:linear-gradient(145deg,#fffefa,#f3d8d6 58%,#dca8a2)}
+.station-workflow-planner .robot-face i{background:#f7aaa3;box-shadow:0 0 7px rgba(247,170,163,.9)}
+.station-workflow-planner .robot-head::before{position:absolute;z-index:3;left:34px;top:-9px;width:19px;height:11px;content:"";border:2px solid #facc15;border-bottom:0;border-radius:12px 12px 0 0;background:#e11d2e}
+.station-strategy-planner .robot-head{background:linear-gradient(145deg,#fffefa,#f9e8b3 58%,#d7c18c)}
+.station-strategy-planner .robot-head::before{position:absolute;z-index:3;top:-8px;left:25px;width:34px;height:15px;content:"";border-radius:18px 18px 5px 5px;background:#facc15;box-shadow:inset 0 -3px 0 rgba(174,124,15,.16);transform:rotate(-5deg)}
+.station-strategy-planner .robot-head::after{position:absolute;z-index:3;top:-2px;right:7px;width:11px;height:11px;content:"";border-radius:50%;background:#e11d2e;box-shadow:0 0 0 2px #fff7df}
+/* Coffee cups sit on desks; tiny steam makes the room feel lived-in */
+.station-coffee-cup{position:absolute;z-index:6;right:6%;bottom:31%;width:13px;height:12px;border:1px solid #cbb49c;border-radius:2px 2px 5px 5px;background:linear-gradient(90deg,#fffdf4,#e5d3bf);box-shadow:0 2px 3px rgba(87,61,38,.12);transform:translateZ(18px)}
+.station-coffee-cup::before{position:absolute;right:-5px;top:2px;width:5px;height:6px;content:"";border:2px solid #e8d8c5;border-left:0;border-radius:0 5px 5px 0}
+.station-coffee-cup i{position:absolute;top:1px;left:1px;right:1px;height:2px;border-radius:50%;background:#855239}
+.station-coffee-cup b{position:absolute;left:3px;top:-9px;width:3px;height:7px;border-left:1px dashed rgba(255,255,255,.85);border-radius:50%;opacity:.5;animation:coffee-steam 2s ease-in-out infinite}
+.station-coffee-cup b::after{position:absolute;top:1px;left:4px;width:3px;height:6px;content:"";border-left:1px dashed rgba(255,255,255,.6);border-radius:50%}
+.station-content-studio .station-coffee-cup{background:linear-gradient(90deg,#fff,#f3c0ba)}
+.station-workflow-planner .station-coffee-cup{background:linear-gradient(90deg,#fff4bf,#e4bd4c)}
+.station-strategy-planner .station-coffee-cup{background:linear-gradient(90deg,#fff,#f3c0ba)}
+/* Slow, friendly micro-movements: focus, chatting, stretching and sipping */
+@keyframes robot-bob{0%,100%{transform:translateY(0) rotateY(-2deg)}25%{transform:translateY(-3px) rotateY(1deg)}58%{transform:translateY(-7px) rotateY(3deg)}80%{transform:translateY(-2px) rotateY(0)}}
+@keyframes robot-coffee-sip{0%,68%,100%{transform:rotate(-24deg)}76%,88%{transform:rotate(-68deg)}}
+@keyframes robot-stretch-left{0%,65%,100%{transform:rotate(25deg)}78%,91%{transform:rotate(115deg)}}
+@keyframes robot-stretch-right{0%,65%,100%{transform:rotate(-26deg)}78%,91%{transform:rotate(-115deg)}}
+@keyframes robot-chat{0%,100%{transform:rotateY(0) rotateZ(0)}30%{transform:rotateY(12deg) rotateZ(2deg)}65%{transform:rotateY(-9deg) rotateZ(-1deg)}}
+@keyframes plant-sway{0%,100%{translate:0 0;rotate:-2deg}50%{translate:1px 0;rotate:3deg}}
+@keyframes coffee-steam{0%{opacity:0;transform:translateY(3px) scale(.8)}35%{opacity:.6}100%{opacity:0;transform:translateY(-7px) scale(1.15)}}
+@keyframes warm-window-glow{0%,100%{opacity:.6}50%{opacity:1}}
+.station-content-studio.robot-state-idle .robot-arm-right{animation:robot-coffee-sip 6.5s ease-in-out infinite}
+.station-research-agent .office-robot{animation:robot-bob 4.2s ease-in-out infinite}
+.station-research-agent.robot-state-idle .robot-head{animation:robot-chat 5.8s ease-in-out infinite}
+.station-workflow-planner.robot-state-idle .robot-arm-left{animation:robot-stretch-left 7.2s ease-in-out infinite}
+.station-workflow-planner.robot-state-idle .robot-arm-right{animation:robot-stretch-right 7.2s ease-in-out infinite}
+.station-strategy-planner .office-robot{animation:robot-bob 4.7s ease-in-out infinite}
+.station-strategy-planner.robot-state-idle .robot-head{animation:robot-chat 6.2s ease-in-out infinite}
+.office-window-sun{animation:warm-window-glow 8s ease-in-out infinite}
+.office-scene-topline{background:#fffaf0;border-bottom-color:#e8dccb;color:#887a68}
+.office-scene-topline>span:first-child i{background:#e11d2e;box-shadow:0 0 6px rgba(225,29,46,.2)}
+.office-signal{color:#468663}
+.office-scene-legend{background:#fffaf1;border-color:#e4d7c5;color:#7c7164}
+.office-scene-legend .legend-tip{color:#a18e7a}
+.legend-working{background:#339d6f;box-shadow:none}
+.legend-done{background:#e8b72d}.legend-attention{background:#e11d2e}
+.station-number{color:rgba(103,79,57,.65)}
+.station-orbit{border-color:rgba(225,29,46,.12)}
+.office-floor-mark{color:rgba(99,77,54,.24)}
+.office-floor-mark span{color:rgba(180,126,28,.46)}
+/* Keep the office comfortable at every viewport and respect reduced-motion settings. */
+@media(max-width:800px){
+  .office-sofa{left:4%;width:25%;transform:scale(.8);transform-origin:bottom left}
+  .office-coffee-cart{right:5%;transform:scale(.8);transform-origin:bottom right}
+  .office-wall-note{right:4%;top:15%;transform:scale(.85) rotate(3deg)}
+  .office-plant.plant-right{right:1%}
+}
+@media(max-width:560px){
+  .office-sofa{bottom:46%;left:1%;transform:scale(.62);transform-origin:bottom left}
+  .office-coffee-cart{right:0;bottom:47%;transform:scale(.64);transform-origin:bottom right}
+  .office-plant{transform:scale(.62);transform-origin:bottom left}
+  .office-plant.plant-right{transform:scale(.58);transform-origin:bottom right}
+  .office-wall-note{top:31%;right:2%;min-width:68px;padding:6px 7px;transform:scale(.7) rotate(3deg);transform-origin:top right}
+  .office-window-sun{left:3%;top:7%;width:43px;height:43px}
+  .station-coffee-cup{right:2%;bottom:30%;transform:scale(.83) translateZ(18px)}
+}
+@media(prefers-reduced-motion:reduce){
+  .ai-office-scene *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+
