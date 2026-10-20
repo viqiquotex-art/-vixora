@@ -23,6 +23,7 @@
     faceEyes: THREE.Mesh[];
     legs: THREE.Group[];
     roamPath: readonly { x: number; z: number }[];
+    chair: THREE.Group;
     screen: THREE.Mesh;
     label: THREE.Sprite;
     labelTexture: THREE.CanvasTexture;
@@ -332,7 +333,9 @@
 
   function makeRobot(scene: THREE.Scene, agent: OfficeAgent, idx: number, x: number, deskZ: number, tool: string, roamPath: readonly { x: number; z: number }[]): RobotRig {
     const root = new THREE.Group();
-    root.position.set(x, 0, deskZ - .98);
+    // Robot works on the near side of the desk, facing the monitor.
+    root.position.set(x, 0, deskZ + 1.0);
+    root.rotation.y = Math.PI;
     scene.add(root);
 
     const bodyColor = idx === 1 ? 0xe6f0ed : idx === 2 ? 0xf5e4c4 : idx === 3 ? 0xe1eadb : 0xf6e6db;
@@ -503,12 +506,14 @@
       cylinder(deskGroup, .022, .022, .3, 0xc49c68, [.88, .87, .23], 8).rotation.z = -.45;
     }
 
-    // Rolling chair behind the little teammate.
-    const chairZ = root.position.z - .16;
-    cylinder(scene, .21, .24, .1, 0xb9a084, [x, .43, chairZ], 16);
-    box(scene, [.09, .3, .09], 0x9e8467, [x, .25, chairZ]);
-    box(scene, [.55, .13, .19], 0xc9ad8c, [x, .53, chairZ - .18]);
-    box(scene, [.54, .48, .12], 0xe2c9ac, [x, .79, chairZ - .28]);
+    // Grouped rolling chair: hidden while the agent strolls, visible when seated at its desk.
+    const chair = new THREE.Group();
+    chair.position.set(x, 0, deskZ + 1.08);
+    scene.add(chair);
+    cylinder(chair, .21, .24, .1, 0xb9a084, [0, .43, 0], 16);
+    box(chair, [.09, .3, .09], 0x9e8467, [0, .25, 0]);
+    box(chair, [.55, .13, .19], 0xc9ad8c, [0, .53, .1]);
+    box(chair, [.54, .48, .12], 0xe2c9ac, [0, .79, .27]);
 
     // Nameplate is a canvas texture on a physical card at the desk's front edge.
     const labelTexture = makeNameplateTexture(agent);
@@ -526,7 +531,7 @@
     hitArea.userData.pickable = true;
     scene.add(hitArea);
 
-    return { root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7 };
+    return { root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, chair, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7 };
   }
 
   function addRoamingBuddy(scene: THREE.Scene) {
