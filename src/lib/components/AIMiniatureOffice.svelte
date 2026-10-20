@@ -30,6 +30,7 @@
     routeDirection: 1 | -1;
     pauseUntil: number;
     gaitPhase: number;
+    sitBlend: number;
     deliveryPhase: 'idle' | 'outbound' | 'handoff' | 'returning' | 'delivered';
     deliveryCurve: THREE.CatmullRomCurve3 | null;
     deliveryProgress: number;
@@ -655,7 +656,8 @@
 
     // Grouped rolling chair: hidden while the agent strolls, visible when seated at its desk.
     const chair = new THREE.Group();
-    chair.position.set(x, 0, deskZ + 1.42);
+    // Seat sits directly under the robot's home position, so the pelvis lines up with the cushion.
+    chair.position.set(x, 0, deskZ + 1.05);
     scene.add(chair);
     cylinder(chair, .21, .24, .1, 0xb9a084, [0, .43, 0], 16);
     box(chair, [.09, .3, .09], 0x9e8467, [0, .25, 0]);
@@ -703,6 +705,7 @@
       routeDirection: 1,
       pauseUntil: 0,
       gaitPhase: idx * .9,
+      sitBlend: 0,
       deliveryPhase: agent.state === 'done' ? 'delivered' : 'idle',
       deliveryCurve: null,
       deliveryProgress: 0,
@@ -1024,6 +1027,10 @@
             // and return along the route. This is an open itinerary, not a tiny closed loop.
             if (time >= rig.pauseUntil) {
               const routeLength = Math.max(rig.roamCurve.getLength(), .01);
+              // Finish standing up before the first step so a departing robot never glides off while seated.
+              if (rig.sitBlend > .08) {
+                rig.routeProgress = 0;
+              } else {
               // Move the path target a little slower than the robot's stride so it can track the curve instead of cutting corners.
               rig.routeProgress += rig.routeDirection * ((.46 * delta) / routeLength);
               if (rig.routeProgress >= 1) {
@@ -1034,6 +1041,7 @@
                 rig.routeProgress = 0;
                 rig.routeDirection = 1;
                 rig.pauseUntil = time + 2.1 + Math.abs(Math.cos(rig.phase * 1.7)) * 1.8;
+              }
               }
             }
             const point = rig.roamCurve.getPointAt(THREE.MathUtils.clamp(rig.routeProgress, 0, 1));
@@ -1107,8 +1115,15 @@
 
           // Real travel advances the gait phase: stopped bots stop stepping.
           if (moving) rig.gaitPhase += movedDistance * 14;
-          // Chairs stay in the room even when their robot gets up to roam or deliver a result.
+          // Keep the chair visible; blend the whole upper posture into a seated pose only at the desk.
+          const atDesk = Math.hypot(rig.root.position.x - homeX, rig.root.position.z - homeZ) < .28;
+          const wantsSit = working && atDesk && !moving && !deliveryActive;
+          rig.sitBlend += ((wantsSit ? 1 : 0) - rig.sitBlend) * (1 - Math.exp(-delta * 5.8));
           rig.chair.visible = true;
+          rig.head.position.y = 1.42 - rig.sitBlend * .045;
+          rig.body.position.y = .79 - rig.sitBlend * .035;
+          rig.leftArm.position.y = .88 - rig.sitBlend * .035;
+          rig.rightArm.position.y = .88 - rig.sitBlend * .035;
           rig.deliveryFolder.visible = deliveryActive && rig.deliveryPhase === 'outbound';
 
           // Keep the root grounded, with a soft gait bounce and a tiny weight shift on turns.
@@ -1216,7 +1231,8 @@
           rig.legs.forEach((leg, index) => {
             const stride = Math.sin(rig.gaitPhase + index * Math.PI);
             const swing = Math.max(0, stride);
-            const legAngle = moving ? stride * .36 : 0;
+            // Seated legs angle forward; when standing, they straighten back to neutral.
+            const legAngle = moving ? stride * .36 : rig.sitBlend * .78;
             leg.rotation.x = legAngle;
             leg.rotation.z = moving ? stride * .025 : 0;
 
