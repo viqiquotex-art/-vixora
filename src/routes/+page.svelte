@@ -900,13 +900,13 @@
         </div>
       {:else if activeTab === 'AI Workspace'}
         <section class="page-intro workspace-intro">
-          <div class="eyebrow"><span class="eyebrow-line"></span> VIXORA DIGITAL FLOOR</div>
-          <h1>AI Digital <span>Workspace</span></h1>
-          <p>Ruang kerja virtual untuk para spesialis AI. Gerakan robot adalah visualisasi suasana kerja; status task dan nama tugas mengikuti Agent Run yang tersimpan.</p>
+          <div class="eyebrow"><span class="eyebrow-line"></span> VIXORA COZY AI STUDIO</div>
+          <h1>AI Cozy <span>Workspace</span></h1>
+          <p>Kantor kecil tempat tim AI bekerja dengan santai, saling bantu, dan sesekali rehat ngopi. Aktivitas robot dibuat hidup; status tugas tetap mengikuti Agent Run yang benar-benar tersimpan.</p>
         </section>
 
         <section class="digital-floor-toolbar" aria-label="Digital workspace controls">
-          <div class="floor-live-status"><span class="floor-live-dot"></span><div><strong>WORKSPACE ONLINE</strong><small>Staging runtime · refresh data kapan saja</small></div></div>
+          <div class="floor-live-status"><span class="floor-live-dot"></span><div><strong>COZY OFFICE ONLINE</strong><small>Staging runtime · refresh data kapan saja</small></div></div>
           <div class="floor-quick-stats">
             <div class="floor-stat"><span>Agent bekerja</span><strong>{agentRuns.filter((run) => run.status === 'running').length.toString().padStart(2, '0')}</strong></div>
             <div class="floor-stat"><span>Task berhasil</span><strong>{agentRuns.filter((run) => run.status === 'succeeded').length.toString().padStart(2, '0')}</strong></div>
@@ -919,7 +919,7 @@
         </section>
 
         <section class="ai-office-shell" aria-label="Animated AI team room">
-          <div class="office-scene-topline"><span><i></i> DIGITAL FLOOR / 01</span><span>VIXORA NEURAL OPERATIONS</span><span class="office-signal">● SIGNAL STABLE</span></div>
+          <div class="office-scene-topline"><span><i></i> DIGITAL FLOOR / 01</span><span>VIXORA LITTLE AI STUDIO</span><span class="office-signal">● SIGNAL STABLE</span></div>
           <div class="ai-office-scene" class:motion-paused={!workspaceMotion}>
             <div class="office-backwall">
               <div class="office-window-grid"></div>
@@ -930,17 +930,17 @@
 
             <div class="office-command-display">
               <div class="command-display-frame">
-                <div class="command-display-header"><span>VIXORA / AGENT NETWORK</span><span><i></i> LIVE</span></div>
+                <div class="command-display-header"><span>VIXORA / TEAM BOARD</span><span><i></i> LIVE</span></div>
                 <div class="command-display-content">
                   <div class="command-globe"><div class="globe-latitude"></div><div class="globe-longitude"></div><span>V</span></div>
                   <div class="command-display-data">
-                    <span class="display-section-label">COLLABORATION MATRIX</span>
+                    <span class="display-section-label">TEAM ACTIVITY</span>
                     <div class="display-graph"><i style="height:28%"></i><i style="height:52%"></i><i style="height:39%"></i><i style="height:76%"></i><i style="height:61%"></i><i style="height:91%"></i><i style="height:68%"></i><i style="height:100%"></i><i style="height:75%"></i></div>
                     <div class="display-readout"><span>AGENTS <b>04</b></span><span>MODE <b>STAGING</b></span></div>
                     <div class="display-code-lines"><i></i><i></i><i></i><i></i></div>
                   </div>
                 </div>
-                <div class="command-display-footer"><span>SECURE TASK ROUTING</span><span>LOCAL + GEMINI</span><span>● ● ●</span></div>
+                <div class="command-display-footer"><span>TEAMWORK IN PROGRESS</span><span>LOCAL + GEMINI</span><span>● ● ●</span></div>
               </div>
               <div class="command-display-stem"></div><div class="command-display-plinth"></div>
             </div>
@@ -951,6 +951,16 @@
             <div class="office-floor-ring ring-large"></div><div class="office-floor-ring ring-small"></div>
             <div class="office-cable cable-one"></div><div class="office-cable cable-two"></div>
 
+            <div class="cozy-office-decor" aria-hidden="true">
+              <div class="office-window-sun"><i></i><b></b></div>
+              <div class="office-sofa"><span></span><i></i><b></b></div>
+              <div class="office-plant plant-left"><i></i><i></i><i></i><i></i><i></i><span></span></div>
+              <div class="office-plant plant-right"><i></i><i></i><i></i><i></i><i></i><span></span></div>
+              <div class="office-coffee-cart"><span class="cart-shelf"></span><span class="cart-leg cart-leg-left"></span><span class="cart-leg cart-leg-right"></span><span class="cart-mug mug-one"><i></i></span><span class="cart-mug mug-two"><i></i></span><span class="cart-jar"></span></div>
+              <div class="office-wall-note"><i></i><i></i><span>one task at a time ✦</span></div>
+              <div class="office-rug"></div>
+            </div>
+
             {#each roomAgents as agent, index (agent.id)}
               <button
                 type="button"
@@ -960,6 +970,7 @@
               >
                 <span class="station-orbit" aria-hidden="true"></span>
                 <span class="station-number">0{index + 1}</span>
+                <span class="station-coffee-cup" aria-hidden="true"><i></i><b></b></span>
                 <div class="office-robot" aria-hidden="true">
                   <span class="robot-shadow"></span>
                   <span class="robot-antenna"><i></i></span>
