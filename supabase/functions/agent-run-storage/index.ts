@@ -99,6 +99,29 @@ Deno.serve(async (request: Request) => {
   const method = request.method.toUpperCase();
 
   if (method === "GET") {
+    // Recover stale runs left behind when a browser closes or a terminal-status write fails.
+    // Live Gemini requests have a 55-second timeout, so a 3-minute threshold avoids interfering
+    // with normal execution while preventing old records from appearing "running" forever.
+    try {
+      const staleCutoff = encodeURIComponent(new Date(Date.now() - 3 * 60 * 1000).toISOString());
+      const now = new Date().toISOString();
+      await adminRest(
+        "agent_runs?user_id=eq." + encodeURIComponent(user.id) +
+          "&status=eq.running&started_at=lt." + staleCutoff,
+        {
+          method: "PATCH",
+          body: JSON.stringify({
+            status: "failed",
+            error_message: "Run ditandai gagal otomatis karena tidak diperbarui selama lebih dari 3 menit.",
+            finished_at: now,
+            updated_at: now,
+          }),
+        },
+      );
+    } catch {
+      // Recovery is best-effort; a recovery error must not prevent the history from loading.
+    }
+
     try {
       const query = "agent_runs?select=id,task_id,title,prompt,status,assigned_agent,executor,output,error_message,attempt_count,requires_approval,created_at,updated_at,started_at,finished_at&user_id=eq." +
         encodeURIComponent(user.id) + "&order=created_at.desc&limit=50";
