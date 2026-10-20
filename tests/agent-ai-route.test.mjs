@@ -119,7 +119,7 @@ test('AI route reports Gemini quota exhaustion without trying another provider',
   assert.equal(response.status, 429);
   const payload = await response.json();
   assert.equal(payload.error, 'GEMINI_QUOTA_OR_RATE_LIMIT');
-  assert.match(payload.message, /tidak memanggil provider alternatif/i);
+  assert.match(payload.message, /tidak ada fallback ke provider lain/i);
   assert.match(captured.modelUrl, /models\/gemini-3\.6-flash:generateContent$/);
 });
 
