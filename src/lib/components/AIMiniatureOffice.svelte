@@ -239,6 +239,89 @@
     return texture;
   }
 
+  function makeCommandWallTexture() {
+    const art = document.createElement('canvas');
+    art.width = 1200;
+    art.height = 420;
+    const ctx = art.getContext('2d');
+    if (!ctx) return new THREE.CanvasTexture(art);
+
+    // A real textured studio dashboard for the oversized wall display.
+    ctx.fillStyle = '#171d25';
+    ctx.fillRect(0, 0, art.width, art.height);
+    const glow = ctx.createLinearGradient(0, 0, art.width, art.height);
+    glow.addColorStop(0, '#263744');
+    glow.addColorStop(.5, '#1a2630');
+    glow.addColorStop(1, '#33272b');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, art.width, art.height);
+
+    ctx.strokeStyle = 'rgba(157,197,192,.10)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < art.width; x += 32) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, art.height); ctx.stroke();
+    }
+    for (let y = 0; y < art.height; y += 28) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(art.width, y); ctx.stroke();
+    }
+
+    ctx.fillStyle = '#e11d2e';
+    ctx.fillRect(0, 0, art.width, 12);
+    ctx.fillStyle = '#f8eee0';
+    ctx.font = 'bold 35px sans-serif';
+    ctx.fillText('VIXORA', 38, 62);
+    ctx.fillStyle = '#a6c9c0';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('AI STUDIO  /  AGENT CONTROL', 40, 92);
+    ctx.fillStyle = '#81bba1';
+    ctx.beginPath(); ctx.arc(1130, 49, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#d8e6dc';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('SYSTEM ONLINE', 1108, 56);
+    ctx.textAlign = 'left';
+    ctx.strokeStyle = 'rgba(222,237,225,.22)';
+    ctx.beginPath(); ctx.moveTo(34, 112); ctx.lineTo(1165, 112); ctx.stroke();
+
+    const cards = [
+      { x: 36, title: 'CONTENT STUDIO', sub: 'CREATE  /  PUBLISH', accent: '#e66b70', bars: [42, 65, 53, 79, 60, 91, 72] },
+      { x: 326, title: 'RESEARCH AGENT', sub: 'SEARCH  /  INSIGHT', accent: '#8ac8bb', bars: [75, 48, 66, 88, 59, 83, 95] },
+      { x: 616, title: 'WORKFLOW PLANNER', sub: 'CONNECT  /  AUTOMATE', accent: '#f0ca69', bars: [38, 57, 82, 62, 94, 70, 88] },
+      { x: 906, title: 'STRATEGY DESK', sub: 'PLAN  /  REVIEW', accent: '#adc99d', bars: [51, 73, 64, 90, 69, 96, 82] }
+    ];
+    for (const card of cards) {
+      ctx.fillStyle = 'rgba(8,14,21,.58)';
+      ctx.beginPath(); ctx.roundRect(card.x, 132, 258, 242, 16); ctx.fill();
+      ctx.strokeStyle = 'rgba(218,232,224,.19)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.roundRect(card.x, 132, 258, 242, 16); ctx.stroke();
+      ctx.fillStyle = card.accent;
+      ctx.fillRect(card.x + 18, 151, 6, 34);
+      ctx.fillStyle = '#f5eee3';
+      ctx.font = 'bold 17px sans-serif';
+      ctx.fillText(card.title, card.x + 36, 164);
+      ctx.fillStyle = card.accent;
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(card.sub, card.x + 36, 184);
+      ctx.strokeStyle = 'rgba(218,232,224,.16)';
+      ctx.beginPath(); ctx.moveTo(card.x + 18, 201); ctx.lineTo(card.x + 240, 201); ctx.stroke();
+      for (let i = 0; i < card.bars.length; i += 1) {
+        const barHeight = card.bars[i] * 1.22;
+        ctx.fillStyle = i === card.bars.length - 1 ? card.accent : 'rgba(145,186,174,.50)';
+        ctx.fillRect(card.x + 26 + i * 28, 333 - barHeight, 15, barHeight);
+      }
+      ctx.fillStyle = '#8faaa8';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('ACTIVITY', card.x + 18, 356);
+      ctx.fillStyle = card.accent;
+      ctx.beginPath(); ctx.arc(card.x + 228, 352, 5, 0, Math.PI * 2); ctx.fill();
+    }
+    const texture = new THREE.CanvasTexture(art);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    texture.anisotropy = 4;
+    return texture;
+  }
+
   function makeOfficeSignTexture() {
     const art = document.createElement('canvas');
     art.width = 1200;
@@ -392,15 +475,52 @@
     box(scene, [.12, .2, .035], 0xf1ca58, [3.91, 3.18, -4.43]);
     box(scene, [.12, .36, .035], 0x8fb29a, [4.06, 3.25, -4.43]);
 
-    // Pinboard and tiny notes.
-    box(scene, [3.7, 1.32, .15], 0xc0a181, [0, 2.28, -4.59]);
-    box(scene, [3.5, 1.17, .05], 0xfff5e6, [0, 2.28, -4.49]);
-    box(scene, [.8, .55, .045], 0xf1c8c2, [-.98, 2.47, -4.445]);
-    box(scene, [.8, .55, .045], 0xf6dfa0, [0, 2.48, -4.445]);
-    box(scene, [.8, .55, .045], 0xd4e5cc, [.98, 2.47, -4.445]);
-    for (let i = 0; i < 5; i += 1) box(scene, [.52 - i * .035, .025, .012], 0xcab8a1, [-.98, 2.33 - i * .075, -4.414], { castShadow: false });
-    for (let i = 0; i < 4; i += 1) box(scene, [.52 - i * .045, .025, .012], 0xcab8a1, [0, 2.33 - i * .075, -4.414], { castShadow: false });
-    for (let i = 0; i < 3; i += 1) box(scene, [.52 - i * .05, .025, .012], 0xb3c9ab, [.98, 2.33 - i * .075, -4.414], { castShadow: false });
+    // Oversized command display: the new focal point directly beneath the VIXORA sign.
+    box(scene, [4.62, 1.58, .2], 0xb99a79, [0, 2.04, -4.42]);
+    box(scene, [4.48, 1.47, .16], 0x242b33, [0, 2.04, -4.30], { roughness: .38, metalness: .12 });
+    box(scene, [4.38, .035, .025], 0xe7c477, [0, 1.27, -4.205], { castShadow: false });
+    const commandTexture = makeCommandWallTexture();
+    const commandScreen = new THREE.Mesh(
+      new THREE.PlaneGeometry(4.30, 1.34),
+      new THREE.MeshBasicMaterial({ map: commandTexture, side: THREE.DoubleSide, toneMapped: false })
+    );
+    commandScreen.position.set(0, 2.05, -4.207);
+    scene.add(commandScreen);
+    // Mounting feet and a slim oak console shelf ground the screen in the room.
+    box(scene, [.12, .34, .15], 0x927457, [-1.5, 1.28, -4.25]);
+    box(scene, [.12, .34, .15], 0x927457, [1.5, 1.28, -4.25]);
+    box(scene, [4.92, .09, .42], 0xc7a27c, [0, 1.10, -4.10]);
+    box(scene, [4.86, .035, .36], 0xe7d2b6, [0, 1.155, -4.09]);
+    // Gold status pips and a soft red underline make the console feel powered on.
+    for (let i = 0; i < 9; i += 1) {
+      const ledColor = i % 3 === 0 ? 0xe11d2e : i % 2 === 0 ? 0xf1ca58 : 0x7fc5a8;
+      sphere(scene, .025, ledColor, [-.52 + i * .13, 1.19, -3.89], [1, .65, .65], { emissive: ledColor, emissiveIntensity: .55 });
+    }
+
+    // Side information plaques balance the wide screen and preserve the hand-made studio feel.
+    for (const side of [-1, 1]) {
+      const px = side * 3.12;
+      box(scene, [.82, .96, .105], 0xb99a79, [px, 2.05, -4.49]);
+      box(scene, [.72, .86, .055], 0xefe2cd, [px, 2.05, -4.425]);
+      box(scene, [.52, .065, .035], side < 0 ? 0x83b8ad : 0xe2b84f, [px, 2.34, -4.385]);
+      for (let row = 0; row < 5; row += 1) {
+        box(scene, [.46 - row * .035, .018, .018], 0xc5b299, [px - .01, 2.18 - row * .10, -4.384], { castShadow: false });
+      }
+      for (let dot = 0; dot < 3; dot += 1) {
+        const dotColor = [0xe11d2e, 0xf1ca58, 0x83b8ad][dot];
+        sphere(scene, .025, dotColor, [px - .19 + dot * .19, 1.81, -4.38], [1, .8, .55], { emissive: dotColor, emissiveIntensity: .25 });
+      }
+    }
+
+    // A small suspended track light warms the work zone without blocking the open roof view.
+    box(scene, [6.4, .075, .12], 0x6d6056, [0, 3.42, -.65]);
+    for (const x of [-2.45, 0, 2.45]) {
+      cylinder(scene, .012, .012, .36, 0x8d7863, [x, 3.23, -.65], 8);
+      const housing = new THREE.Mesh(new THREE.CylinderGeometry(.12, .16, .11, 16), material(0x4a4847, .35, .22));
+      housing.position.set(x, 3.04, -.65);
+      scene.add(housing);
+      sphere(scene, .075, 0xffdf91, [x, 2.975, -.65], [1, .6, 1], { emissive: 0xffc34d, emissiveIntensity: .85 });
+    }
 
     // Sofa and a tiny coffee table make it an actual office, not a command bridge.
     box(scene, [1.72, .55, .64], 0xd5b297, [-5.28, .31, -2.05]);
@@ -428,13 +548,29 @@
     addPlant(scene, 5.7, -3.5, .82);
     addPlant(scene, 5.9, 3.5, .86);
 
-    // Rugs and floor strips help the top-down/isometric composition read as a room.
+    // Layered rugs and floor inlays visually separate the desks from the lounge and team-sync zone.
     const rug = new THREE.Mesh(new THREE.BoxGeometry(3.1, .025, 2.0), material(0xe9d8c3));
     rug.position.set(-3.5, .045, 1.2);
     rug.receiveShadow = true;
     scene.add(rug);
+    const studioRug = new THREE.Mesh(new THREE.BoxGeometry(10.4, .022, 3.25), material(0xe8d7c1));
+    studioRug.position.set(.2, .043, .10);
+    studioRug.receiveShadow = true;
+    scene.add(studioRug);
+    const syncRug = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.55, .028, 48), material(0xe5d1b7));
+    syncRug.position.set(0, .046, 4.18);
+    syncRug.receiveShadow = true;
+    scene.add(syncRug);
+    const syncRugRing = new THREE.Mesh(new THREE.TorusGeometry(1.42, .025, 6, 56), material(0xc09b77));
+    syncRugRing.position.set(0, .065, 4.18);
+    syncRugRing.rotation.x = Math.PI / 2;
+    scene.add(syncRugRing);
     for (let i = 0; i < 7; i += 1) {
       box(scene, [13.1, .018, .018], i % 2 ? 0xe5d5c0 : 0xdfcbb1, [0, .035, -3.9 + i * 1.12], { castShadow: false });
+    }
+    // A few inset floor accents draw the eye toward the central command screen.
+    for (const x of [-5.0, 5.0]) {
+      box(scene, [.035, .012, 5.7], 0xd3b894, [x, .039, .0], { castShadow: false });
     }
 
     // Shared team-sync island: a physical round table and small screen for report handoffs.
