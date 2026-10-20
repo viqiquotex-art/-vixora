@@ -91,7 +91,8 @@
     }>();
     for (const run of agentRuns) {
       if (run.executor !== 'gemini-api' && !run.output?.model) continue;
-      const model = run.output?.model?.trim() || 'Model belum tercatat';
+      const modelFromError = run.error_message?.match(/Gemini \\(([^)]+)\\)/i)?.[1]?.trim();
+      const model = run.output?.model?.trim() || modelFromError || 'Model belum tercatat';
       let group = modelGroups.get(model);
       if (!group) {
         group = { model, total: 0, succeeded: 0, failed: 0, durations: [] };
@@ -638,10 +639,10 @@
       const message = cause instanceof Error ? cause.message : 'AI Agent belum berhasil dijalankan.';
       agentAIError = message;
       if (runId && token) {
-        const failedRun = await updateRun(token, runId, 'failed', {
-          error_message: message,
-          ...(attemptedModel ? { output: { mode: 'live-ai', model: attemptedModel, agent_name: startedAgentName, message: 'Gemini request failed; model and failure recorded.' } } : {})
-        });
+        const persistedError = attemptedModel && !message.includes(attemptedModel)
+          ? `Gemini (${attemptedModel}) gagal: ${message}`
+          : message;
+        const failedRun = await updateRun(token, runId, 'failed', { error_message: persistedError });
         if (failedRun) agentRuns = [failedRun, ...agentRuns.filter((run) => run.id !== failedRun.id)];
       }
     } finally {
@@ -808,7 +809,7 @@
                 </table>
               </div>
               {#if runAnalytics.modelStats.some((model) => model.model === 'Model belum tercatat')}
-                <p class="activity-footnote">Sebagian run lama belum menyimpan nama model pada hasilnya. Run baru akan mencatat model ketika Gemini mengembalikan informasi error.</p>
+                <p class="activity-footnote">Sebagian run lama belum menyimpan nama model pada hasilnya. Run baru akan mencantumkan model pada pesan error jika Gemini mengembalikan informasi model.</p>
               {/if}
             {:else}
               <p class="model-health-empty">Belum ada run AI dengan informasi model. Jalankan satu task AI untuk mulai mengumpulkan metrik.</p>
