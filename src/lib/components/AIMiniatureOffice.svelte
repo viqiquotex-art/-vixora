@@ -239,14 +239,11 @@
     return texture;
   }
 
-  function makeCommandWallTexture() {
-    const art = document.createElement('canvas');
-    art.width = 1200;
-    art.height = 420;
+  function drawCommandWallTexture(art: HTMLCanvasElement, agents: OfficeAgent[]) {
     const ctx = art.getContext('2d');
-    if (!ctx) return new THREE.CanvasTexture(art);
+    if (!ctx) return;
 
-    // A real textured studio dashboard for the oversized wall display.
+    ctx.clearRect(0, 0, art.width, art.height);
     ctx.fillStyle = '#171d25';
     ctx.fillRect(0, 0, art.width, art.height);
     const glow = ctx.createLinearGradient(0, 0, art.width, art.height);
@@ -265,6 +262,9 @@
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(art.width, y); ctx.stroke();
     }
 
+    const activeCount = agents.filter((agent) => agent.state === 'working').length;
+    const reviewCount = agents.filter((agent) => agent.state === 'attention' || agent.state === 'failed').length;
+    const queuedCount = agents.filter((agent) => agent.state === 'queued' || agent.state === 'ready').length;
     ctx.fillStyle = '#e11d2e';
     ctx.fillRect(0, 0, art.width, 12);
     ctx.fillStyle = '#f8eee0';
@@ -272,50 +272,94 @@
     ctx.fillText('VIXORA', 38, 62);
     ctx.fillStyle = '#a6c9c0';
     ctx.font = 'bold 18px sans-serif';
-    ctx.fillText('AI STUDIO  /  AGENT CONTROL', 40, 92);
-    ctx.fillStyle = '#81bba1';
-    ctx.beginPath(); ctx.arc(1130, 49, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillText('AI STUDIO  /  LIVE AGENT STATUS', 40, 92);
+    ctx.fillStyle = reviewCount > 0 ? '#e66b70' : activeCount > 0 ? '#81bba1' : '#e2c477';
+    ctx.beginPath(); ctx.arc(866, 49, 8, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#d8e6dc';
-    ctx.font = 'bold 18px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'right';
-    ctx.fillText('SYSTEM ONLINE', 1108, 56);
+    ctx.fillText(`${activeCount} WORKING  ·  ${queuedCount} QUEUED  ·  ${reviewCount} REVIEW`, 1160, 56);
     ctx.textAlign = 'left';
     ctx.strokeStyle = 'rgba(222,237,225,.22)';
     ctx.beginPath(); ctx.moveTo(34, 112); ctx.lineTo(1165, 112); ctx.stroke();
 
-    const cards = [
-      { x: 36, title: 'CONTENT STUDIO', sub: 'CREATE  /  PUBLISH', accent: '#e66b70', bars: [42, 65, 53, 79, 60, 91, 72] },
-      { x: 326, title: 'RESEARCH AGENT', sub: 'SEARCH  /  INSIGHT', accent: '#8ac8bb', bars: [75, 48, 66, 88, 59, 83, 95] },
-      { x: 616, title: 'WORKFLOW PLANNER', sub: 'CONNECT  /  AUTOMATE', accent: '#f0ca69', bars: [38, 57, 82, 62, 94, 70, 88] },
-      { x: 906, title: 'STRATEGY DESK', sub: 'PLAN  /  REVIEW', accent: '#adc99d', bars: [51, 73, 64, 90, 69, 96, 82] }
-    ];
+    const presets = [
+      { id: 'content-studio', title: 'CONTENT STUDIO', sub: 'CREATE  /  PUBLISH', accent: '#e66b70' },
+      { id: 'research-agent', title: 'RESEARCH AGENT', sub: 'SEARCH  /  INSIGHT', accent: '#8ac8bb' },
+      { id: 'workflow-planner', title: 'WORKFLOW PLANNER', sub: 'CONNECT  /  AUTOMATE', accent: '#f0ca69' },
+      { id: 'strategy-planner', title: 'STRATEGY DESK', sub: 'PLAN  /  REVIEW', accent: '#adc99d' }
+    ] as const;
+
+    const statusFor = (state?: string) => {
+      if (state === 'working' || state === 'running') return { label: 'WORKING', color: '#81c7a2' };
+      if (state === 'attention' || state === 'failed') return { label: 'NEEDS REVIEW', color: '#ef7778' };
+      if (state === 'done') return { label: 'COMPLETED', color: '#f0ca69' };
+      if (state === 'queued') return { label: 'QUEUED', color: '#8ac8bb' };
+      if (state === 'ready') return { label: 'READY', color: '#b4d29f' };
+      return { label: 'STANDBY', color: '#a5acb5' };
+    };
+
+    const cards = presets.map((preset, index) => ({
+      ...preset,
+      x: index * 290 + 36,
+      agent: agents.find((candidate) => candidate.id === preset.id)
+    }));
     for (const card of cards) {
+      const agent = card.agent;
+      const state = statusFor(agent?.state);
+      const x = card.x;
       ctx.fillStyle = 'rgba(8,14,21,.58)';
-      ctx.beginPath(); ctx.roundRect(card.x, 132, 258, 242, 16); ctx.fill();
+      ctx.beginPath(); ctx.roundRect(x, 132, 258, 242, 16); ctx.fill();
       ctx.strokeStyle = 'rgba(218,232,224,.19)';
       ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.roundRect(card.x, 132, 258, 242, 16); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(x, 132, 258, 242, 16); ctx.stroke();
       ctx.fillStyle = card.accent;
-      ctx.fillRect(card.x + 18, 151, 6, 34);
+      ctx.fillRect(x + 18, 151, 6, 34);
       ctx.fillStyle = '#f5eee3';
       ctx.font = 'bold 17px sans-serif';
-      ctx.fillText(card.title, card.x + 36, 164);
+      ctx.fillText(card.title, x + 36, 164);
       ctx.fillStyle = card.accent;
       ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(card.sub, card.x + 36, 184);
+      ctx.fillText(card.sub, x + 36, 184);
       ctx.strokeStyle = 'rgba(218,232,224,.16)';
-      ctx.beginPath(); ctx.moveTo(card.x + 18, 201); ctx.lineTo(card.x + 240, 201); ctx.stroke();
-      for (let i = 0; i < card.bars.length; i += 1) {
-        const barHeight = card.bars[i] * 1.22;
-        ctx.fillStyle = i === card.bars.length - 1 ? card.accent : 'rgba(145,186,174,.50)';
-        ctx.fillRect(card.x + 26 + i * 28, 333 - barHeight, 15, barHeight);
-      }
+      ctx.beginPath(); ctx.moveTo(x + 18, 201); ctx.lineTo(x + 240, 201); ctx.stroke();
+
+      // Status and task labels are derived from each real Agent Run state, not decorative fake metrics.
+      ctx.fillStyle = `${state.color}20`;
+      ctx.beginPath(); ctx.roundRect(x + 18, 215, 222, 34, 8); ctx.fill();
+      ctx.fillStyle = state.color;
+      ctx.beginPath(); ctx.arc(x + 31, 232, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(state.label, x + 45, 237);
+
+      ctx.fillStyle = '#8faaa8';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillText('CURRENT TASK', x + 18, 274);
+      const rawTask = agent?.taskTitle ?? 'Agent belum terhubung';
+      const maxTaskLength = 25;
+      const task = rawTask.length > maxTaskLength ? `${rawTask.slice(0, maxTaskLength - 1)}…` : rawTask;
+      ctx.fillStyle = '#f5eee3';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.fillText(task, x + 18, 299);
       ctx.fillStyle = '#8faaa8';
       ctx.font = '12px sans-serif';
-      ctx.fillText('ACTIVITY', card.x + 18, 356);
-      ctx.fillStyle = card.accent;
-      ctx.beginPath(); ctx.arc(card.x + 228, 352, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillText(agent?.runId ? `RUN ${agent.runId.slice(0, 8)}` : 'NO ACTIVE RUN', x + 18, 340);
+      ctx.fillStyle = state.color;
+      ctx.fillRect(x + 18, 356, agent ? 222 : 0, 3);
     }
+
+    ctx.fillStyle = '#a7b5b6';
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('LIVE FROM WORKSPACE', 1162, 402);
+    ctx.textAlign = 'left';
+  }
+
+  function makeCommandWallTexture(agents: OfficeAgent[]) {
+    const art = document.createElement('canvas');
+    art.width = 1200;
+    art.height = 420;
+    drawCommandWallTexture(art, agents);
     const texture = new THREE.CanvasTexture(art);
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = 4;
@@ -424,7 +468,7 @@
     sphere(scene, .18 * scale, 0x97b98d, [x, 1.04 * scale, z], [.72 * scale, 1.35 * scale, .7 * scale]);
   }
 
-  function addFurniture(scene: THREE.Scene) {
+  function addFurniture(scene: THREE.Scene, currentAgents: OfficeAgent[]): THREE.CanvasTexture {
     // Open studio floor: broad, almost edge-to-edge, with no chunky display-box rim.
     box(scene, [18.8, .12, 12.9], 0xe5d4bd, [0, -.12, .05]);
     box(scene, [18.65, .055, 12.75], 0xf4e9d9, [0, -.035, .05]);
@@ -479,7 +523,7 @@
     box(scene, [4.62, 1.58, .2], 0xb99a79, [0, 2.04, -4.42]);
     box(scene, [4.48, 1.47, .16], 0x242b33, [0, 2.04, -4.30], { roughness: .38, metalness: .12 });
     box(scene, [4.38, .035, .025], 0xe7c477, [0, 1.27, -4.205], { castShadow: false });
-    const commandTexture = makeCommandWallTexture();
+    const commandTexture = makeCommandWallTexture(currentAgents);
     const commandScreen = new THREE.Mesh(
       new THREE.PlaneGeometry(4.30, 1.34),
       new THREE.MeshBasicMaterial({ map: commandTexture, side: THREE.DoubleSide, toneMapped: false })
@@ -588,6 +632,7 @@
     box(scene, [.23, .025, .17], 0xf5d79a, [-.32, .87, 4.04]);
     cylinder(scene, .045, .045, .035, 0xe11d2e, [.28, .85, 4.03], 16);
     cylinder(scene, .028, .028, .02, 0xf1ca58, [.28, .88, 4.03], 16);
+    return commandTexture;
   }
 
   function makeRobot(scene: THREE.Scene, agent: OfficeAgent, idx: number, x: number, deskZ: number, tool: string, roamPath: readonly { x: number; z: number }[]): RobotRig {
@@ -952,7 +997,7 @@
     fill.position.set(8, 7, -4);
     scene.add(fill);
 
-    addFurniture(scene);
+    const commandTexture = addFurniture(scene, currentAgents);
     const rigs: RobotRig[] = [];
     const ordered = agentPositions.map((pos, idx) => ({ pos, idx, agent: currentAgents.find((a) => a.id === ['content-studio', 'research-agent', 'workflow-planner', 'strategy-planner'][idx]) ?? currentAgents[idx] })).filter((entry) => entry.agent);
     ordered.forEach(({ pos, idx, agent }) => {
@@ -1075,6 +1120,9 @@
           rig.root.scale.setScalar(1);
         }
       });
+      // Redraw the wall display from actual statuses and current task titles whenever agent data changes.
+      drawCommandWallTexture(commandTexture.image as HTMLCanvasElement, next);
+      commandTexture.needsUpdate = true;
     };
 
     const resize = () => {
