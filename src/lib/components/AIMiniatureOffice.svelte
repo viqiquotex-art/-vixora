@@ -26,7 +26,7 @@
     roamPath: readonly { x: number; z: number }[];
     roamCurve: THREE.CatmullRomCurve3;
     routeProgress: number;
-    nextPauseAt: number;
+    routeDirection: 1 | -1;
     pauseUntil: number;
     gaitPhase: number;
     deliveryPhase: 'idle' | 'outbound' | 'handoff' | 'returning' | 'delivered';
@@ -66,23 +66,42 @@
   let controller: { syncAgents: (next: OfficeAgent[]) => void; dispose: () => void } | null = null;
 
   // Each loop begins at that agent's desk exit and stays in open aisles, clear of desk footprints.
+  // Each agent gets a broad, one-way itinerary to a different office destination.
+  // Curves start at the workstation exit and travel across the studio instead of circling a desk.
   const agentPositions = [
     {
       x: -4.45, z: 1.25, color: 0xe11d2e, tool: 'content',
-      roam: [{ x: -4.45, z: 3.28 }, { x: -3.85, z: 3.38 }, { x: -3.45, z: 3.78 }, { x: -4.05, z: 4.12 }, { x: -4.95, z: 4.08 }, { x: -5.35, z: 3.68 }, { x: -5.05, z: 3.35 }]
+      roam: [
+        { x: -4.45, z: 2.30 }, { x: -5.15, z: 2.85 }, { x: -6.2, z: 3.08 },
+        { x: -6.82, z: 2.45 }, { x: -7.02, z: 1.35 }, { x: -7.12, z: .1 },
+        { x: -7.12, z: -1.22 }, { x: -6.95, z: -2.42 }, { x: -6.9, z: -2.92 }
+      ]
     },
     {
       x: -1.55, z: -0.65, color: 0x83b6b0, tool: 'research',
-      roam: [{ x: -1.55, z: 1.38 }, { x: -2.25, z: 1.48 }, { x: -2.75, z: 1.82 }, { x: -2.55, z: 2.35 }, { x: -1.8, z: 2.62 }, { x: -.9, z: 2.42 }, { x: -.55, z: 1.82 }, { x: -.9, z: 1.48 }]
+      roam: [
+        { x: -1.55, z: .40 }, { x: -2.72, z: .82 }, { x: -3.0, z: 1.75 },
+        { x: -3.0, z: 2.72 }, { x: -2.82, z: 3.58 }, { x: -2.1, z: 4.25 },
+        { x: -1.98, z: 4.85 }, { x: -2.85, z: 5.18 }, { x: -4.18, z: 5.2 }
+      ]
     },
     {
       x: 1.6, z: 1.15, color: 0xe7b94e, tool: 'workflow',
-      // Keep this patrol to the right of the Team Sync tabletop and monitor.
-      roam: [{ x: 1.6, z: 3.18 }, { x: 2.2, z: 3.32 }, { x: 2.85, z: 3.72 }, { x: 3.18, z: 4.22 }, { x: 3.02, z: 4.85 }, { x: 2.22, z: 5.05 }, { x: 1.72, z: 4.55 }, { x: 1.62, z: 3.82 }]
+      // This path stays outside the Team Sync table's safety radius.
+      roam: [
+        { x: 1.6, z: 2.20 }, { x: 1.68, z: 3.12 }, { x: 2.25, z: 3.55 },
+        { x: 3.05, z: 4.05 }, { x: 3.72, z: 4.72 }, { x: 4.85, z: 5.12 },
+        { x: 6.0, z: 5.0 }, { x: 6.82, z: 4.18 }, { x: 6.92, z: 3.12 },
+        { x: 6.75, z: 2.28 }
+      ]
     },
     {
       x: 4.35, z: -0.65, color: 0x9eb991, tool: 'strategy',
-      roam: [{ x: 4.35, z: 1.38 }, { x: 5.1, z: 1.5 }, { x: 5.55, z: 2.0 }, { x: 5.1, z: 2.62 }, { x: 4.45, z: 3.08 }, { x: 3.75, z: 2.88 }, { x: 3.45, z: 2.24 }, { x: 3.8, z: 1.65 }]
+      roam: [
+        { x: 4.35, z: .40 }, { x: 5.48, z: .48 }, { x: 6.24, z: .05 },
+        { x: 7.0, z: -.68 }, { x: 7.34, z: -1.72 }, { x: 7.38, z: -2.72 },
+        { x: 7.2, z: -3.52 }, { x: 7.08, z: -4.02 }
+      ]
     }
   ] as const;
 
@@ -668,11 +687,11 @@
     hitArea.userData.pickable = true;
     scene.add(hitArea);
 
-    const roamCurve = new THREE.CatmullRomCurve3(roamPath.map((point) => new THREE.Vector3(point.x, 0, point.z)), true, 'centripetal', .5);
+    const roamCurve = new THREE.CatmullRomCurve3(roamPath.map((point) => new THREE.Vector3(point.x, 0, point.z)), false, 'centripetal', .5);
     return {
       root, head, leftArm: arms[0], rightArm: arms[1], legs, feet, roamPath, roamCurve,
       routeProgress: 0,
-      nextPauseAt: Math.min(.22, 1 / roamPath.length),
+      routeDirection: 1,
       pauseUntil: 0,
       gaitPhase: idx * .9,
       deliveryPhase: agent.state === 'done' ? 'delivered' : 'idle',
@@ -989,22 +1008,22 @@
             targetX = point.x;
             targetZ = point.z;
           } else if (strolling && rig.roamPath.length > 1) {
-            // Ordinary idle motion stays on the agent's clear aisle loop.
+            // Walk across the office to a destination, take a proper break there,
+            // and return along the route. This is an open itinerary, not a tiny closed loop.
             if (time >= rig.pauseUntil) {
               const routeLength = Math.max(rig.roamCurve.getLength(), .01);
-              rig.routeProgress += (.56 * delta) / routeLength;
+              rig.routeProgress += rig.routeDirection * ((.78 * delta) / routeLength);
               if (rig.routeProgress >= 1) {
-                rig.routeProgress %= 1;
-                rig.nextPauseAt = Math.min(.22, 1 / rig.roamPath.length);
-              }
-              if (rig.routeProgress >= rig.nextPauseAt) {
-                const pauseVariation = Math.abs(Math.sin(rig.phase * 1.7));
-                rig.pauseUntil = time + .3 + pauseVariation * .55;
-                rig.nextPauseAt += 1 / rig.roamPath.length;
-                if (rig.nextPauseAt >= 1) rig.nextPauseAt = .999;
+                rig.routeProgress = 1;
+                rig.routeDirection = -1;
+                rig.pauseUntil = time + 2.8 + Math.abs(Math.sin(rig.phase * 1.3)) * 2.2;
+              } else if (rig.routeProgress <= 0) {
+                rig.routeProgress = 0;
+                rig.routeDirection = 1;
+                rig.pauseUntil = time + 2.1 + Math.abs(Math.cos(rig.phase * 1.7)) * 1.8;
               }
             }
-            const point = rig.roamCurve.getPointAt(rig.routeProgress);
+            const point = rig.roamCurve.getPointAt(THREE.MathUtils.clamp(rig.routeProgress, 0, 1));
             targetX = point.x;
             targetZ = point.z;
           }
