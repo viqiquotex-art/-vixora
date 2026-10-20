@@ -1292,8 +1292,8 @@ textarea::placeholder{color:#999}
   50%{left:calc(100% - 70px);transform:rotateY(240deg) scale(.84)}
   54%{left:calc(100% - 70px);transform:rotateY(270deg) scale(.86)}
   92%{left:4%;transform:rotateY(270deg) scale(1)}
-  96%{left:4%;transform:rotateY(315deg) scale(1)}
-  100%{left:4%;transform:rotateY(360deg) scale(1)}
+  96%{left:4%;transform:rotateY(360deg) scale(1)}
+  100%{left:4%;transform:rotateY(450deg) scale(1)}
 }
 @media(max-width:560px){
   .ai-office-scene .office-walking-bot{width:57px;height:94px;animation-name:office-walk-yaw-three-d;transform-origin:50% 82%}
