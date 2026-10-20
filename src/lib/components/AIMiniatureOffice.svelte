@@ -248,7 +248,7 @@
     return texture;
   }
 
-  function drawCommandWallTexture(art: HTMLCanvasElement, agents: OfficeAgent[]) {
+  function drawCommandWallTexture(art: HTMLCanvasElement, agents: OfficeAgent[], highlights: Partial<Record<string, number>> = {}) {
     const ctx = art.getContext('2d');
     if (!ctx) return;
 
@@ -317,11 +317,31 @@
       const agent = card.agent;
       const state = statusFor(agent?.state);
       const x = card.x;
+      const transitionHighlight = Math.max(0, Math.min(1, highlights[card.id] ?? 0));
+      const persistentHighlight = agent?.state === 'working' || agent?.state === 'running'
+        ? .26
+        : agent?.state === 'attention' || agent?.state === 'failed'
+          ? .34
+          : 0;
+      const highlight = Math.max(transitionHighlight, persistentHighlight);
+
       ctx.fillStyle = 'rgba(8,14,21,.58)';
       ctx.beginPath(); ctx.roundRect(x, 132, 258, 242, 16); ctx.fill();
-      ctx.strokeStyle = 'rgba(218,232,224,.19)';
-      ctx.lineWidth = 2;
+      if (highlight > 0) {
+        ctx.save();
+        ctx.globalAlpha = highlight * .11;
+        ctx.fillStyle = state.color;
+        ctx.beginPath(); ctx.roundRect(x + 1, 133, 256, 240, 15); ctx.fill();
+        ctx.restore();
+      }
+      ctx.save();
+      ctx.shadowColor = state.color;
+      ctx.shadowBlur = highlight > 0 ? 5 + highlight * 22 : 0;
+      ctx.strokeStyle = highlight > 0 ? state.color : 'rgba(218,232,224,.19)';
+      ctx.globalAlpha = highlight > 0 ? .62 + highlight * .38 : 1;
+      ctx.lineWidth = highlight > 0 ? 1.6 + highlight * 2.4 : 2;
       ctx.beginPath(); ctx.roundRect(x, 132, 258, 242, 16); ctx.stroke();
+      ctx.restore();
       ctx.fillStyle = card.accent;
       ctx.fillRect(x + 18, 151, 6, 34);
       ctx.fillStyle = '#f5eee3';
@@ -364,11 +384,11 @@
     ctx.textAlign = 'left';
   }
 
-  function makeCommandWallTexture(agents: OfficeAgent[]) {
+  function makeCommandWallTexture(agents: OfficeAgent[], highlights: Partial<Record<string, number>> = {}) {
     const art = document.createElement('canvas');
     art.width = 1200;
     art.height = 420;
-    drawCommandWallTexture(art, agents);
+    drawCommandWallTexture(art, agents, highlights);
     const texture = new THREE.CanvasTexture(art);
     texture.colorSpace = THREE.SRGBColorSpace;
     texture.anisotropy = 4;
@@ -1035,9 +1055,27 @@
         ring,
         currentColor: new THREE.Color(color),
         targetColor: new THREE.Color(color),
-        pulseUntil: 0
+        pulseUntil: 0,
+        pulseDuration: 1.35
       };
     });
+
+    const readPanelHighlight = (indicator: (typeof panelStatusLights)[number], time: number) => {
+      const remaining = indicator.pulseUntil - time;
+      if (remaining <= 0 || indicator.pulseDuration <= 0) return 0;
+      const progress = THREE.MathUtils.clamp(1 - remaining / indicator.pulseDuration, 0, 1);
+      // Smooth 0 → 1 → 0 envelope so the screen highlight fades in and out without a hard cutoff.
+      return Math.sin(progress * Math.PI);
+    };
+    const readPanelHighlights = (time: number): Partial<Record<string, number>> => {
+      const highlights: Partial<Record<string, number>> = {};
+      panelStatusLights.forEach((indicator) => {
+        const strength = readPanelHighlight(indicator, time);
+        if (strength > 0) highlights[indicator.agentId] = strength;
+      });
+      return highlights;
+    };
+    let nextDashboardFrameAt = 0;
 
     const roamer = addRoamingBuddy(scene);
 
@@ -1159,12 +1197,13 @@
           panelLight.targetColor.setHex(agentStatusColor(nextAgent.state));
           if (nextAgent.state !== previousAgent.state || nextAgent.runId !== previousAgent.runId) {
             // Brief confirmation pulse on real state/run changes; no fabricated progress or output.
-            panelLight.pulseUntil = timer.elapsedTime + (nextAgent.state === 'done' ? 2.8 : 1.35);
+            panelLight.pulseDuration = nextAgent.state === 'done' ? 2.8 : 1.35;
+            panelLight.pulseUntil = timer.elapsedTime + panelLight.pulseDuration;
           }
         }
       });
       // Redraw the wall display from actual statuses and current task titles whenever agent data changes.
-      drawCommandWallTexture(commandTexture.image as HTMLCanvasElement, next);
+      drawCommandWallTexture(commandTexture.image as HTMLCanvasElement, next, readPanelHighlights(timer.elapsedTime));
       commandTexture.needsUpdate = true;
     };
 
@@ -1530,9 +1569,7 @@
           const isWorking = agent.state === 'working' || agent.state === 'running';
           const needsReview = agent.state === 'attention' || agent.state === 'failed';
           const completed = agent.state === 'done';
-          const transitionPulse = time < indicator.pulseUntil
-            ? Math.sin(((indicator.pulseUntil - time) / (completed ? 2.8 : 1.35)) * Math.PI) * .5 + .5
-            : 0;
+          const transitionPulse = readPanelHighlight(indicator, time);
           const activePulse = isWorking ? (Math.sin(time * 3.2 + rigs.findIndex((rig) => rig.agent.id === indicator.agentId)) + 1) * .5 : 0;
           const alertPulse = needsReview ? (Math.sin(time * 6.2) + 1) * .5 : 0;
           const intensity = isWorking
@@ -1553,6 +1590,19 @@
           const pulseScale = isWorking || needsReview ? 1 + .09 * (isWorking ? activePulse : alertPulse) : 1 + .08 * transitionPulse;
           indicator.ring.scale.setScalar(pulseScale);
         });
+
+        // Animate the highlight directly on the dashboard cards, redrawing only during brief
+        // real status/run transitions (12 fps, at most a few seconds) to avoid a constant canvas upload.
+        const dashboardTransitionActive = panelStatusLights.some((indicator) => time < indicator.pulseUntil);
+        if (dashboardTransitionActive && time >= nextDashboardFrameAt) {
+          drawCommandWallTexture(
+            commandTexture.image as HTMLCanvasElement,
+            rigs.map((rig) => rig.agent),
+            readPanelHighlights(time)
+          );
+          commandTexture.needsUpdate = true;
+          nextDashboardFrameAt = time + 1 / 12;
+        }
 
         handoffReport.visible = rigs.some((rig) => rig.deliveryPhase === 'handoff');
         handoffReport.rotation.y = Math.sin(time * .7) * .035;
