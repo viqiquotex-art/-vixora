@@ -1099,7 +1099,13 @@
           if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .88 + Math.sin(time * 3.5) * .1 : .58;
 
           const beaconMaterial = rig.statusLight.material as THREE.MeshStandardMaterial;
-          const pulsing = rig.agent.state === 'working' || rig.agent.state === 'attention';
+          const receivingHandoff = rig.agent.id === 'strategy-planner'
+            && rigs.some((other) => other.deliveryPhase === 'handoff');
+          const pulsing = rig.agent.state === 'working' || rig.agent.state === 'attention' || receivingHandoff;
+          if (receivingHandoff) {
+            beaconMaterial.color.setHex(0x37a978);
+            beaconMaterial.emissive.setHex(0x37a978);
+          }
           beaconMaterial.emissiveIntensity = pulsing
             ? .45 + (Math.sin(time * (rig.agent.state === 'attention' ? 5.2 : 2.8) + rig.phase) + 1) * .23
             : rig.agent.state === 'idle' ? .08 : .28;
