@@ -928,22 +928,18 @@
               <div class="office-wall-orbit orbit-two"></div>
             </div>
 
-            <div class="office-command-display">
-              <div class="command-display-frame">
-                <div class="command-display-header"><span>VIXORA / TEAM BOARD</span><span><i></i> LIVE</span></div>
-                <div class="command-display-content">
-                  <div class="command-globe"><div class="globe-latitude"></div><div class="globe-longitude"></div><span>V</span></div>
-                  <div class="command-display-data">
-                    <span class="display-section-label">TEAM ACTIVITY</span>
-                    <div class="display-graph"><i style="height:28%"></i><i style="height:52%"></i><i style="height:39%"></i><i style="height:76%"></i><i style="height:61%"></i><i style="height:91%"></i><i style="height:68%"></i><i style="height:100%"></i><i style="height:75%"></i></div>
-                    <div class="display-readout"><span>AGENTS <b>04</b></span><span>MODE <b>STAGING</b></span></div>
-                    <div class="display-code-lines"><i></i><i></i><i></i><i></i></div>
-                  </div>
-                </div>
-                <div class="command-display-footer"><span>TEAMWORK IN PROGRESS</span><span>LOCAL + GEMINI</span><span>● ● ●</span></div>
+            <div class="office-wall-workboard" aria-hidden="true">
+              <div class="wall-board-header"><span>TEAM NOTEBOOK</span><span>✦ take it easy</span></div>
+              <div class="wall-board-body">
+                <div class="wall-board-calendar"><span class="board-subtitle">TODAY'S LITTLE PLAN</span><i></i><i></i><i></i><i></i><i></i></div>
+                <div class="wall-board-sticky sticky-red"><i></i><i></i><span>make cool stuff</span></div>
+                <div class="wall-board-sticky sticky-yellow"><i></i><i></i><span>research ✦</span></div>
+                <div class="wall-board-sticky sticky-green"><i></i><i></i><span>one step at a time</span></div>
+                <div class="wall-board-mini-chart"><i></i><i></i><i></i><i></i><i></i></div>
               </div>
-              <div class="command-display-stem"></div><div class="command-display-plinth"></div>
             </div>
+            <div class="office-wall-shelf shelf-left" aria-hidden="true"><i></i><i></i><span></span><b></b></div>
+            <div class="office-wall-shelf shelf-right" aria-hidden="true"><i></i><i></i><span></span><b></b></div>
 
             <div class="office-light-strip"></div>
             <div class="office-floor-grid"></div>
@@ -971,6 +967,7 @@
                 <span class="station-orbit" aria-hidden="true"></span>
                 <span class="station-number">0{index + 1}</span>
                 <span class="station-coffee-cup" aria-hidden="true"><i></i><b></b></span>
+                <div class="station-chair" aria-hidden="true"><span></span><i></i><b></b></div>
                 <div class="office-robot" aria-hidden="true">
                   <span class="robot-shadow"></span>
                   <span class="robot-antenna"><i></i></span>
@@ -984,6 +981,15 @@
                   <span class="robot-arm robot-arm-right"><i></i><b></b></span>
                   <span class="robot-leg robot-leg-left"><i></i></span><span class="robot-leg robot-leg-right"><i></i></span>
                 </div>
+                {#if agent.id === 'content-studio'}
+                  <div class="station-special-prop prop-content" aria-hidden="true"><span class="content-canvas"><i></i><b></b><em></em></span><span class="content-swatch swatch-one"></span><span class="content-swatch swatch-two"></span><span class="content-swatch swatch-three"></span><span class="content-pencil"></span></div>
+                {:else if agent.id === 'research-agent'}
+                  <div class="station-special-prop prop-research" aria-hidden="true"><span class="research-chart"><i></i><i></i><i></i><i></i><i></i></span><span class="research-lens"></span><span class="research-notes"><i></i><i></i><i></i></span></div>
+                {:else if agent.id === 'workflow-planner'}
+                  <div class="station-special-prop prop-workflow" aria-hidden="true"><span class="flow-node node-one"></span><span class="flow-node node-two"></span><span class="flow-node node-three"></span><span class="flow-node node-four"></span><span class="flow-link link-one"></span><span class="flow-link link-two"></span><span class="flow-link link-three"></span></div>
+                {:else}
+                  <div class="station-special-prop prop-strategy" aria-hidden="true"><span class="strategy-note note-one"></span><span class="strategy-note note-two"></span><span class="strategy-note note-three"></span><span class="strategy-chart"><i></i><i></i><i></i><i></i></span><span class="strategy-pencil"></span></div>
+                {/if}
                 <div class="station-computer" aria-hidden="true">
                   <div class="station-monitor"><div class="monitor-camera"></div><div class="monitor-screen"><span></span><i></i><i></i><b></b><i></i></div><div class="monitor-neck"></div></div>
                   <div class="station-keyboard"><i></i><i></i><i></i><i></i></div>
@@ -995,7 +1001,7 @@
                   <small>{agent.taskTitle}</small>
                   <span class="station-status"><i></i>{agent.statusLabel}</span>
                 </span>
-                <span class="station-open-hint">OPEN TASK HISTORY ↗</span>
+                <span class="station-open-hint">TAP TO SEE TASK ↗</span>
               </button>
             {/each}
 
