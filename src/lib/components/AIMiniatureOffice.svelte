@@ -413,7 +413,6 @@
     }
 
     // A real, extruded desk with a monitor, keys and agent-specific tools.
-    const deskZ = deskZFor(root.position.z);
     const stationX = x;
     const deskGroup = new THREE.Group();
     deskGroup.position.set(stationX, 0, deskZ);
@@ -510,10 +509,6 @@
     scene.add(hitArea);
 
     return { root, head, leftArm: arms[0], rightArm: arms[1], faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7 };
-  }
-
-  function deskZFor(robotZ: number) {
-    return robotZ + .98;
   }
 
   function addRoamingBuddy(scene: THREE.Scene) {
