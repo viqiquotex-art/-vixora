@@ -782,6 +782,17 @@
     });
     const roamer = addRoamingBuddy(scene);
 
+    // Shared report sits on the Team Sync island only while a teammate is handing over results.
+    const handoffReport = new THREE.Group();
+    handoffReport.position.set(.22, .85, 4.13);
+    box(handoffReport, [.34, .045, .24], 0xf2d99e, [0, 0, 0]);
+    box(handoffReport, [.31, .018, .21], 0xfff6e3, [0, .032, 0]);
+    box(handoffReport, [.065, .014, .21], 0xe11d2e, [-.095, .045, 0]);
+    box(handoffReport, [.1, .018, .026], 0xc3a47e, [.075, .045, -.055]);
+    const reportSeal = sphere(handoffReport, .035, 0xe11d2e, [.11, .055, .07], [1, .6, .3], { emissive: 0xe11d2e, emissiveIntensity: .45 });
+    scene.add(handoffReport);
+    handoffReport.visible = false;
+
     const camera = new THREE.OrthographicCamera(-8, 8, 5.5, -5.5, .1, 70);
     camera.position.set(10.5, 12.4, 14.5);
     camera.lookAt(0, .65, -.05);
@@ -951,7 +962,8 @@
 
           // A newly completed run takes its result folder to the shared Team Sync table.
           if (deliveryActive && rig.deliveryCurve) {
-            const curveLength = Math.max(rig.deliveryCurve.getLength(), .01);
+            const deliveryCurve = rig.deliveryCurve;
+            const curveLength = Math.max(deliveryCurve.getLength(), .01);
             if (rig.deliveryPhase === 'outbound') {
               rig.deliveryProgress = Math.min(1, rig.deliveryProgress + (.62 * delta) / curveLength);
               if (rig.deliveryProgress >= 1) {
@@ -970,7 +982,7 @@
                 rig.deliveryFolder.visible = false;
               }
             }
-            const point = rig.deliveryCurve.getPointAt(THREE.MathUtils.clamp(rig.deliveryProgress, 0, 1));
+            const point = deliveryCurve.getPointAt(THREE.MathUtils.clamp(rig.deliveryProgress, 0, 1));
             targetX = point.x;
             targetZ = point.z;
           } else if (strolling && rig.roamPath.length > 1) {
@@ -1094,6 +1106,9 @@
           rig.statusRing.scale.setScalar(1 + (pulsing ? .08 * (Math.sin(time * 2.5 + rig.phase) + 1) : 0));
           rig.root.scale.setScalar(rig.agent.id === hoveredAgentId ? 1.055 : 1);
         });
+        handoffReport.visible = rigs.some((rig) => rig.deliveryPhase === 'handoff');
+        handoffReport.rotation.y = Math.sin(time * .7) * .035;
+        reportSeal.material && ((reportSeal.material as THREE.MeshStandardMaterial).emissiveIntensity = .25 + (Math.sin(time * 2.4) + 1) * .12);
         // The little courier follows a slower shuttle and turns through the whole arc,
         // rather than instantly flipping its facing direction at each endpoint.
         const previousCourierX = roamer.position.x;
