@@ -91,7 +91,7 @@
     }>();
     for (const run of agentRuns) {
       if (run.executor !== 'gemini-api' && !run.output?.model) continue;
-      const modelFromError = run.error_message?.match(/Gemini \\(([^)]+)\\)/i)?.[1]?.trim();
+      const modelFromError = run.error_message?.match(/Gemini \(([^)]+)\)/i)?.[1]?.trim();
       const model = run.output?.model?.trim() || modelFromError || 'Model belum tercatat';
       let group = modelGroups.get(model);
       if (!group) {
