@@ -859,3 +859,216 @@ textarea::placeholder{color:#999}
   .ai-office-scene *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
 
+
+/* ==========================================================
+   LIVED-IN STUDIO REWORK — staggered desks, tools and roaming bot
+   ========================================================== */
+/* Replace the floating command-screen feel with a real wall board. */
+.office-backwall{bottom:36%;background:linear-gradient(180deg,#fffaf0 0%,#f4e8d8 80%,#e8d8c6 100%)}
+.office-window-grid{
+  background:
+    linear-gradient(90deg,transparent 0 7%,rgba(157,124,89,.26) 7.15% 7.5%,transparent 7.65% 25.2%,rgba(157,124,89,.23) 25.35% 25.7%,transparent 25.85% 47.8%,rgba(157,124,89,.23) 47.95% 48.3%,transparent 48.45% 72.3%,rgba(157,124,89,.23) 72.45% 72.8%,transparent 72.95% 92%,rgba(157,124,89,.2) 92.15% 92.5%,transparent 92.65%),
+    linear-gradient(180deg,transparent 0 13%,rgba(157,124,89,.2) 13.15% 13.5%,transparent 13.65% 53%,rgba(157,124,89,.18) 53.15% 53.5%,transparent 53.65%),
+    linear-gradient(115deg,#e7f0eb,#fff8e9 45%,#f5ead8);
+}
+.office-window-grid::after{background:linear-gradient(180deg,rgba(255,253,245,.03),rgba(255,250,239,.02) 58%,rgba(151,120,87,.12))}
+.office-light-strip{top:48%;height:2px;opacity:.28;box-shadow:none}
+.office-floor-grid{inset:51% -10% -20%;background-image:linear-gradient(rgba(135,106,77,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(135,106,77,.08) 1px,transparent 1px);background-size:56px 47px;mask-image:linear-gradient(180deg,rgba(0,0,0,.45),transparent 90%)}
+.office-floor-ring,.office-cable{opacity:.38}
+.office-floor-ring{display:none}
+.office-cable{border-color:rgba(161,130,96,.18)}
+.cable-two{border-color:rgba(225,29,46,.1)}
+/* Cozy planning board pinned onto the back wall, not floating in the room. */
+.office-wall-workboard{position:absolute;z-index:2;left:34%;top:5%;width:32%;height:25%;padding:0;border:7px solid #fffdf6;border-radius:7px;background:#f4e9d8;box-shadow:0 8px 18px rgba(108,77,47,.13),inset 0 0 0 1px rgba(165,132,96,.12);transform:translateZ(20px) rotate(-.6deg)}
+.wall-board-header{height:25px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 9px;background:#fffaf0;border-bottom:1px solid #e6d6bf;color:#9b7955;font-size:7px;font-weight:850;letter-spacing:.12em}
+.wall-board-header span:last-child{color:#c42835;letter-spacing:0}
+.wall-board-body{position:relative;height:calc(100% - 25px);overflow:hidden;background:linear-gradient(135deg,#fbf2e4,#eee0cb)}
+.wall-board-calendar{position:absolute;left:5%;top:13%;width:26%;height:67%;padding:5px;border:1px solid rgba(160,128,93,.19);border-radius:3px;background:#fffaf0}
+.board-subtitle{display:block;margin-bottom:7px;color:#8e7861;font-size:5px;font-weight:850;letter-spacing:.06em}
+.wall-board-calendar i{display:block;width:84%;height:3px;margin:5px 0;border-radius:2px;background:#e2d0b7}
+.wall-board-calendar i:nth-of-type(2){width:64%;background:#e5aaaa}.wall-board-calendar i:nth-of-type(3){width:73%;background:#ebc965}.wall-board-calendar i:nth-of-type(4){width:54%;background:#b5d2b7}.wall-board-calendar i:nth-of-type(5){width:79%}
+.wall-board-sticky{position:absolute;display:grid;gap:4px;width:25%;height:38%;padding:6px;border-radius:2px;box-shadow:0 3px 6px rgba(97,72,48,.1);transform:rotate(-3deg)}
+.wall-board-sticky i{display:block;width:71%;height:2px;border-radius:3px;background:rgba(75,60,47,.19)}
+.wall-board-sticky i:nth-child(2){width:48%}
+.wall-board-sticky span{align-self:end;color:#8c6946;font-size:6px;font-weight:800;white-space:nowrap}
+.sticky-red{left:38%;top:13%;background:#f5cfca}
+.sticky-yellow{left:66%;top:20%;background:#ffe8a3;transform:rotate(3deg)}
+.sticky-green{left:45%;top:55%;width:36%;height:28%;background:#d8e7d2;transform:rotate(-1deg)}
+.wall-board-mini-chart{position:absolute;right:5%;bottom:8%;display:flex;align-items:flex-end;gap:3px;width:21%;height:44%;padding:3px 4px 0;border-bottom:1px solid #d7c4a8}
+.wall-board-mini-chart i{flex:1;border-radius:2px 2px 0 0;background:linear-gradient(#e11d2e,#efb4a7);height:35%}
+.wall-board-mini-chart i:nth-child(2){height:64%;background:linear-gradient(#facc15,#e7bf55)}
+.wall-board-mini-chart i:nth-child(3){height:45%}
+.wall-board-mini-chart i:nth-child(4){height:85%;background:linear-gradient(#a6c4a6,#6f9c7a)}
+.wall-board-mini-chart i:nth-child(5){height:58%}
+.office-wall-shelf{position:absolute;z-index:2;top:24%;width:14%;height:57px;border-bottom:5px solid #c39c75;background:linear-gradient(180deg,transparent 0 80%,rgba(120,87,57,.07))}
+.office-wall-shelf::before{position:absolute;bottom:4px;left:0;right:0;height:4px;content:"";background:#e7c5a2}
+.office-wall-shelf i{position:absolute;bottom:7px;width:9px;height:26px;border-radius:2px 2px 0 0;background:#d4a693;box-shadow:inset 2px 0 rgba(255,255,255,.35)}
+.office-wall-shelf i:nth-child(1){left:8%;height:19px;background:#cddac4}.office-wall-shelf i:nth-child(2){left:22%;height:25px;background:#e1b5a7}
+.office-wall-shelf span{position:absolute;bottom:8px;left:39%;width:20px;height:19px;border-radius:3px 3px 0 0;background:#f0d77e}
+.office-wall-shelf b{position:absolute;bottom:8px;right:9%;width:16px;height:16px;border-radius:50% 50% 4px 4px;background:#b7cead}
+.shelf-left{left:7%}.shelf-right{right:7%;transform:scale(.87);transform-origin:top right}
+/* Workstations form a small studio with depth, not a straight line of mascots. */
+.office-station{width:25.3%;height:79%;bottom:1%;transition:filter .25s}
+.station-content-studio{left:0%;bottom:0%;height:82%;z-index:5}
+.station-research-agent{left:24.7%;bottom:7%;height:73%;z-index:4}
+.station-workflow-planner{left:49.5%;bottom:1%;height:80%;z-index:5}
+.station-strategy-planner{left:74.4%;bottom:6%;height:74%;z-index:4}
+.station-number{top:7%;left:7%;font-size:7px;color:#9a8165}
+.station-orbit{display:none}
+.office-station::before{bottom:8%;height:19%;border-color:rgba(170,136,102,.1);background:radial-gradient(ellipse,rgba(147,113,80,.12),transparent 68%)}
+.office-station:hover::before{background:radial-gradient(ellipse,rgba(225,29,46,.12),transparent 68%)}
+/* Chairs peek behind each robot; bots lean toward their desks while working. */
+.station-chair{position:absolute;z-index:1;left:14%;bottom:37%;width:61px;height:77px;transform:translateZ(-12px)}
+.station-chair::before{position:absolute;left:5px;right:5px;top:0;height:43px;border:3px solid #c9ae8e;border-radius:14px 14px 7px 7px;background:linear-gradient(135deg,#f9e9d3,#e1c3a2);box-shadow:inset 0 0 0 4px rgba(255,255,255,.32)}
+.station-chair::after{position:absolute;left:3px;right:3px;bottom:10px;height:17px;content:"";border:2px solid #ba9876;border-radius:7px;background:linear-gradient(180deg,#e8d2b8,#c7a381)}
+.station-chair span{position:absolute;left:28px;bottom:0;width:5px;height:17px;background:#a68a6d}
+.station-chair i,.station-chair b{position:absolute;bottom:0;width:21px;height:4px;border-radius:5px;background:#a68a6d}
+.station-chair i{left:12px}.station-chair b{right:12px}
+.office-robot{z-index:3;left:11%;bottom:36%;transform-origin:bottom center;animation:robot-office-idle 4.1s ease-in-out infinite}
+.station-computer{left:44%;bottom:38%;width:41%;height:106px;transform:translateZ(14px)}
+.station-monitor{left:14%;width:79%;height:73px}
+.station-keyboard{left:2%;width:95%}
+.station-desk-top{bottom:35%;height:14px;left:1%;right:1%;background:linear-gradient(180deg,#fffaf0 0%,#e2d2bd 48%,#b49a7d 100%);border-color:#bca184;box-shadow:0 5px 8px rgba(105,77,49,.1)}
+.station-desk-front{bottom:26%;height:9%;border-color:#b39a7e;background:linear-gradient(90deg,#e6d2b9,#f7e8d2 36%,#d3b596);box-shadow:0 6px 8px rgba(105,77,49,.12)}
+.station-desk-leg{bottom:9%;height:17%;background:linear-gradient(90deg,#b49a7d,#e9d7c0,#ad9173)}
+/* Task names become neat nameplates attached to each desk instead of a black card row. */
+.station-task-card{left:7%;right:7%;bottom:15%;min-height:unset;padding:5px 7px;gap:2px;border:1px solid rgba(178,145,108,.25);border-radius:4px;background:linear-gradient(140deg,rgba(255,251,242,.98),rgba(242,226,204,.97));box-shadow:0 3px 6px rgba(100,73,47,.08);transform:translateZ(18px)}
+.station-agent-role{font-size:6px;letter-spacing:.07em;color:#b37b2e}
+.station-task-card strong{font-size:9px;color:#29241f}
+.station-task-card small{font-size:7px;color:#8c7a67}
+.station-status{font-size:6px;color:#83715f;letter-spacing:.02em}
+.station-status i{background:#b6a18b}
+.station-open-hint{display:none}
+.station-coffee-cup{right:2%;bottom:37%;transform:translateZ(22px)}
+/* Agent-specific media tools live around each desk. */
+.station-special-prop{position:absolute;z-index:4;right:2%;bottom:44%;width:42px;height:42px;transform:translateZ(24px);filter:drop-shadow(0 2px 2px rgba(90,66,43,.12))}
+.prop-content .content-canvas{position:absolute;left:0;top:2px;width:25px;height:29px;border:2px solid #fff7eb;border-radius:3px;background:linear-gradient(145deg,#f7d1c7 0 42%,#facc15 43% 67%,#c3d8c2 68%);box-shadow:0 0 0 1px #cbb39a}
+.content-canvas i{position:absolute;left:3px;top:4px;width:13px;height:10px;border-radius:50%;background:#e11d2e;opacity:.7}
+.content-canvas b{position:absolute;right:3px;bottom:3px;width:10px;height:8px;border-radius:50% 0 50% 0;background:#8eaf98}
+.content-canvas em{position:absolute;bottom:4px;left:4px;width:9px;height:2px;background:#fff}
+.content-swatch{position:absolute;left:1px;bottom:1px;width:6px;height:6px;border-radius:50%;border:1px solid #fff}
+.swatch-one{left:28px;background:#e11d2e}.swatch-two{left:34px;background:#facc15}.swatch-three{left:28px;bottom:9px;background:#95bca0}
+.content-pencil{position:absolute;right:1px;top:1px;width:3px;height:28px;border-radius:2px;background:linear-gradient(90deg,#b39472,#e11d2e);transform:rotate(20deg)}
+.prop-research .research-chart{position:absolute;top:3px;left:1px;display:flex;align-items:flex-end;gap:2px;width:25px;height:24px;padding:4px;border:1px solid #d5c0a3;border-radius:3px;background:#fffaf0}
+.research-chart i{width:4px;background:#8fb8a0;border-radius:2px 2px 0 0;height:45%}.research-chart i:nth-child(2){height:72%;background:#e11d2e}.research-chart i:nth-child(3){height:55%;background:#facc15}.research-chart i:nth-child(4){height:90%}.research-chart i:nth-child(5){height:65%;background:#dbbba2}
+.research-lens{position:absolute;right:0;top:1px;width:19px;height:19px;border:3px solid #a4c1c1;border-radius:50%;background:rgba(230,244,239,.45);box-shadow:inset 0 0 0 2px rgba(255,255,255,.7)}
+.research-lens::after{position:absolute;right:-7px;bottom:-5px;width:8px;height:3px;content:"";border-radius:2px;background:#a4c1c1;transform:rotate(48deg)}
+.research-notes{position:absolute;bottom:0;left:2px;display:grid;gap:3px;width:27px;padding:4px;border-radius:2px;background:#ffe9a5}
+.research-notes i{height:2px;background:rgba(115,89,54,.23)}.research-notes i:nth-child(2){width:65%}
+.prop-workflow .flow-node{position:absolute;width:11px;height:10px;border:1px solid #dcaaa0;border-radius:3px;background:#fff3e7;box-shadow:0 1px 1px rgba(90,65,41,.1)}
+.flow-node.node-one{left:1px;top:4px}.flow-node.node-two{right:1px;top:4px;background:#f7d68a;border-color:#d9bc75}.flow-node.node-three{left:1px;bottom:3px;background:#d8e7d2;border-color:#adc7a7}.flow-node.node-four{right:1px;bottom:3px}
+.flow-link{position:absolute;height:2px;background:#d7b59b;transform-origin:left center}
+.link-one{left:12px;top:9px;width:18px}.link-two{left:6px;top:16px;width:19px;transform:rotate(52deg)}.link-three{right:5px;top:16px;width:17px;transform:rotate(126deg)}
+.prop-strategy .strategy-note{position:absolute;width:15px;height:13px;border:1px solid rgba(158,129,89,.17);border-radius:2px;background:#f6ceca;box-shadow:0 1px 1px rgba(95,70,45,.1)}
+.note-one{top:2px;left:0;transform:rotate(-5deg)}.note-two{top:6px;left:17px;background:#fbe4a0;transform:rotate(5deg)}.note-three{top:1px;right:0;background:#cce0c9;transform:rotate(9deg)}
+.strategy-chart{position:absolute;bottom:0;left:1px;display:flex;align-items:flex-end;gap:3px;width:36px;height:24px;padding:3px 4px 0;border-bottom:1px solid #bea58a}
+.strategy-chart i{display:block;flex:1;height:40%;background:#d8a39b}.strategy-chart i:nth-child(2){height:65%;background:#e5c65c}.strategy-chart i:nth-child(3){height:45%;background:#c6d8be}.strategy-chart i:nth-child(4){height:90%;background:#e11d2e}
+.strategy-pencil{position:absolute;right:0;bottom:1px;width:3px;height:22px;border-radius:2px;background:#d19b4f;transform:rotate(28deg)}
+/* A tiny courier bot actually walks down the aisle between the workstations. */
+.office-walking-bot{position:absolute;z-index:8;left:5%;bottom:1%;width:57px;height:94px;transform-style:preserve-3d;animation:office-walk-patrol 19s ease-in-out infinite}
+.walker-shadow{position:absolute;bottom:0;left:1px;width:56px;height:14px;border-radius:50%;background:rgba(104,78,51,.15);filter:blur(4px);transform:rotateX(68deg)}
+.walker-antenna{position:absolute;left:29px;top:0;width:2px;height:9px;border-radius:2px;background:#c5a88b}
+.walker-antenna::after{position:absolute;left:-3px;top:-3px;width:8px;height:8px;content:"";border-radius:50%;background:#e11d2e;box-shadow:0 0 5px rgba(225,29,46,.3)}
+.walker-head{position:absolute;top:8px;left:8px;width:42px;height:36px;border:2px solid #fff8ec;border-radius:17px 17px 14px 14px;background:linear-gradient(140deg,#fffef9,#e0d0bc);box-shadow:inset -3px -3px 5px rgba(110,79,49,.12),0 3px 5px rgba(80,55,32,.1)}
+.walker-head::before{position:absolute;inset:5px 4px 5px;content:"";border-radius:11px;background:#30313a}
+.walker-head i{position:absolute;z-index:1;top:12px;left:11px;width:5px;height:7px;border-radius:50%;background:#facc15;box-shadow:0 0 4px #facc15}
+.walker-head i:nth-child(2){left:25px}
+.walker-head b{position:absolute;z-index:1;left:17px;bottom:8px;width:9px;height:3px;border-bottom:1px solid #f0a4a2;border-radius:0 0 7px 7px}
+.walker-body{position:absolute;top:42px;left:17px;width:26px;height:24px;border:2px solid #fff7ec;border-radius:10px;background:linear-gradient(130deg,#fff,#d5c3ae)}
+.walker-body i{position:absolute;left:8px;top:7px;width:7px;height:7px;border-radius:50%;background:#e11d2e;box-shadow:0 0 4px rgba(225,29,46,.2)}
+.walker-arm{position:absolute;top:44px;width:7px;height:20px;border-radius:5px;background:linear-gradient(90deg,#bca58c,#fff6e8);transform-origin:top center}
+.walker-arm-left{left:13px;animation:walker-arm-swing .58s ease-in-out infinite alternate}
+.walker-arm-right{left:40px;animation:walker-arm-swing .58s ease-in-out infinite alternate-reverse}
+.walker-leg{position:absolute;top:63px;width:8px;height:23px;border:1px solid #d7c4ad;border-radius:5px;background:linear-gradient(90deg,#b9a38a,#fff5e6);transform-origin:top center}
+.walker-leg-left{left:21px;animation:walker-leg-swing .58s ease-in-out infinite alternate}
+.walker-leg-right{left:32px;animation:walker-leg-swing .58s ease-in-out infinite alternate-reverse}
+.walker-clipboard{position:absolute;top:50px;right:-2px;width:13px;height:18px;padding:4px 2px;border:1px solid #bd9d79;border-radius:2px;background:#fff0bf;transform:rotate(-9deg)}
+.walker-clipboard i{display:block;height:1px;margin:2px 0;background:#b5a083}
+.walker-thought{position:absolute;top:-18px;left:25px;z-index:2;padding:3px 5px;border:1px solid #ead7b7;border-radius:6px;background:#fffaf0;color:#9a744b;font-size:6px;white-space:nowrap;opacity:0;animation:walker-thought-pop 19s ease-in-out infinite}
+@keyframes robot-office-idle{0%,100%{transform:translateY(0) scale(1.06) rotateY(-2deg)}25%{transform:translateY(-3px) scale(1.06) rotateY(0)}60%{transform:translateY(-5px) scale(1.06) rotateY(2deg)}}
+@keyframes office-walk-patrol{0%{transform:translateX(0) scaleX(1)}46%{transform:translateX(790%) scaleX(1)}50%{transform:translateX(790%) scaleX(-1)}96%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(0) scaleX(1)}}
+@keyframes walker-leg-swing{from{transform:rotate(20deg)}to{transform:rotate(-23deg)}}
+@keyframes walker-arm-swing{from{transform:rotate(-28deg)}to{transform:rotate(30deg)}}
+@keyframes walker-thought-pop{0%,4%,48%,52%,96%,100%{opacity:0;transform:translateY(3px)}10%,40%,60%,90%{opacity:1;transform:translateY(0)}}
+@media(max-width:1100px){
+ .office-wall-workboard{left:31%;width:38%}
+ .office-wall-shelf{width:12%}
+ .office-robot{left:7%;transform:scale(.92);transform-origin:bottom center}
+ .station-chair{left:9%;transform:scale(.9);transform-origin:bottom left}
+ .station-special-prop{right:0;transform:scale(.9) translateZ(20px);transform-origin:bottom right}
+ .office-walking-bot{animation-name:office-walk-patrol-mid}
+}
+@keyframes office-walk-patrol-mid{0%{transform:translateX(0) scaleX(1)}46%{transform:translateX(620%) scaleX(1)}50%{transform:translateX(620%) scaleX(-1)}96%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(0) scaleX(1)}}
+@media(max-width:800px){
+ .office-wall-workboard{left:25%;top:5%;width:50%;height:23%}
+ .shelf-left{left:2%;top:18%;transform:scale(.8);transform-origin:top left}
+ .shelf-right{right:1%;top:18%;transform:scale(.75);transform-origin:top right}
+ .office-station{width:49%;height:43%;bottom:1%}
+ .station-content-studio{left:0%;bottom:50%;height:43%}
+ .station-research-agent{left:51%;bottom:50%;height:43%}
+ .station-workflow-planner{left:0%;bottom:1%;height:43%}
+ .station-strategy-planner{left:51%;bottom:1%;height:43%}
+ .station-chair{left:12%;bottom:37%;transform:scale(.76);transform-origin:bottom left}
+ .office-robot{left:7%;bottom:39%;transform:scale(.84);transform-origin:bottom center}
+ .station-computer{left:43%;bottom:39%;width:47%;height:92px;transform:scale(.84);transform-origin:bottom left}
+ .station-desk-top{bottom:35%;height:12px}
+ .station-desk-front{bottom:26%;height:9%}
+ .station-desk-leg{bottom:9%;height:16%}
+ .station-special-prop{right:0;bottom:44%;transform:scale(.76) translateZ(14px);transform-origin:bottom right}
+ .station-task-card{left:5%;right:5%;bottom:15%;padding:4px 6px}
+ .station-task-card strong{font-size:9px}
+ .station-task-card small{font-size:7px}
+ .office-walking-bot{bottom:1%;animation-name:office-walk-patrol-small}
+}
+@keyframes office-walk-patrol-small{0%{transform:translateX(0) scaleX(1)}46%{transform:translateX(470%) scaleX(1)}50%{transform:translateX(470%) scaleX(-1)}96%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(0) scaleX(1)}}
+@media(max-width:560px){
+ .office-wall-workboard{left:22%;top:4%;width:56%;height:22%;border-width:4px}
+ .wall-board-header{height:19px;padding:0 5px;font-size:5px}
+ .wall-board-body{height:calc(100% - 19px)}
+ .wall-board-sticky{padding:4px}
+ .wall-board-sticky span{font-size:4px}
+ .board-subtitle{font-size:4px}
+ .office-wall-shelf{top:15%;width:12%;height:43px}
+ .shelf-left{left:0;transform:scale(.65);transform-origin:top left}
+ .shelf-right{right:0;transform:scale(.6);transform-origin:top right}
+ .ai-office-scene{min-height:740px;height:740px}
+ .office-backwall{bottom:52%}
+ .office-station{width:50%;height:44%;bottom:1%}
+ .station-content-studio{left:0%;bottom:49%;height:44%}
+ .station-research-agent{left:50%;bottom:49%;height:44%}
+ .station-workflow-planner{left:0%;bottom:1%;height:44%}
+ .station-strategy-planner{left:50%;bottom:1%;height:44%}
+ .station-chair{left:5%;bottom:38%;transform:scale(.62);transform-origin:bottom left}
+ .office-robot{left:2%;bottom:39%;transform:scale(.68);transform-origin:bottom center}
+ .station-computer{left:42%;bottom:39%;width:50%;height:82px;transform:scale(.72);transform-origin:bottom left}
+ .station-monitor{height:62px}
+ .station-desk-top{bottom:35%;height:10px}
+ .station-desk-front{bottom:25%;height:9%}
+ .station-desk-leg{bottom:8%;height:16%}
+ .station-special-prop{right:0;bottom:44%;transform:scale(.64) translateZ(12px);transform-origin:bottom right}
+ .station-task-card{left:4%;right:4%;bottom:13%;padding:4px 5px;gap:2px}
+ .station-agent-role{font-size:5px}
+ .station-task-card strong{font-size:8px}
+ .station-task-card small{font-size:6px}
+ .station-status{font-size:5px}
+ .station-number{top:7%;font-size:6px}
+ .office-walking-bot{width:43px;height:73px;bottom:1%;animation-name:office-walk-patrol-tiny}
+ .walker-head{top:8px;left:6px;width:34px;height:29px}
+ .walker-head i{top:10px;left:8px;width:4px;height:6px}
+ .walker-head i:nth-child(2){left:21px}
+ .walker-head b{left:13px;bottom:6px}
+ .walker-antenna{left:22px}
+ .walker-body{top:34px;left:12px;width:22px;height:20px}
+ .walker-body i{left:7px;top:5px}
+ .walker-arm{top:36px;height:16px}
+ .walker-arm-left{left:8px}.walker-arm-right{left:32px}
+ .walker-leg{top:52px;height:18px;width:6px}
+ .walker-leg-left{left:15px}.walker-leg-right{left:25px}
+ .walker-clipboard{top:40px;width:10px;height:15px}
+ .walker-thought{font-size:5px;left:12px}
+}
+@keyframes office-walk-patrol-tiny{0%{transform:translateX(0) scaleX(1)}46%{transform:translateX(470%) scaleX(1)}50%{transform:translateX(470%) scaleX(-1)}96%{transform:translateX(0) scaleX(-1)}100%{transform:translateX(0) scaleX(1)}}
+@media(prefers-reduced-motion:reduce){
+ .office-walking-bot,.walker-thought,.walker-arm,.walker-leg,.office-robot,.office-plant i{animation:none!important}
+}
+
