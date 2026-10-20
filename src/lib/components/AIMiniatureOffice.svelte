@@ -24,6 +24,10 @@
     legs: THREE.Group[];
     roamPath: readonly { x: number; z: number }[];
     roamCurve: THREE.CatmullRomCurve3;
+    routeProgress: number;
+    nextPauseAt: number;
+    pauseUntil: number;
+    gaitPhase: number;
     chair: THREE.Group;
     screen: THREE.Mesh;
     label: THREE.Sprite;
@@ -606,7 +610,15 @@
     scene.add(hitArea);
 
     const roamCurve = new THREE.CatmullRomCurve3(roamPath.map((point) => new THREE.Vector3(point.x, 0, point.z)), true, 'centripetal', .5);
-    return { root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, roamCurve, chair, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7 };
+    const routeLength = Math.max(roamCurve.getLength(), .01);
+    return {
+      root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, roamCurve,
+      routeProgress: 0,
+      nextPauseAt: Math.min(.22, 1 / roamPath.length),
+      pauseUntil: 0,
+      gaitPhase: idx * .9,
+      chair, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7
+    };
   }
 
   function addRoamingBuddy(scene: THREE.Scene) {
@@ -791,18 +803,33 @@
       const time = timer.elapsedTime;
       if (motionEnabled) {
         rigs.forEach((rig) => {
-          const working = rig.agent.state === 'working';
+          const working = rig.agent.state === 'running' || rig.agent.state === 'working';
           const needsAttention = rig.agent.state === 'attention' || rig.agent.state === 'failed';
           const finished = rig.agent.state === 'done';
           const strolling = !working && !needsAttention;
+          const homeX = rig.baseX;
           const homeZ = rig.deskZ + 1.05;
-
-          // A centripetal Catmull-Rom loop keeps strolls slow and rounded instead of snapping at corners.
-          let targetX = rig.baseX;
+          let targetX = homeX;
           let targetZ = homeZ;
+
+          // Walk the curve at a world-space pace, and take small rests at waypoints.
+          // This keeps foot cadence coupled to distance instead of an independent timer.
           if (strolling && rig.roamPath.length > 1) {
-            const pathProgress = (time * .018 + rig.phase * .0007) % 1;
-            const point = rig.roamCurve.getPointAt(pathProgress);
+            if (time >= rig.pauseUntil) {
+              const routeLength = Math.max(rig.roamCurve.getLength(), .01);
+              rig.routeProgress += (.16 * delta) / routeLength;
+              if (rig.routeProgress >= 1) {
+                rig.routeProgress %= 1;
+                rig.nextPauseAt = Math.min(.22, 1 / rig.roamPath.length);
+              }
+              if (rig.routeProgress >= rig.nextPauseAt) {
+                const pauseVariation = Math.abs(Math.sin(rig.phase * 1.7));
+                rig.pauseUntil = time + 1.4 + pauseVariation * 1.5;
+                rig.nextPauseAt += 1 / rig.roamPath.length;
+                if (rig.nextPauseAt >= 1) rig.nextPauseAt = .999;
+              }
+            }
+            const point = rig.roamCurve.getPointAt(rig.routeProgress);
             targetX = point.x;
             targetZ = point.z;
           }
@@ -811,66 +838,73 @@
           const oldZ = rig.root.position.z;
           const dx = targetX - oldX;
           const dz = targetZ - oldZ;
-          const distance = Math.hypot(dx, dz);
-          const moveBlend = 1 - Math.exp(-delta * 1.6);
-          rig.root.position.x += dx * moveBlend;
-          rig.root.position.z += dz * moveBlend;
+          const distanceToTarget = Math.hypot(dx, dz);
+          const walkSpeed = strolling ? .18 : .28;
+          const travelDistance = Math.min(distanceToTarget, walkSpeed * delta);
+          if (distanceToTarget > .00001) {
+            rig.root.position.x += (dx / distanceToTarget) * travelDistance;
+            rig.root.position.z += (dz / distanceToTarget) * travelDistance;
+          }
           const actualDx = rig.root.position.x - oldX;
           const actualDz = rig.root.position.z - oldZ;
-          const moving = distance > .09;
+          const movedDistance = Math.hypot(actualDx, actualDz);
+          const moving = movedDistance > .0002;
 
-          if (moving && Math.hypot(actualDx, actualDz) > .0004) {
+          // Turn the complete character toward travel direction before it feels like it is sliding sideways.
+          if (moving) {
             const desiredYaw = Math.atan2(actualDx, actualDz);
             const yawDifference = Math.atan2(
               Math.sin(desiredYaw - rig.root.rotation.y),
               Math.cos(desiredYaw - rig.root.rotation.y)
             );
-            rig.root.rotation.y += yawDifference * Math.min(1, delta * 2.4);
-          } else if (!strolling) {
+            rig.root.rotation.y += yawDifference * (1 - Math.exp(-delta * 5.2));
+          } else if (working || needsAttention) {
             const desiredYaw = Math.PI;
             const yawDifference = Math.atan2(
               Math.sin(desiredYaw - rig.root.rotation.y),
               Math.cos(desiredYaw - rig.root.rotation.y)
             );
-            rig.root.rotation.y += yawDifference * Math.min(1, delta * 2.2);
+            rig.root.rotation.y += yawDifference * (1 - Math.exp(-delta * 3.8));
           }
 
-          // The chair is a real object, but it clears out while its owner is walking.
-          const atDesk = Math.hypot(rig.root.position.x - rig.baseX, rig.root.position.z - homeZ) < .28;
+          // Real travel advances the gait phase: stopped bots stop stepping.
+          if (moving) rig.gaitPhase += movedDistance * 18;
+          const atDesk = Math.hypot(rig.root.position.x - homeX, rig.root.position.z - homeZ) < .28;
           rig.chair.visible = atDesk && !moving;
 
-          const walkingCycle = time * 4.6 + rig.phase;
           rig.root.position.y = moving
-            ? Math.abs(Math.sin(walkingCycle * 2)) * .028
-            : Math.sin(time * 1.7 + rig.phase) * (working ? .009 : .014);
-          rig.head.rotation.y = Math.sin(time * .55 + rig.phase) * (strolling ? .12 : .045);
+            ? Math.abs(Math.sin(rig.gaitPhase * 2)) * .014
+            : Math.sin(time * 1.15 + rig.phase) * (working ? .007 : .009);
+          rig.head.rotation.y = Math.sin(time * (moving ? .45 : .7) + rig.phase) * (strolling ? .105 : .035);
           rig.head.rotation.z = moving
-            ? Math.sin(walkingCycle) * .025
-            : Math.sin(time * .9 + rig.phase) * (strolling ? .018 : .008);
+            ? Math.sin(rig.gaitPhase) * .018
+            : Math.sin(time * .7 + rig.phase) * (strolling ? .015 : .006);
+          rig.root.rotation.z = moving ? Math.sin(rig.gaitPhase) * .012 : 0;
 
           rig.leftArm.rotation.x = moving
-            ? Math.sin(walkingCycle + Math.PI) * .24
+            ? Math.sin(rig.gaitPhase + Math.PI) * .20
             : working
-              ? -.58 + Math.sin(time * 8.2 + rig.phase) * .14
-              : finished ? -.3 : -.4 + Math.sin(time * .8 + rig.phase) * .055;
+              ? -.58 + Math.sin(time * 8.2 + rig.phase) * .13
+              : finished ? -.28 : -.34 + Math.sin(time * .75 + rig.phase) * .045;
           rig.rightArm.rotation.x = moving
-            ? Math.sin(walkingCycle) * .24
+            ? Math.sin(rig.gaitPhase) * .20
             : working
-              ? -.58 + Math.sin(time * 8.2 + rig.phase + 1) * .14
-              : finished ? -1.1 + Math.sin(time * 1.4) * .08 : -.42 + Math.sin(time * .85 + rig.phase + 1) * .06;
+              ? -.58 + Math.sin(time * 8.2 + rig.phase + 1) * .13
+              : finished ? -1.0 + Math.sin(time * 1.1) * .07 : -.36 + Math.sin(time * .8 + rig.phase + 1) * .05;
           rig.leftArm.rotation.z = moving
-            ? Math.sin(walkingCycle + Math.PI) * .1
-            : -.1 + Math.sin(time * (working ? 8 : .8) + rig.phase) * (working ? .16 : .045);
+            ? -.1 + Math.sin(rig.gaitPhase + Math.PI) * .075
+            : -.1 + Math.sin(time * (working ? 8 : .75) + rig.phase) * (working ? .15 : .035);
           rig.rightArm.rotation.z = moving
-            ? Math.sin(walkingCycle) * .1
-            : .1 + Math.sin(time * (working ? 8 : .9) + rig.phase + 2) * (working ? .16 : .045);
+            ? .1 + Math.sin(rig.gaitPhase) * .075
+            : .1 + Math.sin(time * (working ? 8 : .8) + rig.phase + 2) * (working ? .15 : .035);
+
           rig.legs.forEach((leg, index) => {
-            leg.rotation.x = moving ? Math.sin(walkingCycle + index * Math.PI) * .31 : Math.sin(time * .8 + rig.phase + index) * .012;
-            leg.rotation.z = moving ? Math.sin(walkingCycle + index * Math.PI) * .045 : 0;
+            leg.rotation.x = moving ? Math.sin(rig.gaitPhase + index * Math.PI) * .43 : Math.sin(time * .65 + rig.phase + index) * .008;
+            leg.rotation.z = moving ? Math.sin(rig.gaitPhase + index * Math.PI) * .035 : 0;
           });
 
           const eyeMaterial = rig.faceEyes[0]?.material as THREE.MeshStandardMaterial | undefined;
-          if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .85 + Math.sin(time * 4) * .13 : .58;
+          if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .88 + Math.sin(time * 3.5) * .1 : .58;
         });
         const travel = (Math.sin(time * .12) + 1) / 2;
         roamer.position.x = -5.3 + travel * 10.3;
