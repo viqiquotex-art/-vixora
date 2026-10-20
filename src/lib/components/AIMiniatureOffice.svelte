@@ -310,13 +310,9 @@
   }
 
   function addFurniture(scene: THREE.Scene) {
-    // Open-front room shell on a beveled-looking display plinth.
-    box(scene, [14.2, .26, 9.7], 0xc8b49a, [0, -.18, .05]);
-    box(scene, [13.9, .1, 9.42], 0xf1e5d3, [0, -.02, .05]);
-    box(scene, [14.2, .15, .12], 0x9c7858, [0, -.13, 4.91]);
-    box(scene, [14.2, .15, .12], 0x9c7858, [0, -.13, -4.81]);
-    box(scene, [.12, .15, 9.7], 0x9c7858, [-7.02, -.13, .05]);
-    box(scene, [.12, .15, 9.7], 0x9c7858, [7.02, -.13, .05]);
+    // Open studio floor: broad, almost edge-to-edge, with no chunky display-box rim.
+    box(scene, [18.8, .12, 12.9], 0xe5d4bd, [0, -.12, .05]);
+    box(scene, [18.65, .055, 12.75], 0xf4e9d9, [0, -.035, .05]);
 
     // Warm back wall and tall window panels.
     box(scene, [14, 3.6, .2], 0xf8eddb, [0, 1.8, -4.78]);
@@ -696,8 +692,9 @@
 
   function buildScene(currentAgents: OfficeAgent[]) {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf2e8d9);
-    scene.fog = new THREE.Fog(0xf2e8d9, 18, 35);
+    // Transparent canvas lets the office breathe into the dashboard instead of sitting in a colored rectangle.
+    scene.background = null;
+    scene.fog = new THREE.Fog(0xf2e8d9, 22, 42);
 
     const hemi = new THREE.HemisphereLight(0xfff6e7, 0xa89071, 2.15);
     scene.add(hemi);
@@ -742,7 +739,7 @@
     controls.maxPolarAngle = 1.16;
     controls.update();
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'low-power' });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.6));
     renderer.setSize(container.clientWidth, container.clientHeight, false);
     renderer.shadowMap.enabled = true;
@@ -750,7 +747,7 @@
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
-    renderer.setClearColor(0xf2e8d9, 1);
+    renderer.setClearColor(0xf2e8d9, 0);
 
     const timer = new THREE.Clock();
     const stationTargets = rigs.map((rig) => rig.hitArea);
@@ -1032,8 +1029,9 @@
 </div>
 
 <style>
-  .miniature-office{position:relative;overflow:hidden;width:100%;height:clamp(530px,57vw,740px);min-height:530px;border:1px solid #d8c5ac;border-radius:12px;background:#f2e8d9;box-shadow:0 10px 30px rgba(81,58,35,.12);isolation:isolate}
-  .miniature-office-canvas{display:block;width:100%;height:100%;outline:none;touch-action:pan-y;cursor:grab}
+  .miniature-office{position:relative;overflow:visible;width:100%;height:clamp(620px,66vw,850px);min-height:620px;border:0;border-radius:0;background:transparent;box-shadow:none;isolation:isolate}
+  .miniature-office::after{position:absolute;inset:auto 3% 1%;height:7%;content:"";border-radius:50%;background:radial-gradient(ellipse,rgba(141,111,80,.11),transparent 72%);filter:blur(10px);pointer-events:none;z-index:-1}
+  .miniature-office-canvas{position:relative;z-index:1;display:block;width:100%;height:100%;outline:none;touch-action:pan-y;cursor:grab;background:transparent}
   .miniature-office-canvas:active{cursor:grabbing}
   .miniature-office-hint{position:absolute;left:14px;bottom:12px;display:flex;align-items:center;gap:7px;padding:8px 11px;border:1px solid rgba(174,145,110,.35);border-radius:7px;background:rgba(255,250,240,.88);color:#88745f;font-size:9px;font-weight:800;letter-spacing:.07em;pointer-events:none;backdrop-filter:blur(4px)}
   .hint-dot{width:6px;height:6px;border-radius:50%;background:#e11d2e;box-shadow:0 0 6px rgba(225,29,46,.28)}
@@ -1049,6 +1047,6 @@
   .mini-fallback-roster button>span:nth-child(2){display:grid;gap:4px;min-width:0;flex:1}
   .mini-fallback-roster strong{font-size:11px;color:#322c26}
   .mini-fallback-roster small{overflow:hidden;color:#8a7b68;font-size:9px;text-overflow:ellipsis;white-space:nowrap}
-  @media(max-width:680px){.miniature-office{height:600px;min-height:600px}.miniature-office-hint{font-size:8px;left:7px;bottom:7px;gap:5px;padding:7px}.mini-fallback-roster{grid-template-columns:1fr}}
+  @media(max-width:680px){.miniature-office{height:680px;min-height:680px}.miniature-office-hint{font-size:8px;left:8px;bottom:7px;gap:5px;padding:7px}.mini-fallback-roster{grid-template-columns:1fr}}
   @media(prefers-reduced-motion:reduce){.miniature-office *{scroll-behavior:auto}}
 </style>
