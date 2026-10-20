@@ -371,3 +371,26 @@ textarea::placeholder{color:#999}
   .activity-date{font-size:8px}
   .activity-count{font-size:9px}
 }
+
+/* Per-model Agent Run health table */
+.model-health-panel{margin-top:13px;padding:20px}
+.model-health-heading{align-items:flex-start;margin-bottom:15px}
+.model-health-name{display:inline-block;max-width:260px;overflow-wrap:anywhere;color:#222;font-weight:700}
+.model-health-table-wrap{width:100%;overflow-x:auto;border:1px solid rgba(20,20,20,.08);border-radius:9px}
+.model-health-table{width:100%;min-width:620px;border-collapse:collapse;font-size:11px;font-variant-numeric:tabular-nums}
+.model-health-table th,.model-health-table td{padding:11px 12px;border-bottom:1px solid rgba(20,20,20,.07);text-align:left;white-space:nowrap}
+.model-health-table thead th{background:#fafafa;color:#777;font-size:10px;font-weight:700}
+.model-health-table tbody th{font-weight:500}
+.model-health-table tbody tr:last-child th,.model-health-table tbody tr:last-child td{border-bottom:0}
+.model-health-table tbody tr:hover{background:#fffaf9}
+.model-health-success{color:#187242;font-weight:750}
+.run-number-failure{color:#ba1e2c;font-weight:750}
+.model-health-empty{margin:0;padding:15px;border:1px dashed rgba(20,20,20,.14);border-radius:9px;color:#777;font-size:11px;line-height:1.6}
+@media(max-width:560px){
+  .model-health-panel{padding:13px}
+  .model-health-heading{gap:8px}
+  .model-health-heading .activity-peak{padding-top:2px}
+  .model-health-name{max-width:150px}
+  .model-health-table th,.model-health-table td{padding:10px 9px}
+}
+
