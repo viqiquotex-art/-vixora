@@ -782,6 +782,38 @@
             </div>
             <p class="activity-footnote">Berdasarkan waktu dibuat pada browser lokal; run di luar 50 record terbaru tidak dihitung dalam ringkasan ini.</p>
           </article>
+          <article class="panel model-health-panel">
+            <div class="panel-heading model-health-heading">
+              <div><span class="eyebrow">MODEL HEALTH</span><h2>Performa per model</h2><p class="analytics-subtitle">Keberhasilan, kegagalan, dan durasi berdasarkan maksimal 50 run terakhir.</p></div>
+              <span class="activity-peak">{runAnalytics.modelStats.length} model</span>
+            </div>
+            {#if runAnalytics.modelStats.length}
+              <div class="model-health-table-wrap">
+                <table class="model-health-table">
+                  <thead>
+                    <tr><th scope="col">Model</th><th scope="col">Total run</th><th scope="col">Berhasil</th><th scope="col">Gagal</th><th scope="col">Success rate</th><th scope="col">Rata-rata durasi</th></tr>
+                  </thead>
+                  <tbody>
+                    {#each runAnalytics.modelStats as model (model.model)}
+                      <tr>
+                        <th scope="row"><span class="model-health-name">{model.model}</span></th>
+                        <td>{model.total}</td>
+                        <td><span class="model-health-success">{model.succeeded}</span></td>
+                        <td><span class:run-number-failure={model.failed > 0}>{model.failed}</span></td>
+                        <td>{model.successRate === null ? '—' : `${model.successRate}%`}</td>
+                        <td>{model.averageDuration}</td>
+                      </tr>
+                    {/each}
+                  </tbody>
+                </table>
+              </div>
+              {#if runAnalytics.modelStats.some((model) => model.model === 'Model belum tercatat')}
+                <p class="activity-footnote">Sebagian run lama belum menyimpan nama model pada hasilnya. Run baru akan mencatat model ketika Gemini mengembalikan informasi error.</p>
+              {/if}
+            {:else}
+              <p class="model-health-empty">Belum ada run AI dengan informasi model. Jalankan satu task AI untuk mulai mengumpulkan metrik.</p>
+            {/if}
+          </article>
         {:else if runStorageReady === false}
           <div class="analytics-unavailable"><span>i</span><div><strong>Analytics belum tersedia</strong><p>{runNotice || 'Database Agent Run staging belum bisa dimuat.'}</p></div></div>
         {:else}
