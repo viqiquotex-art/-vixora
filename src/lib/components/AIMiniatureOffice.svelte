@@ -30,6 +30,8 @@
     pauseUntil: number;
     gaitPhase: number;
     chair: THREE.Group;
+    statusLight: THREE.Mesh;
+    statusRing: THREE.Mesh;
     screen: THREE.Mesh;
     label: THREE.Sprite;
     labelTexture: THREE.CanvasTexture;
@@ -54,6 +56,7 @@
   let canvas: HTMLCanvasElement;
   let webglUnavailable = $state(false);
   let sceneReady = $state(false);
+  let hoveredAgentId = $state<string | null>(null);
   let controller: { syncAgents: (next: OfficeAgent[]) => void; dispose: () => void } | null = null;
 
   // Each loop begins at that agent's desk exit and stays in open aisles, clear of desk footprints.
@@ -535,6 +538,26 @@
     );
     screen.position.set(0, 1.16, -.112);
     deskGroup.add(screen);
+
+    // Small 3D status beacon: red = attention, green = working, gold = completed/queued.
+    const statusColor = agent.state === 'attention'
+      ? 0xe11d2e
+      : agent.state === 'working'
+        ? 0x37a978
+        : agent.state === 'done'
+          ? 0xe6bb47
+          : 0xc5ad8c;
+    const statusLight = sphere(
+      deskGroup, .065, statusColor, [.82, .9, -.3], [1, 1, 1],
+      { roughness: .22, metalness: .05, emissive: statusColor, emissiveIntensity: agent.state === 'idle' ? .08 : .45 }
+    );
+    const statusRing = new THREE.Mesh(
+      new THREE.TorusGeometry(.09, .012, 7, 18),
+      material(statusColor, .35, .1)
+    );
+    statusRing.position.set(.82, .9, -.3);
+    statusRing.rotation.x = Math.PI / 2;
+    deskGroup.add(statusRing);
     box(deskGroup, [.09, .2, .11], 0xa99984, [0, .94, -.16]);
     box(deskGroup, [.42, .045, .24], 0xc3af94, [0, .84, -.08]);
     // Keyboard and a mouse are separate physical pieces.
@@ -619,7 +642,7 @@
       nextPauseAt: Math.min(.22, 1 / roamPath.length),
       pauseUntil: 0,
       gaitPhase: idx * .9,
-      chair, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7
+      chair, statusLight, statusRing, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7
     };
   }
 
@@ -771,6 +794,21 @@
             eyeMat.color.setHex(eyeColor);
             eyeMat.emissive.setHex(eyeColor);
           });
+          const statusColor = nextAgent.state === 'attention'
+            ? 0xe11d2e
+            : nextAgent.state === 'working'
+              ? 0x37a978
+              : nextAgent.state === 'done'
+                ? 0xe6bb47
+                : 0xc5ad8c;
+          const beaconMaterial = rig.statusLight.material as THREE.MeshStandardMaterial;
+          beaconMaterial.color.setHex(statusColor);
+          beaconMaterial.emissive.setHex(statusColor);
+          beaconMaterial.emissiveIntensity = nextAgent.state === 'idle' ? .08 : .45;
+          const ringMaterial = rig.statusRing.material as THREE.MeshStandardMaterial;
+          ringMaterial.color.setHex(statusColor);
+          ringMaterial.emissive.setHex(statusColor);
+          rig.root.scale.setScalar(1);
         }
       });
     };
@@ -791,21 +829,34 @@
     resize();
 
     let pointerStart: { x: number; y: number } | null = null;
+    const findAgentUnderPointer = (event: PointerEvent) => {
+      const rect = canvas.getBoundingClientRect();
+      pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+      raycaster.setFromCamera(pointer, camera);
+      const intersection = raycaster.intersectObjects(stationTargets, false)[0];
+      return typeof intersection?.object.userData.agentId === 'string' ? intersection.object.userData.agentId as string : null;
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      hoveredAgentId = findAgentUnderPointer(event);
+      canvas.style.cursor = hoveredAgentId ? 'pointer' : 'grab';
+    };
+    const onPointerLeave = () => {
+      hoveredAgentId = null;
+      canvas.style.cursor = 'grab';
+    };
     const onPointerDown = (event: PointerEvent) => { pointerStart = { x: event.clientX, y: event.clientY }; };
     const onPointerUp = (event: PointerEvent) => {
       if (!pointerStart || Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) > 5) {
         pointerStart = null;
         return;
       }
-      const rect = canvas.getBoundingClientRect();
-      pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
-      raycaster.setFromCamera(pointer, camera);
-      const intersection = raycaster.intersectObjects(stationTargets, false)[0];
-      const agentId = intersection?.object.userData.agentId;
-      if (typeof agentId === 'string') onAgentSelect(agentId);
+      const agentId = findAgentUnderPointer(event);
+      if (agentId) onAgentSelect(agentId);
       pointerStart = null;
     };
     canvas.addEventListener('pointerdown', onPointerDown);
+    canvas.addEventListener('pointermove', onPointerMove);
+    canvas.addEventListener('pointerleave', onPointerLeave);
     canvas.addEventListener('pointerup', onPointerUp);
 
     const animate = () => {
@@ -926,6 +977,14 @@
 
           const eyeMaterial = rig.faceEyes[0]?.material as THREE.MeshStandardMaterial | undefined;
           if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .88 + Math.sin(time * 3.5) * .1 : .58;
+
+          const beaconMaterial = rig.statusLight.material as THREE.MeshStandardMaterial;
+          const pulsing = rig.agent.state === 'working' || rig.agent.state === 'attention';
+          beaconMaterial.emissiveIntensity = pulsing
+            ? .45 + (Math.sin(time * (rig.agent.state === 'attention' ? 5.2 : 2.8) + rig.phase) + 1) * .23
+            : rig.agent.state === 'idle' ? .08 : .28;
+          rig.statusRing.scale.setScalar(1 + (pulsing ? .08 * (Math.sin(time * 2.5 + rig.phase) + 1) : 0));
+          rig.root.scale.setScalar(rig.agent.id === hoveredAgentId ? 1.055 : 1);
         });
         // The little courier follows a slower shuttle and turns through the whole arc,
         // rather than instantly flipping its facing direction at each endpoint.
@@ -977,6 +1036,8 @@
         cancelAnimationFrame(frame);
         observer.disconnect();
         canvas.removeEventListener('pointerdown', onPointerDown);
+        canvas.removeEventListener('pointermove', onPointerMove);
+        canvas.removeEventListener('pointerleave', onPointerLeave);
         canvas.removeEventListener('pointerup', onPointerUp);
         controls.dispose();
         scene.traverse((object) => {
