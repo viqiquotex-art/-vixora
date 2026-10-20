@@ -69,7 +69,7 @@ jobs:
               console.log("Staging health check passed:", JSON.stringify(body));
             });
           '
-- name: Smoke test Agent Run storage authentication
+      - name: Smoke test Agent Run storage authentication
         shell: bash
         run: |
           set -euo pipefail
