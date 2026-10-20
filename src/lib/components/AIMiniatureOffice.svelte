@@ -77,7 +77,8 @@
     },
     {
       x: 1.6, z: 1.15, color: 0xe7b94e, tool: 'workflow',
-      roam: [{ x: 1.6, z: 3.18 }, { x: .95, z: 3.32 }, { x: .38, z: 3.72 }, { x: .88, z: 4.12 }, { x: 1.85, z: 4.18 }, { x: 2.65, z: 3.88 }, { x: 2.75, z: 3.45 }, { x: 2.15, z: 3.22 }]
+      // Keep this patrol to the right of the Team Sync tabletop and monitor.
+      roam: [{ x: 1.6, z: 3.18 }, { x: 2.2, z: 3.32 }, { x: 2.85, z: 3.72 }, { x: 3.18, z: 4.22 }, { x: 3.02, z: 4.85 }, { x: 2.22, z: 5.05 }, { x: 1.72, z: 4.55 }, { x: 1.62, z: 3.82 }]
     },
     {
       x: 4.35, z: -0.65, color: 0x9eb991, tool: 'strategy',
@@ -848,9 +849,9 @@
           rig.deliveryCurve = new THREE.CatmullRomCurve3([
             start,
             new THREE.Vector3(sideX, 0, start.z),
-            new THREE.Vector3(sideX, 0, 2.68),
-            new THREE.Vector3(.05, 0, 2.68),
-            new THREE.Vector3(.05, 0, 2.95)
+            new THREE.Vector3(sideX, 0, 2.5),
+            new THREE.Vector3(.05, 0, 2.5),
+            new THREE.Vector3(.05, 0, 2.68)
           ], false, 'centripetal', .25);
           rig.deliveryProgress = 0;
           rig.deliveryPauseUntil = 0;
@@ -1016,8 +1017,23 @@
           const walkSpeed = strolling ? .54 : .62;
           const travelDistance = Math.min(distanceToTarget, walkSpeed * delta);
           if (distanceToTarget > .00001) {
-            rig.root.position.x += (dx / distanceToTarget) * travelDistance;
-            rig.root.position.z += (dz / distanceToTarget) * travelDistance;
+            const proposedX = rig.root.position.x + (dx / distanceToTarget) * travelDistance;
+            const proposedZ = rig.root.position.z + (dz / distanceToTarget) * travelDistance;
+
+            // Hard safety envelope around the Team Sync tabletop, its base and monitor.
+            // Project each movement step back to the walkable perimeter if a curve overshoots.
+            const obstacleDx = proposedX;
+            const obstacleDz = proposedZ - 4.18;
+            const obstacleDistance = Math.hypot(obstacleDx, obstacleDz);
+            const safeRadius = 1.34;
+            if (obstacleDistance < safeRadius) {
+              const angle = obstacleDistance > .0001 ? Math.atan2(obstacleDz, obstacleDx) : Math.atan2(dz, dx);
+              rig.root.position.x = Math.cos(angle) * safeRadius;
+              rig.root.position.z = 4.18 + Math.sin(angle) * safeRadius;
+            } else {
+              rig.root.position.x = proposedX;
+              rig.root.position.z = proposedZ;
+            }
           }
           const actualDx = rig.root.position.x - oldX;
           const actualDz = rig.root.position.z - oldZ;
