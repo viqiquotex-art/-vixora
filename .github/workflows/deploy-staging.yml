@@ -48,3 +48,24 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: npx wrangler deploy --config wrangler.toml
+
+      - name: Smoke test deployed staging Worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL="https://vixora-workspace-staging.viqiquotex.workers.dev/api/health"
+          payload="$(curl --retry 8 --retry-all-errors --retry-delay 2 --retry-max-time 45 --fail --silent --show-error "$URL")"
+          printf '%s' "$payload" | node --input-type=module -e '
+            let raw = "";
+            process.stdin.on("data", (chunk) => raw += chunk);
+            process.stdin.on("end", () => {
+              let body;
+              try { body = JSON.parse(raw); }
+              catch { console.error("Staging health endpoint returned invalid JSON"); process.exit(1); }
+              if (body.ok !== true || body.service !== "vixora-workspace-staging" || body.mode !== "staging") {
+                console.error("Unexpected staging health response:", body);
+                process.exit(1);
+              }
+              console.log("Staging health check passed:", JSON.stringify(body));
+            });
+          '
