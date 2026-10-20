@@ -610,7 +610,6 @@
     scene.add(hitArea);
 
     const roamCurve = new THREE.CatmullRomCurve3(roamPath.map((point) => new THREE.Vector3(point.x, 0, point.z)), true, 'centripetal', .5);
-    const routeLength = Math.max(roamCurve.getLength(), .01);
     return {
       root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, roamCurve,
       routeProgress: 0,
@@ -906,20 +905,36 @@
           const eyeMaterial = rig.faceEyes[0]?.material as THREE.MeshStandardMaterial | undefined;
           if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .88 + Math.sin(time * 3.5) * .1 : .58;
         });
-        const travel = (Math.sin(time * .12) + 1) / 2;
+        // The little courier follows a slower shuttle and turns through the whole arc,
+        // rather than instantly flipping its facing direction at each endpoint.
+        const previousCourierX = roamer.position.x;
+        const previousCourierZ = roamer.position.z;
+        const travel = (Math.sin(time * .045) + 1) / 2;
         roamer.position.x = -5.3 + travel * 10.3;
-        roamer.position.z = 3.35 + Math.sin(time * .25) * .12;
-        const direction = Math.cos(time * .12) >= 0 ? 1 : -1;
-        roamer.rotation.y = direction > 0 ? Math.PI / 2 : -Math.PI / 2;
+        roamer.position.z = 3.48 + Math.sin(time * .11) * .08;
+        const courierDx = roamer.position.x - previousCourierX;
+        const courierDz = roamer.position.z - previousCourierZ;
+        const courierDistance = Math.hypot(courierDx, courierDz);
+        if (courierDistance > .0001) {
+          roamerGaitPhase += courierDistance * 14;
+          const desiredYaw = Math.atan2(courierDx, courierDz);
+          const yawDifference = Math.atan2(
+            Math.sin(desiredYaw - roamer.rotation.y),
+            Math.cos(desiredYaw - roamer.rotation.y)
+          );
+          roamer.rotation.y += yawDifference * (1 - Math.exp(-delta * 4.2));
+        }
+        roamer.position.y = Math.abs(Math.sin(roamerGaitPhase * 2)) * .014;
         const limbs = roamer.userData as { legs: THREE.Group[]; arms: THREE.Group[]; head: THREE.Group };
-        limbs.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(time * 4.8 + i * Math.PI) * .3; });
-        limbs.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(time * 4.8 + i * Math.PI + .6) * .18; });
-        limbs.head.rotation.y = Math.sin(time * .8) * .09;
+        limbs.legs.forEach((leg, i) => { leg.rotation.x = Math.sin(roamerGaitPhase + i * Math.PI) * .28; });
+        limbs.arms.forEach((arm, i) => { arm.rotation.x = Math.sin(roamerGaitPhase + i * Math.PI + .6) * .15; });
+        limbs.head.rotation.y = Math.sin(time * .65) * .075;
       }
       controls.update();
       renderer.render(scene, camera);
       frame = requestAnimationFrame(animate);
     };
+    let roamerGaitPhase = 0;
     let frame = requestAnimationFrame(animate);
 
     return {
