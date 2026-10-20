@@ -177,7 +177,7 @@ export const POST: RequestHandler = async ({ request, platform }) => {
       try {
         const providerError = await response.json() as { error?: { message?: string; status?: string } };
         providerDetail = typeof providerError.error?.message === 'string'
-          ? providerError.error.message.replace(/[\\r\\n]+/g, ' ').slice(0, 240)
+          ? providerError.error.message.replace(/[\r\n]+/g, ' ').slice(0, 240)
           : '';
         if (/api key not valid|api_key_invalid|invalid api key/i.test(providerDetail)) {
           return json({
