@@ -191,3 +191,29 @@ test('AI route handles a safety-blocked empty answer clearly', async (t) => {
   assert.equal(payload.error, 'GEMINI_EMPTY_RESPONSE');
   assert.match(payload.message, /filter keselamatan/i);
 });
+
+test('AI route includes the selected model in network failure diagnostics', async (t) => {
+  const originalFetch = globalThis.fetch;
+  t.after(() => { globalThis.fetch = originalFetch; });
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.endsWith('/auth/v1/user')) return upstream({ id: '8efb5e37-9e17-4fb1-91c4-75b4ecf394a1' });
+    if (url.includes('/rest/v1/tasks?')) {
+      return upstream([{ id: taskId, title: 'hai', description: null, priority: 'medium' }]);
+    }
+    if (url.includes('generativelanguage.googleapis.com')) throw new TypeError('simulated network failure');
+    throw new Error(`Unexpected fetch URL in test: ${url}`);
+  };
+
+  const response = await POST({
+    request: request(),
+    platform: { env: platformEnv() }
+  });
+
+  assert.equal(response.status, 502);
+  const payload = await response.json();
+  assert.equal(payload.error, 'GEMINI_NETWORK_ERROR');
+  assert.equal(payload.model, 'gemini-3.6-flash');
+  assert.match(payload.message, /gemini-3\.6-flash/i);
+  assert.equal(payload.causeType, 'TypeError');
+});
