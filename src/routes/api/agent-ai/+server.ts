@@ -164,7 +164,8 @@ export const POST: RequestHandler = async ({ request, platform }) => {
     }
     return json({
       error: 'GEMINI_NETWORK_ERROR',
-      message: 'Cloudflare Worker tidak berhasil menyelesaikan koneksi ke Gemini API. Periksa secret GEMINI_API_KEY dan coba lagi. VIXORA tidak memanggil provider alternatif.',
+      message: `Cloudflare Worker tidak berhasil menyelesaikan koneksi ke Gemini API (model ${model}). Periksa secret GEMINI_API_KEY dan coba lagi. VIXORA tidak memanggil provider alternatif.`,
+      model,
       causeType: errorName || 'UnknownError'
     }, { status: 502 });
   }
