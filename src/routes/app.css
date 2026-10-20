@@ -1546,3 +1546,100 @@ textarea::placeholder{color:#999}
   76%{transform:scale(.32) translateY(-1px) rotateY(1deg)}
 }
 
+
+/* ==========================================================
+   OPEN CANVAS PASS — make the mini office part of the page,
+   not a boxed widget dropped inside the workspace.
+   ========================================================== */
+.ai-office-shell.ai-office-3d-shell{
+  position:relative;
+  overflow:visible;
+  width:calc(100% + 24px);
+  margin:0 -12px;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.ai-office-3d-shell .office-scene-topline{
+  position:absolute;
+  z-index:8;
+  top:15px;
+  right:22px;
+  left:22px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:#927f69;
+  pointer-events:none;
+}
+.ai-office-3d-shell .office-scene-topline>span{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:29px;
+  padding:7px 11px;
+  border:1px solid rgba(184,151,115,.2);
+  border-radius:999px;
+  background:rgba(255,250,241,.75);
+  box-shadow:0 3px 11px rgba(122,91,57,.045);
+  backdrop-filter:blur(12px);
+  color:#8a765e;
+  font-size:8px;
+  letter-spacing:.1em;
+  white-space:nowrap;
+}
+.ai-office-3d-shell .office-scene-topline>span:first-child i{
+  width:6px;
+  height:6px;
+  border-radius:50%;
+  background:#e11d2e;
+  box-shadow:0 0 8px rgba(225,29,46,.24);
+}
+.ai-office-3d-shell .office-scene-topline .office-signal{
+  color:#388a63;
+  font-variant-numeric:tabular-nums;
+}
+.ai-office-3d-shell .office-scene-legend{
+  position:relative;
+  z-index:3;
+  display:flex;
+  align-items:center;
+  gap:17px;
+  flex-wrap:wrap;
+  margin: -2px 8px 15px;
+  padding:11px 8px 12px;
+  border:0;
+  border-top:1px solid rgba(172,140,105,.15);
+  background:transparent;
+  color:#887761;
+  font-size:10px;
+}
+.ai-office-3d-shell .office-scene-legend .legend-tip{
+  margin-left:auto;
+  color:#9c8a75;
+  font-size:9px;
+}
+.ai-office-3d-shell .office-scene-legend i{width:7px;height:7px}
+.ai-office-3d-shell .office-scene-legend .legend-working{background:#339d70;box-shadow:0 0 5px rgba(51,157,112,.16)}
+.ai-office-3d-shell .office-scene-legend .legend-done{background:#e6bb47}
+.ai-office-3d-shell .office-scene-legend .legend-attention{background:#e11d2e}
+@media(max-width:800px){
+  .ai-office-shell.ai-office-3d-shell{width:calc(100% + 12px);margin:0 -6px}
+  .ai-office-3d-shell .office-scene-topline{top:10px;left:12px;right:12px}
+  .ai-office-3d-shell .office-scene-topline>span{min-height:25px;padding:6px 8px;font-size:7px;letter-spacing:.04em}
+  .ai-office-3d-shell .office-scene-topline>span:nth-child(2){display:none}
+  .ai-office-3d-shell .office-scene-legend{gap:10px;margin:0 5px 12px;padding:9px 4px; font-size:9px}
+  .ai-office-3d-shell .office-scene-legend .legend-tip{width:100%;margin:2px 0 0;padding-top:8px;border-top:1px solid rgba(172,140,105,.12);font-size:8px}
+}
+@media(max-width:560px){
+  .ai-office-shell.ai-office-3d-shell{width:calc(100% + 6px);margin:0 -3px}
+  .ai-office-3d-shell .office-scene-topline{top:8px;left:8px;right:8px}
+  .ai-office-3d-shell .office-scene-topline>span{padding:5px 7px;font-size:6px}
+}
+
