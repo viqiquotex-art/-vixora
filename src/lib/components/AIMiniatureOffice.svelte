@@ -329,7 +329,7 @@
     }
   }
 
-  function makeRobot(scene: THREE.Scene, agent: OfficeAgent, idx: number, x: number, deskZ: number, tool: string): RobotRig {
+  function makeRobot(scene: THREE.Scene, agent: OfficeAgent, idx: number, x: number, deskZ: number, tool: string, roamPath: readonly { x: number; z: number }[]): RobotRig {
     const root = new THREE.Group();
     root.position.set(x, 0, deskZ - .98);
     scene.add(root);
@@ -340,13 +340,16 @@
     body.material = material(bodyColor, .35);
     sphere(root, .12, 0xd3c1ab, [0, 1.08, 0], [1, .62, .78]);
 
-    const legs: THREE.Mesh[] = [];
+    const legs: THREE.Group[] = [];
     for (const side of [-1, 1]) {
-      const upperLeg = sphere(root, .12, 0xd6c5b0, [side * .14, .52, .08], [.8, 1.45, .78]);
+      const leg = new THREE.Group();
+      leg.position.set(side * .14, .52, .08);
+      root.add(leg);
+      const upperLeg = sphere(leg, .12, 0xd6c5b0, [0, -.12, 0], [.8, 1.45, .78]);
       upperLeg.rotation.x = -.4;
-      legs.push(upperLeg);
-      sphere(root, .14, 0xf9f3e8, [side * .15, .31, .25], [1.05, .58, 1.4]);
-      sphere(root, .045, 0xbba58a, [side * .15, .29, .34], [1, .55, .7]);
+      sphere(leg, .14, 0xf9f3e8, [side * .01, -.21, .17], [1.05, .58, 1.4]);
+      sphere(leg, .045, 0xbba58a, [side * .01, -.23, .26], [1, .55, .7]);
+      legs.push(leg);
     }
 
     const armMaterial = material(0xf7eee2, .33);
@@ -522,7 +525,7 @@
     hitArea.userData.pickable = true;
     scene.add(hitArea);
 
-    return { root, head, leftArm: arms[0], rightArm: arms[1], faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7 };
+    return { root, head, leftArm: arms[0], rightArm: arms[1], legs, roamPath, faceEyes: eyes, screen, label, labelTexture, hitArea, baseX: x, deskZ, agent, phase: idx * 1.7 };
   }
 
   function addRoamingBuddy(scene: THREE.Scene) {
@@ -610,7 +613,7 @@
     const rigs: RobotRig[] = [];
     const ordered = agentPositions.map((pos, idx) => ({ pos, idx, agent: currentAgents.find((a) => a.id === ['content-studio', 'research-agent', 'workflow-planner', 'strategy-planner'][idx]) ?? currentAgents[idx] })).filter((entry) => entry.agent);
     ordered.forEach(({ pos, idx, agent }) => {
-      const rig = makeRobot(scene, agent, idx, pos.x, pos.z, pos.tool);
+      const rig = makeRobot(scene, agent, idx, pos.x, pos.z, pos.tool, pos.roam);
       rigs.push(rig);
     });
     const roamer = addRoamingBuddy(scene);
