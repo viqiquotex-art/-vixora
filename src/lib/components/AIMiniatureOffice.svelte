@@ -654,12 +654,20 @@
 
     // Grouped rolling chair: hidden while the agent strolls, visible when seated at its desk.
     const chair = new THREE.Group();
-    chair.position.set(x, 0, deskZ + 1.28);
+    chair.position.set(x, 0, deskZ + 1.42);
     scene.add(chair);
     cylinder(chair, .21, .24, .1, 0xb9a084, [0, .43, 0], 16);
     box(chair, [.09, .3, .09], 0x9e8467, [0, .25, 0]);
     box(chair, [.55, .13, .19], 0xc9ad8c, [0, .53, .1]);
     box(chair, [.54, .48, .12], 0xe2c9ac, [0, .79, .27]);
+    // Five small spokes and casters keep the rolling chair readable when the robot is away.
+    for (let wheel = 0; wheel < 5; wheel += 1) {
+      const angle = (wheel / 5) * Math.PI * 2;
+      const wheelX = Math.cos(angle) * .23;
+      const wheelZ = Math.sin(angle) * .23;
+      box(chair, [.22, .035, .045], 0x9e8467, [wheelX / 2, .105, wheelZ / 2]).rotation.y = angle;
+      sphere(chair, .055, 0x887b6b, [wheelX, .055, wheelZ], [1.05, .76, .76]);
+    }
 
     // Nameplate is a canvas texture on a physical card at the desk's front edge.
     const labelTexture = makeNameplateTexture(agent);
@@ -1012,7 +1020,7 @@
             // and return along the route. This is an open itinerary, not a tiny closed loop.
             if (time >= rig.pauseUntil) {
               const routeLength = Math.max(rig.roamCurve.getLength(), .01);
-              rig.routeProgress += rig.routeDirection * ((.78 * delta) / routeLength);
+              // Move the path target a little slower than the robot's stride so it can track the curve instead of cutting corners.\n              rig.routeProgress += rig.routeDirection * ((.46 * delta) / routeLength);
               if (rig.routeProgress >= 1) {
                 rig.routeProgress = 1;
                 rig.routeDirection = -1;
@@ -1058,6 +1066,7 @@
           const actualDz = rig.root.position.z - oldZ;
           const movedDistance = Math.hypot(actualDx, actualDz);
           const moving = movedDistance > .0002;
+          let turnAmount = 0;
 
           // Turn the complete character toward travel direction before it feels like it is sliding sideways.
           if (moving) {
@@ -1066,7 +1075,8 @@
               Math.sin(desiredYaw - rig.root.rotation.y),
               Math.cos(desiredYaw - rig.root.rotation.y)
             );
-            rig.root.rotation.y += yawDifference * (1 - Math.exp(-delta * 5.2));
+            rig.root.rotation.y += yawDifference * (1 - Math.exp(-delta * 4.6));
+            turnAmount = THREE.MathUtils.clamp(yawDifference, -.8, .8);
           } else if (rig.deliveryPhase === 'handoff') {
             // Face the shared table during the handoff pause.
             const desiredYaw = 0;
@@ -1086,17 +1096,19 @@
 
           // Real travel advances the gait phase: stopped bots stop stepping.
           if (moving) rig.gaitPhase += movedDistance * 14;
-          const atDesk = Math.hypot(rig.root.position.x - homeX, rig.root.position.z - homeZ) < .28;
-          rig.chair.visible = atDesk && !moving && !deliveryActive;
+          // Chairs stay in the room even when their robot gets up to roam or deliver a result.
+          rig.chair.visible = true;
           rig.deliveryFolder.visible = deliveryActive && rig.deliveryPhase === 'outbound';
 
-          // Keep the root on the floor; only the swing foot lifts.
-          rig.root.position.y = 0;
+          // A tiny synchronized body bounce makes footsteps feel weighted rather than gliding.
+          rig.root.position.y = moving
+            ? Math.pow(Math.max(0, Math.sin(rig.gaitPhase * 2)), 1.4) * .024
+            : Math.sin(time * 2 + rig.phase) * .008;
           rig.head.rotation.y = Math.sin(time * (moving ? .45 : .7) + rig.phase) * (strolling ? .105 : .035);
           rig.head.rotation.z = moving
             ? Math.sin(rig.gaitPhase) * .018
             : Math.sin(time * .7 + rig.phase) * (strolling ? .015 : .006);
-          rig.root.rotation.z = moving ? Math.sin(rig.gaitPhase) * .012 : 0;
+          rig.root.rotation.z = moving ? Math.sin(rig.gaitPhase) * .012 - turnAmount * .035 : 0;
 
           rig.leftArm.rotation.x = moving
             ? Math.sin(rig.gaitPhase + Math.PI) * .20
@@ -1132,6 +1144,12 @@
             }
           });
 
+          // Occasional quick blink gives each little bot a hint of personality.
+          const blinkPhase = (time * .47 + rig.phase * 1.9) % 5.4;
+          const blink = blinkPhase > 4.98 && blinkPhase < 5.12
+            ? Math.sin(((blinkPhase - 4.98) / .14) * Math.PI)
+            : 0;
+          rig.faceEyes.forEach((eye) => { eye.scale.y = 1.15 * (1 - blink * .92); });
           const eyeMaterial = rig.faceEyes[0]?.material as THREE.MeshStandardMaterial | undefined;
           if (eyeMaterial) eyeMaterial.emissiveIntensity = working ? .88 + Math.sin(time * 3.5) * .1 : .58;
 
