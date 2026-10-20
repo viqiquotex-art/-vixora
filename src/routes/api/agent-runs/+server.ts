@@ -37,8 +37,22 @@ async function forward(request: Request, method: 'GET' | 'POST' | 'PATCH') {
     });
     const text = await response.text();
     let payload: unknown;
-    try { payload = text ? JSON.parse(text) : {}; }
-    catch { payload = { error: 'Agent-run storage returned an invalid response.' }; }
+    try {
+      payload = text ? JSON.parse(text) : {};
+    } catch {
+      return json({
+        storageReady: false,
+        error: 'AGENT_RUN_STORAGE_INVALID_RESPONSE',
+        message: 'Database staging Agent Run mengembalikan respons yang tidak valid.'
+      }, { status: 502, headers: { 'cache-control': 'no-store' } });
+    }
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      return json({
+        storageReady: false,
+        error: 'AGENT_RUN_STORAGE_INVALID_RESPONSE',
+        message: 'Database staging Agent Run mengembalikan format respons yang tidak valid.'
+      }, { status: 502, headers: { 'cache-control': 'no-store' } });
+    }
     return json(payload, {
       status: response.status,
       headers: { 'cache-control': 'no-store' }
