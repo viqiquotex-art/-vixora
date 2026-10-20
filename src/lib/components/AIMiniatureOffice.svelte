@@ -816,7 +816,41 @@
       rigs.forEach((rig) => {
         const nextAgent = next.find((a) => a.id === rig.agent.id);
         if (!nextAgent) return;
-        const changed = nextAgent.name !== rig.agent.name || nextAgent.taskTitle !== rig.agent.taskTitle || nextAgent.statusLabel !== rig.agent.statusLabel || nextAgent.state !== rig.agent.state;
+        const previousAgent = rig.agent;
+        const changed = nextAgent.name !== previousAgent.name
+          || nextAgent.taskTitle !== previousAgent.taskTitle
+          || nextAgent.statusLabel !== previousAgent.statusLabel
+          || nextAgent.state !== previousAgent.state
+          || nextAgent.runId !== previousAgent.runId;
+
+        // When a real run completes, send its robot to the shared team-sync table once.
+        if (
+          nextAgent.id !== 'strategy-planner'
+          && nextAgent.state === 'done'
+          && nextAgent.runId
+          && (previousAgent.state !== 'done' || previousAgent.runId !== nextAgent.runId)
+        ) {
+          const start = rig.root.position.clone();
+          start.y = 0;
+          const exitZ = Math.max(start.z + .62, 2.92);
+          rig.deliveryCurve = new THREE.CatmullRomCurve3([
+            start,
+            new THREE.Vector3(start.x, 0, exitZ),
+            new THREE.Vector3(start.x * .52, 0, 3.62),
+            new THREE.Vector3(.05, 0, 3.34)
+          ], false, 'centripetal', .35);
+          rig.deliveryProgress = 0;
+          rig.deliveryPauseUntil = 0;
+          rig.deliveryPhase = 'outbound';
+          rig.deliveryRunId = nextAgent.runId;
+          rig.deliveryFolder.visible = true;
+        } else if (nextAgent.state === 'working' || nextAgent.state === 'attention') {
+          rig.deliveryPhase = 'idle';
+          rig.deliveryCurve = null;
+          rig.deliveryProgress = 0;
+          rig.deliveryPauseUntil = 0;
+          rig.deliveryFolder.visible = false;
+        }
         rig.agent = nextAgent;
         if (changed) {
           const texture = makeNameplateTexture(nextAgent);
