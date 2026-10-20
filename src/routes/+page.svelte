@@ -3,7 +3,7 @@
   import { goto } from '$app/navigation';
   import { supabase } from '$lib/supabase';
 
-  type Tab = 'Overview' | 'Task Center' | 'Agent Hub' | 'Automations' | 'Integrations';
+  type Tab = 'Overview' | 'AI Workspace' | 'Task Center' | 'Agent Hub' | 'Automations' | 'Integrations';
   type DraftTask = { id: string; title: string; createdAt: string; status: 'Draft' | 'Saved' };
   type AgentRunView = {
     id: string;
@@ -31,7 +31,7 @@
   type AgentPreview = { mode: string; status: string; externalExecutorCalls: number; executor: string; agentId: string; agentName: string; taskTitle: string; summary: string; steps: string[]; deliverables: string[]; nextAction: string; limitations: string[]; createdAt: string };
   type AgentAIResult = { mode: string; status: string; model: string; agentId: string; agentName: string; taskTitle: string; answer: string; limitations: string[]; usage?: { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null } | null; createdAt: string };
 
-  let activeTab = $state<Tab>('Overview');
+  let activeTab = $state<Tab>('AI Workspace');
   let taskInput = $state('');
   let tasks = $state<DraftTask[]>([]);
   let notice = $state('Workspace baru sedang disiapkan. Task belum dikirim ke executor.');
@@ -649,7 +649,51 @@
       aiBusyTaskId = null;
     }
   }
-  const tabs: Tab[] = ['Overview', 'Task Center', 'Agent Hub', 'Automations', 'Integrations'];
+  const workspaceAgentDefinitions = [
+    { id: 'content-studio', name: 'Content Studio', role: 'Creative Lab', summary: 'Hooks, scripts & captions' },
+    { id: 'research-agent', name: 'Research Agent', role: 'Insight Lab', summary: 'Research & evidence' },
+    { id: 'workflow-planner', name: 'Workflow Planner', role: 'Automation Bay', summary: 'Workflows & integrations' },
+    { id: 'strategy-planner', name: 'Strategy & Planner', role: 'Command Desk', summary: 'Planning & decisions' }
+  ] as const;
+
+  let workspaceMotion = $state(true);
+  let roomAgents = $derived.by(() => workspaceAgentDefinitions.map((agent) => {
+    const latestRun = agentRuns.find((run) =>
+      run.assigned_agent === agent.id || run.output?.agent_name === agent.name
+    );
+    const state = latestRun?.status === 'running'
+      ? 'working'
+      : latestRun?.status === 'failed'
+        ? 'attention'
+        : latestRun?.status === 'succeeded'
+          ? 'done'
+          : latestRun && ['queued', 'planning', 'awaiting_approval'].includes(latestRun.status)
+            ? 'queued'
+            : latestRun?.status === 'planned'
+              ? 'ready'
+              : 'idle';
+    const statusLabel = state === 'working'
+      ? 'SEDANG BEKERJA'
+      : state === 'attention'
+        ? 'PERLU DICEK'
+        : state === 'done'
+          ? 'TASK SELESAI'
+          : state === 'queued'
+            ? 'DALAM ANTREAN'
+            : state === 'ready'
+              ? 'SIAP BERTUGAS'
+              : 'STANDBY';
+    return {
+      ...agent,
+      state,
+      statusLabel,
+      taskTitle: latestRun?.title ?? 'Menunggu task pertama',
+      model: latestRun?.output?.model ?? (latestRun?.executor === 'gemini-api' ? 'Gemini API' : 'Local runtime'),
+      runId: latestRun?.id ?? null
+    };
+  }));
+
+  const tabs: Tab[] = ['Overview', 'AI Workspace', 'Task Center', 'Agent Hub', 'Automations', 'Integrations'];
 
   async function createDraft(event: SubmitEvent) {
     event.preventDefault();
@@ -718,7 +762,7 @@
     <nav aria-label="Main navigation">
       {#each tabs as tab}
         <button class:active={activeTab === tab} class="nav-item" onclick={() => activeTab = tab}>
-          <span class="nav-icon">{tab === 'Overview' ? '◫' : tab === 'Task Center' ? '⌘' : tab === 'Agent Hub' ? '✳' : tab === 'Automations' ? '↗' : '⌁'}</span>
+          <span class="nav-icon">{tab === 'Overview' ? '◫' : tab === 'AI Workspace' ? '⬡' : tab === 'Task Center' ? '⌘' : tab === 'Agent Hub' ? '✳' : tab === 'Automations' ? '↗' : '⌁'}</span>
           <span>{tab}</span>
           {#if tab === 'Task Center' && tasks.length > 0}<span class="nav-count">{tasks.length}</span>{/if}
         </button>
@@ -854,6 +898,115 @@
             <article class="agent-card"><div class="agent-card-top"><span class="agent-number">{agent.number}</span><span class="blueprint-pill">LOCAL DRY-RUN</span></div><h3>{agent.name}</h3><p>{agent.description}</p><div class="agent-card-bottom"><span class="agent-status-dot"></span><span>{agent.status}</span></div></article>
           {/each}
         </div>
+      {:else if activeTab === 'AI Workspace'}
+        <section class="page-intro workspace-intro">
+          <div class="eyebrow"><span class="eyebrow-line"></span> VIXORA DIGITAL FLOOR</div>
+          <h1>AI Digital <span>Workspace</span></h1>
+          <p>Ruang kerja virtual untuk para spesialis AI. Gerakan robot adalah visualisasi suasana kerja; status task dan nama tugas mengikuti Agent Run yang tersimpan.</p>
+        </section>
+
+        <section class="digital-floor-toolbar" aria-label="Digital workspace controls">
+          <div class="floor-live-status"><span class="floor-live-dot"></span><div><strong>WORKSPACE ONLINE</strong><small>Staging runtime · refresh data kapan saja</small></div></div>
+          <div class="floor-quick-stats">
+            <div class="floor-stat"><span>Agent bekerja</span><strong>{agentRuns.filter((run) => run.status === 'running').length.toString().padStart(2, '0')}</strong></div>
+            <div class="floor-stat"><span>Task berhasil</span><strong>{agentRuns.filter((run) => run.status === 'succeeded').length.toString().padStart(2, '0')}</strong></div>
+            <div class="floor-stat"><span>Riwayat dimuat</span><strong>{agentRuns.length.toString().padStart(2, '0')}</strong></div>
+          </div>
+          <div class="floor-actions">
+            <button class:floor-toggle-active={workspaceMotion} class="floor-motion-button" type="button" onclick={() => workspaceMotion = !workspaceMotion} aria-pressed={workspaceMotion}>{workspaceMotion ? 'Ⅱ Pause motion' : '▶ Resume motion'}</button>
+            <button class="floor-refresh-button" type="button" onclick={() => void refreshAgentRuns()}>↻ Sync agents</button>
+          </div>
+        </section>
+
+        <section class="ai-office-shell" aria-label="Animated AI team room">
+          <div class="office-scene-topline"><span><i></i> DIGITAL FLOOR / 01</span><span>VIXORA NEURAL OPERATIONS</span><span class="office-signal">● SIGNAL STABLE</span></div>
+          <div class="ai-office-scene" class:motion-paused={!workspaceMotion}>
+            <div class="office-backwall">
+              <div class="office-window-grid"></div>
+              <div class="office-window-glow"></div>
+              <div class="office-wall-orbit orbit-one"></div>
+              <div class="office-wall-orbit orbit-two"></div>
+            </div>
+
+            <div class="office-command-display">
+              <div class="command-display-frame">
+                <div class="command-display-header"><span>VIXORA / AGENT NETWORK</span><span><i></i> LIVE</span></div>
+                <div class="command-display-content">
+                  <div class="command-globe"><div class="globe-latitude"></div><div class="globe-longitude"></div><span>V</span></div>
+                  <div class="command-display-data">
+                    <span class="display-section-label">COLLABORATION MATRIX</span>
+                    <div class="display-graph"><i style="height:28%"></i><i style="height:52%"></i><i style="height:39%"></i><i style="height:76%"></i><i style="height:61%"></i><i style="height:91%"></i><i style="height:68%"></i><i style="height:100%"></i><i style="height:75%"></i></div>
+                    <div class="display-readout"><span>AGENTS <b>04</b></span><span>MODE <b>STAGING</b></span></div>
+                    <div class="display-code-lines"><i></i><i></i><i></i><i></i></div>
+                  </div>
+                </div>
+                <div class="command-display-footer"><span>SECURE TASK ROUTING</span><span>LOCAL + GEMINI</span><span>● ● ●</span></div>
+              </div>
+              <div class="command-display-stem"></div><div class="command-display-plinth"></div>
+            </div>
+
+            <div class="office-light-strip"></div>
+            <div class="office-floor-grid"></div>
+            <div class="office-floor-glow"></div>
+            <div class="office-floor-ring ring-large"></div><div class="office-floor-ring ring-small"></div>
+            <div class="office-cable cable-one"></div><div class="office-cable cable-two"></div>
+
+            {#each roomAgents as agent, index (agent.id)}
+              <button
+                type="button"
+                class={`office-station station-${agent.id} robot-state-${agent.state}`}
+                aria-label={`Buka riwayat ${agent.name}; status ${agent.statusLabel}`}
+                onclick={() => { runSearch = agent.id; activeTab = 'Task Center'; }}
+              >
+                <span class="station-orbit" aria-hidden="true"></span>
+                <span class="station-number">0{index + 1}</span>
+                <div class="office-robot" aria-hidden="true">
+                  <span class="robot-shadow"></span>
+                  <span class="robot-antenna"><i></i></span>
+                  <span class="robot-head">
+                    <span class="robot-ear robot-ear-left"></span><span class="robot-ear robot-ear-right"></span>
+                    <span class="robot-face"><i></i><i></i><b></b></span>
+                  </span>
+                  <span class="robot-neck"></span>
+                  <span class="robot-body"><i class="robot-chest-light"></i><b></b></span>
+                  <span class="robot-arm robot-arm-left"><i></i><b></b></span>
+                  <span class="robot-arm robot-arm-right"><i></i><b></b></span>
+                  <span class="robot-leg robot-leg-left"><i></i></span><span class="robot-leg robot-leg-right"><i></i></span>
+                </div>
+                <div class="station-computer" aria-hidden="true">
+                  <div class="station-monitor"><div class="monitor-camera"></div><div class="monitor-screen"><span></span><i></i><i></i><b></b><i></i></div><div class="monitor-neck"></div></div>
+                  <div class="station-keyboard"><i></i><i></i><i></i><i></i></div>
+                </div>
+                <span class="station-desk-top" aria-hidden="true"></span><span class="station-desk-front" aria-hidden="true"></span><span class="station-desk-leg desk-leg-left" aria-hidden="true"></span><span class="station-desk-leg desk-leg-right" aria-hidden="true"></span>
+                <span class="station-task-card">
+                  <span class="station-agent-role">{agent.role}</span>
+                  <strong>{agent.name}</strong>
+                  <small>{agent.taskTitle}</small>
+                  <span class="station-status"><i></i>{agent.statusLabel}</span>
+                </span>
+                <span class="station-open-hint">OPEN TASK HISTORY ↗</span>
+              </button>
+            {/each}
+
+            <div class="office-floor-mark" aria-hidden="true">VIXORA <span>AI OPERATIONS</span></div>
+            <div class="office-room-reflection" aria-hidden="true"></div>
+          </div>
+          <div class="office-scene-legend"><span><i class="legend-working"></i> Working</span><span><i class="legend-done"></i> Completed</span><span><i class="legend-attention"></i> Needs attention</span><span class="legend-tip">Klik workstation untuk membuka Task Center agent tersebut.</span></div>
+        </section>
+
+        <section class="workspace-agent-roster">
+          <div class="section-heading"><div><span class="eyebrow">THE PEOPLE BEHIND THE PROMPTS</span><h2>Agent workstations</h2><p class="analytics-subtitle">Pilih satu robot untuk melihat tugas dan riwayatnya.</p></div><button class="text-button" onclick={() => activeTab = 'Task Center'}>Open Task Center <span>→</span></button></div>
+          <div class="workspace-agent-grid">
+            {#each roomAgents as agent (agent.id)}
+              <button type="button" class={`workspace-agent-card robot-state-${agent.state}`} onclick={() => { runSearch = agent.id; activeTab = 'Task Center'; }}>
+                <span class="workspace-agent-avatar"><i></i><i></i><b></b></span>
+                <span class="workspace-agent-details"><strong>{agent.name}</strong><small>{agent.summary}</small><span class="workspace-agent-status"><i></i>{agent.statusLabel}</span></span>
+                <span class="workspace-agent-arrow">↗</span>
+              </button>
+            {/each}
+          </div>
+        </section>
+
       {:else if activeTab === 'Task Center'}
         <section class="page-intro"><div class="eyebrow">WORK QUEUE</div><h1>Task <span>Center</span></h1><p>Draft tugas dan riwayat yang akan dikelola oleh orchestrator.</p></section>
         <article class="panel task-panel"><div class="panel-heading"><div><span class="eyebrow">NEW TASK</span><h2>Capture an objective</h2></div></div><form onsubmit={createDraft}><label class="sr-only" for="task-input">Describe a task</label><textarea id="task-input" bind:value={taskInput} placeholder="Jelaskan hasil yang ingin kamu capai…" rows="3"></textarea><div class="composer-footer"><span>Belum menjalankan agent</span><button class="primary-button" type="submit" disabled={!taskInput.trim() || taskBusy}>{taskBusy ? 'Saving…' : 'Save draft'} <span>↗</span></button></div></form>{#if taskFeedback}<p class={taskFeedbackError ? 'task-feedback is-error' : 'task-feedback is-success'} role={taskFeedbackError ? 'alert' : 'status'}>{taskFeedback}</p>{/if}</article>
