@@ -23,6 +23,7 @@
     rightArm: THREE.Group;
     faceEyes: THREE.Mesh[];
     legs: THREE.Group[];
+    lowerLegs: THREE.Group[];
     feet: THREE.Group[];
     roamPath: readonly { x: number; z: number }[];
     roamCurve: THREE.CatmullRomCurve3;
@@ -467,20 +468,29 @@
     sphere(root, .12, 0xd3c1ab, [0, 1.08, 0], [1, .62, .78]);
 
     const legs: THREE.Group[] = [];
+    const lowerLegs: THREE.Group[] = [];
     const feet: THREE.Group[] = [];
     for (const side of [-1, 1]) {
+      // Hip pivot controls the thigh; a separate knee pivot keeps the shin articulated.
       const leg = new THREE.Group();
       leg.position.set(side * .14, .52, .08);
       root.add(leg);
-      const upperLeg = sphere(leg, .12, 0xd6c5b0, [0, -.12, 0], [.8, 1.45, .78]);
-      upperLeg.rotation.x = -.4;
-      // Separate ankles let the soles stay flat and planted while the knees swing.
+      sphere(leg, .12, 0xd6c5b0, [0, -.11, 0], [.8, 1.35, .78]);
+
+      const lowerLeg = new THREE.Group();
+      lowerLeg.position.set(0, -.22, .04);
+      leg.add(lowerLeg);
+      const shin = sphere(lowerLeg, .095, 0xd6c5b0, [0, -.105, .02], [.78, 1.3, .76]);
+      lowerLeg.userData.shin = shin;
+
+      // Keep each sole level while the knee bends, and lengthen the shin subtly for a grounded seated pose.
       const foot = new THREE.Group();
-      foot.position.set(side * .01, -.44, .17);
-      leg.add(foot);
+      foot.position.set(side * .01, -.22, .08);
+      lowerLeg.add(foot);
       sphere(foot, .14, 0xf9f3e8, [0, 0, 0], [1.05, .58, 1.4]);
       sphere(foot, .045, 0xbba58a, [0, -.01, .09], [1, .55, .7]);
       feet.push(foot);
+      lowerLegs.push(lowerLeg);
       legs.push(leg);
     }
 
@@ -657,7 +667,8 @@
     // Grouped rolling chair: hidden while the agent strolls, visible when seated at its desk.
     const chair = new THREE.Group();
     // Seat sits directly under the robot's home position, so the pelvis lines up with the cushion.
-    chair.position.set(x, 0, deskZ + 1.05);
+    // At rest the chair sits slightly pulled back; it slides under the robot when the seated pose settles.
+    chair.position.set(x, 0, deskZ + 1.19);
     scene.add(chair);
     cylinder(chair, .21, .24, .1, 0xb9a084, [0, .43, 0], 16);
     box(chair, [.09, .3, .09], 0x9e8467, [0, .25, 0]);
@@ -700,7 +711,7 @@
 
     const roamCurve = new THREE.CatmullRomCurve3(roamPath.map((point) => new THREE.Vector3(point.x, 0, point.z)), false, 'centripetal', .5);
     return {
-      root, head, body, leftArm: arms[0], rightArm: arms[1], legs, feet, roamPath, roamCurve,
+      root, head, body, leftArm: arms[0], rightArm: arms[1], legs, lowerLegs, feet, roamPath, roamCurve,
       routeProgress: 0,
       routeDirection: 1,
       pauseUntil: 0,
@@ -1001,7 +1012,10 @@
           if (deliveryActive && rig.deliveryCurve) {
             const deliveryCurve = rig.deliveryCurve;
             const curveLength = Math.max(deliveryCurve.getLength(), .01);
-            if (rig.deliveryPhase === 'outbound') {
+            if (rig.deliveryPhase === 'outbound' && rig.sitBlend > .08) {
+              // Stand up before leaving the desk to deliver a completed result.
+              rig.deliveryProgress = 0;
+            } else if (rig.deliveryPhase === 'outbound') {
               rig.deliveryProgress = Math.min(1, rig.deliveryProgress + (.62 * delta) / curveLength);
               if (rig.deliveryProgress >= 1) {
                 rig.deliveryPhase = 'handoff';
@@ -1120,10 +1134,12 @@
           const wantsSit = working && atDesk && !moving && !deliveryActive;
           rig.sitBlend += ((wantsSit ? 1 : 0) - rig.sitBlend) * (1 - Math.exp(-delta * 5.8));
           rig.chair.visible = true;
-          rig.head.position.y = 1.42 - rig.sitBlend * .045;
-          rig.body.position.y = .79 - rig.sitBlend * .035;
-          rig.leftArm.position.y = .88 - rig.sitBlend * .035;
-          rig.rightArm.position.y = .88 - rig.sitBlend * .035;
+          // Pull the chair out while standing, then slide it beneath the pelvis as the robot sits.
+          rig.chair.position.z = rig.deskZ + .95 + (1 - rig.sitBlend) * .24;
+          rig.head.position.y = 1.42 - rig.sitBlend * .075;
+          rig.body.position.y = .79 - rig.sitBlend * .055;
+          rig.leftArm.position.y = .88 - rig.sitBlend * .015;
+          rig.rightArm.position.y = .88 - rig.sitBlend * .015;
           rig.deliveryFolder.visible = deliveryActive && rig.deliveryPhase === 'outbound';
 
           // Keep the root grounded, with a soft gait bounce and a tiny weight shift on turns.
@@ -1232,16 +1248,25 @@
             const stride = Math.sin(rig.gaitPhase + index * Math.PI);
             const swing = Math.max(0, stride);
             // Seated legs angle forward; when standing, they straighten back to neutral.
-            const legAngle = moving ? stride * .36 : rig.sitBlend * .78;
+            const legAngle = moving ? stride * .36 : rig.sitBlend * .9;
             leg.rotation.x = legAngle;
             leg.rotation.z = moving ? stride * .025 : 0;
 
             const foot = rig.feet[index];
             if (foot) {
-              const footHeight = .082 + (moving ? swing * .105 : 0);
-              const footZ = foot.position.z;
-              foot.position.y = (footHeight - leg.position.y + footZ * Math.sin(legAngle)) / Math.max(.92, Math.cos(legAngle));
-              foot.rotation.x = -legAngle;
+              const lowerLeg = rig.lowerLegs[index];
+              if (lowerLeg) {
+                // Counter-rotate the shin for a vertical lower leg while seated.
+                lowerLeg.rotation.x = moving ? -legAngle * .24 : -rig.sitBlend * .9;
+                lowerLeg.position.y = -.22 - rig.sitBlend * .09;
+                const shin = lowerLeg.userData.shin as THREE.Mesh | undefined;
+                if (shin) {
+                  shin.position.y = -.105 - rig.sitBlend * .045;
+                  shin.scale.y = 1.3 + rig.sitBlend * .5;
+                }
+                foot.position.y = -.22 - rig.sitBlend * .09 + (moving ? swing * .045 : 0);
+                foot.rotation.x = -(legAngle + lowerLeg.rotation.x);
+              }
               foot.rotation.z = -leg.rotation.z;
             }
           });
