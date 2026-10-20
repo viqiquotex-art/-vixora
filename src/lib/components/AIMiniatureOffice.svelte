@@ -21,6 +21,8 @@
     leftArm: THREE.Group;
     rightArm: THREE.Group;
     faceEyes: THREE.Mesh[];
+    legs: THREE.Group[];
+    roamPath: readonly { x: number; z: number }[];
     screen: THREE.Mesh;
     label: THREE.Sprite;
     labelTexture: THREE.CanvasTexture;
