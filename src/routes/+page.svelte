@@ -396,21 +396,56 @@
     }
   }
 
+  async function hasWorkspaceAccess(token: string, email: string | undefined): Promise<boolean> {
+    if (email?.trim().toLowerCase() === 'viqiquotex@gmail.com') return true;
+    try {
+      const response = await fetch('/api/access-status', {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store'
+      });
+      if (!response.ok) return false;
+      const result = await response.json() as { status?: string };
+      return result.status === 'approved';
+    } catch {
+      return false;
+    }
+  }
+
   onMount(() => {
     let active = true;
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
-      accessToken = data.session?.access_token ?? null;
-      signedInEmail = data.session?.user.email ?? null;
-      if (data.session) void loadSavedTasks(data.session.access_token);
-      if (data.session) void loadAgentRuns(data.session.access_token);
+      const session = data.session;
+      if (!session) {
+        accessToken = null;
+        signedInEmail = null;
+        await goto('/login');
+        return;
+      }
+      accessToken = session.access_token;
+      signedInEmail = session.user.email ?? null;
+      if (!(await hasWorkspaceAccess(session.access_token, session.user.email))) {
+        await supabase.auth.signOut();
+        if (active) await goto('/login');
+        return;
+      }
+      if (!active) return;
+      void loadSavedTasks(session.access_token);
+      void loadAgentRuns(session.access_token);
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       accessToken = session?.access_token ?? null;
       signedInEmail = session?.user.email ?? null;
       if (session) {
-        void loadSavedTasks(session.access_token);
-        void loadAgentRuns(session.access_token);
+        void (async () => {
+          if (!(await hasWorkspaceAccess(session.access_token, session.user.email))) {
+            await supabase.auth.signOut();
+            await goto('/login');
+            return;
+          }
+          void loadSavedTasks(session.access_token);
+          void loadAgentRuns(session.access_token);
+        })();
       } else {
         tasks = [];
         agentRuns = [];
