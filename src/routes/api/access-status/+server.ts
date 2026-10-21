@@ -3,7 +3,7 @@ import type { RequestHandler } from './$types';
 
 const STAGING_URL = 'https://nuofddhqznewkkryejmu.supabase.co';
 const STAGING_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJudW9mZGRocXpuZXdra3J5ZWptdSIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzkyMzc5NzUwLCJleHAiOjIxMDc5NTU3NTB9.Wg7ClORTohR_Ps06x7aYTjFI5OdGm8MNqYAr-AfjurQ';
-const ADMIN_EMAIL = 'viqiquotex@gmail.com';
+const ADMIN_EMAILS = ['viqiquotex@gmail.com', 'viqiseptia@gmail.com'];
 
 function bearer(request: Request) {
   return request.headers.get('authorization')?.match(/^Bearer\s+(.+)$/i)?.[1] ?? null;
@@ -19,7 +19,7 @@ export const GET: RequestHandler = async ({ request }) => {
   if (!userResponse.ok) return json({ error: 'Session is invalid or expired.' }, { status: 401 });
   const user = await userResponse.json() as { email?: string };
   const email = user.email?.trim().toLowerCase() ?? '';
-  if (email === ADMIN_EMAIL) return json({ status: 'approved', admin: true });
+  if (ADMIN_EMAILS.includes(email)) return json({ status: 'approved', admin: true });
 
   const statusResponse = await fetch(
     `${STAGING_URL}/rest/v1/access_requests?select=status,requested_at,approved_at&email=eq.${encodeURIComponent(email)}&limit=1`,
