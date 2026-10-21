@@ -81,6 +81,8 @@
         const approval = await approvalResponse.json() as { status?: string; error?: string; message?: string };
         if (!approvalResponse.ok) {
           message = approval.message || 'Akun dibuat, tetapi email persetujuan admin belum berhasil dikirim. Akses tetap terkunci; hubungi admin.';
+        } else if (approval.status === 'approved') {
+          message = 'Akun admin terdaftar. Selesaikan konfirmasi email jika diminta, lalu login menggunakan email admin.';
         } else {
           message = 'Pendaftaran diterima dan menunggu persetujuan admin. Setelah email konfirmasi Supabase selesai dan admin menyetujui, kamu bisa login.';
         }
