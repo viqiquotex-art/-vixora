@@ -45,7 +45,7 @@
         const { data, error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (authError) throw authError;
         const userEmail = data.user.email?.trim().toLowerCase() ?? '';
-        if (userEmail === 'viqiquotex@gmail.com') {
+        if (['viqiquotex@gmail.com', 'viqiseptia@gmail.com'].includes(userEmail)) {
           await goto('/');
           return;
         }
