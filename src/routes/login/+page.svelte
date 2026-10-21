@@ -22,18 +22,48 @@
         if (resetError) throw resetError;
         message = 'Jika email tersebut terdaftar, instruksi pemulihan akan dikirim. Periksa Inbox, Spam, dan Promotions.';
       } else if (mode === 'signin') {
-        const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const { data, error: authError } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (authError) throw authError;
+        const userEmail = data.user.email?.trim().toLowerCase() ?? '';
+        if (userEmail === 'viqiquotex@gmail.com') {
+          await goto('/');
+          return;
+        }
+        const accessResponse = await fetch('/api/access-status', {
+          headers: { Authorization: `Bearer ${data.session.access_token}` },
+          cache: 'no-store'
+        });
+        const access = await accessResponse.json() as { status?: string; error?: string; message?: string };
+        if (!accessResponse.ok || access.status !== 'approved') {
+          await supabase.auth.signOut();
+          if (access.status === 'rejected') {
+            message = 'Pendaftaran belum disetujui. Hubungi admin jika kamu merasa ini keliru.';
+          } else if (access.status === 'pending') {
+            message = 'Akunmu masih menunggu persetujuan admin. Kamu baru bisa masuk setelah disetujui.';
+          } else {
+            message = 'Akun belum disetujui. Silakan daftar atau ajukan persetujuan terlebih dahulu.';
+          }
+          return;
+        }
         await goto('/');
       } else {
-        const { data, error: authError } = await supabase.auth.signUp({
+        const { error: authError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: { emailRedirectTo: window.location.origin + '/login' }
         });
         if (authError) throw authError;
-        if (data.session) await goto('/');
-        else message = 'Permintaan pendaftaran selesai. Jika ini akun baru, periksa email untuk konfirmasi. Jika pernah mendaftar sebelumnya, gunakan Sign in atau Lupa password.';
+        const approvalResponse = await fetch('/api/access-status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email.trim() })
+        });
+        const approval = await approvalResponse.json() as { status?: string; error?: string; message?: string };
+        if (!approvalResponse.ok) {
+          message = approval.message || 'Akun dibuat, tetapi email persetujuan admin belum berhasil dikirim. Akses tetap terkunci; hubungi admin.';
+        } else {
+          message = 'Pendaftaran diterima dan menunggu persetujuan admin. Setelah email konfirmasi Supabase selesai dan admin menyetujui, kamu bisa login.';
+        }
       }
     } catch (cause) {
       error = cause instanceof Error ? cause.message : 'Autentikasi gagal. Coba lagi.';
@@ -55,9 +85,9 @@
   </a>
 
   <section class="auth-card">
-    <div class="auth-eyebrow">SECURE WORKSPACE ACCESS</div>
+    <div class="auth-eyebrow">PRIVATE WORKSPACE · ADMIN APPROVAL</div>
     <h1>{mode === 'signin' ? 'Welcome back.' : mode === 'signup' ? 'Create your account.' : 'Reset your password.'}</h1>
-    <p>{mode === 'forgot' ? 'Masukkan email akunmu. Kami akan mengirim tautan pemulihan jika alamat tersebut terdaftar dan pengiriman email tersedia.' : 'Masuk untuk menyimpan task di workspace-mu. Executor AI masih dalam tahap integrasi staging.'}</p>
+    <p>{mode === 'forgot' ? 'Masukkan email akunmu. Kami akan mengirim tautan pemulihan jika alamat tersebut terdaftar dan pengiriman email tersedia.' : 'Daftar untuk meminta akses. Akun baru wajib mendapat persetujuan admin sebelum dapat membuka workspace.'}</p>
 
     {#if mode !== 'forgot'}
       <div class="auth-switch" role="group" aria-label="Authentication mode">
