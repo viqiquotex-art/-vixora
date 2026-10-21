@@ -67,12 +67,18 @@
         }
         await goto('/');
       } else {
-        const { error: authError } = await supabase.auth.signUp({
+        const { data: signUpData, error: authError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: { emailRedirectTo: 'https://vixora-workspace-staging.viqiquotex.workers.dev/login' }
         });
         if (authError) throw authError;
+        if (!signUpData.user) {
+          throw new Error('Supabase belum mengonfirmasi pembuatan akun. Tidak ada permintaan approval yang dikirim. Tunggu sebentar, lalu cek Authentication → Users sebelum mencoba lagi.');
+        }
+        if (signUpData.user.identities?.length === 0) {
+          throw new Error('Email ini kemungkinan sudah terdaftar. Pilih Sign in atau Lupa password; jangan daftar ulang.');
+        }
         const approvalResponse = await fetch('/api/access-status', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
