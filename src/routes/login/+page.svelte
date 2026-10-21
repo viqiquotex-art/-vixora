@@ -70,7 +70,7 @@
         const { error: authError } = await supabase.auth.signUp({
           email: email.trim(),
           password,
-          options: { emailRedirectTo: window.location.origin + '/login' }
+          options: { emailRedirectTo: 'https://vixora-workspace-staging.viqiquotex.workers.dev/login' }
         });
         if (authError) throw authError;
         const approvalResponse = await fetch('/api/access-status', {
