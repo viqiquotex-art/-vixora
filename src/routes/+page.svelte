@@ -397,7 +397,7 @@
   }
 
   async function hasWorkspaceAccess(token: string, email: string | undefined): Promise<boolean> {
-    if (['viqiquotex@gmail.com', 'viqiseptia@gmail.com'].includes(email?.trim().toLowerCase() ?? '')) return true;
+    if (['viqiquotex@gmail.com', 'viqiseptia@gmail.com', 'nabilaria789@gmail.com'].includes(email?.trim().toLowerCase() ?? '')) return true;
     try {
       const response = await fetch('/api/access-status', {
         headers: { Authorization: `Bearer ${token}` },
