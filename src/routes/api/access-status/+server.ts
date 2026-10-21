@@ -20,17 +20,17 @@ export const GET: RequestHandler = async ({ request }) => {
   const user = await userResponse.json() as { email?: string };
   const email = user.email?.trim().toLowerCase() ?? '';
   if (ADMIN_EMAILS.includes(email)) return json({ status: 'approved', admin: true });
-  // Staging recovery for a verified approval record whose row is not visible through the user's RLS query.
-  // The user's Supabase session is still validated above; this is limited to this exact approved staging test account.
-  if (email === 'nabilaria789@gmail.com') return json({ status: 'approved', recovery: true }, { headers: { 'cache-control': 'no-store' } });
-
-  const statusResponse = await fetch(
-    `${STAGING_URL}/rest/v1/access_requests?select=status,requested_at,approved_at&email=eq.${encodeURIComponent(email)}&limit=1`,
-    { headers: { apikey: STAGING_ANON_KEY, Authorization: `Bearer ${token}`, Accept: 'application/json' } }
-  );
-  if (!statusResponse.ok) return json({ error: 'Could not check access approval.' }, { status: 502 });
-  const rows = await statusResponse.json() as Array<{ status: string; requested_at: string; approved_at: string | null }>;
-  return json(rows[0] ?? { status: 'not_requested' }, { headers: { 'cache-control': 'no-store' } });
+  const statusResponse = await fetch(`${STAGING_URL}/functions/v1/vixora-access-approval`, {
+    method: 'POST',
+    headers: { apikey: STAGING_ANON_KEY, 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'status', accessToken: token }),
+    signal: AbortSignal.timeout(12000)
+  });
+  const statusText = await statusResponse.text();
+  let statusBody: Record<string, unknown> = {};
+  try { statusBody = statusText ? JSON.parse(statusText) as Record<string, unknown> : {}; } catch {}
+  if (!statusResponse.ok) return json({ error: statusBody.error || 'Could not check access approval.' }, { status: statusResponse.status, headers: { 'cache-control': 'no-store' } });
+  return json(statusBody, { headers: { 'cache-control': 'no-store' } });
 };
 
 export const POST: RequestHandler = async ({ request }) => {
