@@ -1,7 +1,7 @@
 const corsHeaders = {
   "Access-Control-Allow-Origin": "https://vixora.my.id",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 const CREAO_APP_ID = "1305331a-99f0-4330-b1c1-226f5f0ea129";
@@ -20,6 +20,105 @@ const json = (data, status = 200, extraHeaders = {}) =>
 
 const getCreaoKey = (env) =>
   typeof env?.CREAO_API_KEY === "string" ? env.CREAO_API_KEY.trim() : "";
+
+async function authorizeSupabaseUser(request, env) {
+  const authorization = request.headers.get("Authorization") || "";
+  const token = authorization.match(/^Bearer\s+(.+)$/i)?.[1]?.trim();
+  if (!token) return { ok: false, status: 401, error: "Login diperlukan untuk menjalankan perintah." };
+
+  const publishableKey = typeof env?.SUPABASE_PUBLISHABLE_KEY === "string"
+    ? env.SUPABASE_PUBLISHABLE_KEY.trim()
+    : "";
+  if (!publishableKey) {
+    return { ok: false, status: 503, error: "SUPABASE_PUBLISHABLE_KEY belum dikonfigurasi di Worker." };
+  }
+
+  try {
+    const response = await fetch("https://gdxughluqryzlklrnzhz.supabase.co/auth/v1/user", {
+      headers: { apikey: publishableKey, Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) return { ok: false, status: 401, error: "Sesi login tidak valid atau sudah kedaluwarsa." };
+    const user = await response.json();
+    if (!user?.id) return { ok: false, status: 401, error: "Sesi login tidak valid." };
+    return { ok: true, user };
+  } catch {
+    return { ok: false, status: 502, error: "Tidak dapat memverifikasi sesi login saat ini." };
+  }
+}
+
+async function sendTelegramMessage(env, chatId, text) {
+  const token = typeof env?.TELEGRAM_BOT_TOKEN === "string" ? env.TELEGRAM_BOT_TOKEN.trim() : "";
+  if (!token) return false;
+  const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text: String(text).slice(0, 3900) }),
+  });
+  return response.ok;
+}
+
+async function handleTelegramWebhook(request, env) {
+  const expectedSecret = typeof env?.TELEGRAM_WEBHOOK_SECRET === "string"
+    ? env.TELEGRAM_WEBHOOK_SECRET.trim()
+    : "";
+  if (!expectedSecret) return json({ ok: false, error: "Telegram webhook secret is not configured." }, 503);
+  if (request.headers.get("X-Telegram-Bot-Api-Secret-Token") !== expectedSecret) {
+    return json({ ok: false, error: "Unauthorized webhook." }, 401);
+  }
+
+  const botToken = typeof env?.TELEGRAM_BOT_TOKEN === "string" ? env.TELEGRAM_BOT_TOKEN.trim() : "";
+  if (!botToken) return json({ ok: false, error: "Telegram bot token is not configured." }, 503);
+
+  let update;
+  try {
+    update = await request.json();
+  } catch {
+    return json({ ok: false, error: "Invalid JSON." }, 400);
+  }
+  const message = update?.message || update?.edited_message;
+  const text = typeof message?.text === "string" ? message.text.trim() : "";
+  const chatId = message?.chat?.id;
+  if (!text || chatId === undefined || chatId === null) return json({ ok: true, ignored: true });
+
+  const allowed = (typeof env?.TELEGRAM_ALLOWED_CHAT_IDS === "string" ? env.TELEGRAM_ALLOWED_CHAT_IDS : "")
+    .split(",").map((id) => id.trim()).filter(Boolean);
+  if (!allowed.length) return json({ ok: false, error: "Telegram allowlist is not configured." }, 503);
+  if (!allowed.includes(String(chatId))) return json({ ok: true, ignored: true });
+
+  if (/^\/(start|help)(?:@\w+)?(?:\s|$)/i.test(text)) {
+    await sendTelegramMessage(env, chatId,
+      "VIXORA AI Command Center siap. Kirim instruksi dalam bahasa biasa untuk diteruskan ke executor. Periksa hasil sebelum menjalankan tindakan penting.");
+    return json({ ok: true });
+  }
+
+  const command = text.replace(/^\/command(?:@\w+)?\s*/i, "").trim();
+  if (!command) {
+    await sendTelegramMessage(env, chatId, "Kirim instruksi dalam bahasa biasa, atau gunakan /command diikuti instruksi.");
+    return json({ ok: true });
+  }
+
+  const result = await creaoRequest(CREAO_BASE_URL, env, {
+    method: "POST",
+    body: JSON.stringify({ inputs: { command } }),
+  });
+  if (result.error) {
+    await sendTelegramMessage(env, chatId, "VIXORA belum siap: CREAO_API_KEY belum dikonfigurasi.");
+    return json({ ok: false, error: "Executor is not configured." }, 503);
+  }
+  if (!result.response.ok) {
+    await result.response.text().catch(() => "");
+    await sendTelegramMessage(env, chatId, "Executor gagal menerima perintah. Coba lagi nanti.");
+    return json({ ok: false, error: "Executor request failed." }, 502);
+  }
+
+  const run = await result.response.json().catch(() => null);
+  const runId = run?.id || run?.run_id || run?.data?.id || run?.data?.run_id;
+  const reply = runId
+    ? `Perintah dikirim ke executor VIXORA.\nRun ID: ${runId}\nStatus: menunggu hasil executor.`
+    : "Perintah dikirim ke executor VIXORA. Periksa dashboard untuk status selanjutnya.";
+  await sendTelegramMessage(env, chatId, reply);
+  return json({ ok: true, dispatched: true, runId: runId || null });
+}
 
 async function creaoRequest(url, env, init = {}) {
   const apiKey = getCreaoKey(env);
@@ -57,13 +156,26 @@ export default {
         agents: ["AGENT 01: content-agent"],
         executor: "creao-api-trigger",
         appId: CREAO_APP_ID,
-        routes: ["/", "/api/health", "/api/command", "/api/command/:runId"],
+        configuration: {
+          creao: Boolean(getCreaoKey(env)),
+          supabaseAuth: Boolean(env?.SUPABASE_PUBLISHABLE_KEY),
+          telegram: Boolean(env?.TELEGRAM_BOT_TOKEN && env?.TELEGRAM_WEBHOOK_SECRET && env?.TELEGRAM_ALLOWED_CHAT_IDS),
+        },
+        routes: ["/", "/api/health", "/api/command", "/api/command/:runId", "/api/telegram/webhook"],
       });
+    }
+
+    if (url.pathname === "/api/telegram/webhook") {
+      if (request.method !== "POST") return json({ ok: false, error: "Method not allowed" }, 405, { Allow: "POST, OPTIONS" });
+      return handleTelegramWebhook(request, env);
     }
 
     if (request.method === "GET" && url.pathname.startsWith("/api/command/")) {
       const runId = url.pathname.split("/").filter(Boolean).pop();
       if (!runId) return json({ success: false, error: "Run ID is required" }, 400);
+
+      const auth = await authorizeSupabaseUser(request, env);
+      if (!auth.ok) return json({ success: false, status: auth.status === 401 ? "unauthorized" : "auth_unavailable", error: auth.error }, auth.status);
 
       const result = await creaoRequest(`${CREAO_BASE_URL}/${encodeURIComponent(runId)}`, env, { method: "GET" });
 
@@ -98,6 +210,9 @@ export default {
       return json({ success: false, error: "Not found" }, 404);
     }
 
+    const auth = await authorizeSupabaseUser(request, env);
+    if (!auth.ok) return json({ success: false, status: auth.status === 401 ? "unauthorized" : "auth_unavailable", error: auth.error }, auth.status);
+
     try {
       const body = await request.json();
       if (!body || typeof body !== "object" || Array.isArray(body)) {
@@ -113,44 +228,7 @@ export default {
         ? body.source.trim()
         : "vixora-command-center";
 
-      // AGENT 01 — Content Agent
-      // Handles content ideation and short-form scripting before executor dispatch.
-      const contentIntent = /(?:ide|konsep|skrip|script|shorts?|konten|content|youtube short)/i.test(command);
-      if (contentIntent) {
-        const topicMatch = command.match(/(?:tentang|topik|tema|mengenai|about)\s+(.+?)(?:\\.|$)/i);
-        const topic = topicMatch?.[1]?.trim() || "AI";
-
-        const content = [
-          {
-            title: "AI Itu Apa Sih? 30 Detik Paham",
-            hook: "Kalau HP kamu bisa nebak kata berikutnya, itu contoh AI.",
-            script: `AI sebenarnya ada di sekitar kita. Saat keyboard menebak kata berikutnya, saat YouTube merekomendasikan video, atau saat email memisahkan spam, ada sistem yang belajar dari pola data. Jadi AI bukan sulap. AI menggunakan data dan pola untuk membuat prediksi atau membantu mengambil keputusan. Singkatnya: AI belajar dari data, lalu menggunakan pola itu untuk membantu kita.`,
-          },
-          {
-            title: "3 Kesalahan Umum Saat Pakai AI buat Tugas",
-            hook: "Pakai AI buat tugas? Jangan lakukan tiga kesalahan ini.",
-            script: `Pertama, copy-paste jawaban AI mentah-mentah. Kedua, percaya hasil AI seratus persen tanpa mengecek fakta. Ketiga, memberi perintah terlalu umum tanpa konteks. Cara lebih aman? Beri konteks yang jelas, gunakan AI sebagai partner berpikir, lalu cek kembali informasi penting sebelum dipakai.`,
-          },
-          {
-            title: "AI di Saku Kamu",
-            hook: "Tanpa sadar, kamu mungkin memakai AI setiap hari.",
-            script: `Rekomendasi video, filter spam email, kamera yang mengenali objek, sampai prediksi kata di keyboard—semuanya bisa melibatkan AI atau machine learning. Jadi AI bukan cuma chatbot. Teknologi ini sudah masuk ke banyak fitur yang kita pakai setiap hari. Pertanyaannya bukan lagi kapan AI datang, tapi seberapa pintar kita menggunakannya.`,
-          },
-        ];
-
-        return json({
-          success: true,
-          status: "completed",
-          agent: "content-agent",
-          agentCode: "AGENT 01",
-          task: "short-form-content",
-          topic,
-          message: `Content Agent selesai. Aku membuat 3 konsep Shorts tentang ${topic}, lengkap dengan hook dan skrip 30 detik.`,
-          result: content,
-          next: "youtube-agent",
-        });
-      }
-
+      // Send commands to the configured executor; do not label static templates as AI-generated output.
       const result = await creaoRequest(CREAO_BASE_URL, env, {
         method: "POST",
         body: JSON.stringify({ inputs: { command } }),
