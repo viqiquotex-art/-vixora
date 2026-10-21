@@ -9,6 +9,26 @@
   let message = $state('');
   let error = $state('');
 
+  async function resendApproval() {
+    busy = true;
+    message = '';
+    error = '';
+    try {
+      const response = await fetch('/api/access-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() })
+      });
+      const result = await response.json() as { message?: string; error?: string };
+      if (!response.ok) throw new Error(result.message || result.error || 'Permintaan persetujuan gagal.');
+      message = result.message || 'Permintaan persetujuan dikirim ke admin.';
+    } catch (cause) {
+      error = cause instanceof Error ? cause.message : 'Permintaan persetujuan gagal.';
+    } finally {
+      busy = false;
+    }
+  }
+
   async function submit(event: SubmitEvent) {
     event.preventDefault();
     busy = true;
@@ -107,6 +127,7 @@
       {/if}
       {#if mode === 'signin'}
         <button class="auth-inline-link forgot-link" type="button" onclick={() => { mode = 'forgot'; error = ''; message = ''; }}>Lupa password?</button>
+        <button class="auth-inline-link" type="button" disabled={busy || !email.trim()} onclick={resendApproval}>Minta / kirim ulang persetujuan admin</button>
       {/if}
       {#if error}<p class="auth-message error" role="alert">{error}</p>{/if}
       {#if message}<p class="auth-message success" role="status">{message}</p>{/if}
