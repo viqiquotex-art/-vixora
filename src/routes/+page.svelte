@@ -25,7 +25,7 @@
       model?: string;
       answer?: string;
       mode?: string;
-      usage?: { totalTokens?: number | null } | null;
+      usage?: { inputTokens?: number | null; outputTokens?: number | null; totalTokens?: number | null } | null;
       limitations?: string[];
     } | null;
   };
@@ -138,8 +138,15 @@
       };
     });
     const peakActivity = Math.max(0, ...activityDays.map((day) => day.count));
+    const tokenUsageRuns = agentRuns.filter((run) => typeof run.output?.usage?.totalTokens === 'number');
+    const tokenUsage = tokenUsageRuns.reduce((totals, run) => ({
+      input: totals.input + (run.output?.usage?.inputTokens ?? 0),
+      output: totals.output + (run.output?.usage?.outputTokens ?? 0),
+      total: totals.total + (run.output?.usage?.totalTokens ?? 0)
+    }), { input: 0, output: 0, total: 0 });
     return {
       total: agentRuns.length,
+      tokenUsage: { ...tokenUsage, trackedRuns: tokenUsageRuns.length },
       succeeded,
       failed,
       completedCount,
@@ -814,6 +821,14 @@
             <article class="analytics-card"><div class="analytics-card-top"><span>Failed runs</span><span class="analytics-icon failure">!</span></div><strong>{runAnalytics.failed}</strong><small>Run yang gagal</small></article>
             <article class="analytics-card"><div class="analytics-card-top"><span>Avg. duration</span><span class="analytics-icon duration">◷</span></div><strong>{runAnalytics.averageDuration}</strong><small>Run selesai dengan durasi tercatat</small></article>
           </div>
+          <article class="panel token-usage-panel">
+            <div class="panel-heading"><div><span class="eyebrow">GEMINI API USAGE</span><h2>Token yang tercatat</h2><p class="analytics-subtitle">Akumulasi metadata pemakaian dari run yang menyimpan usage. Ini bukan saldo atau kuota harian Google.</p></div><span class="activity-peak">{runAnalytics.tokenUsage.trackedRuns} run terlacak</span></div>
+            <div class="analytics-metrics token-usage-metrics">
+              <article class="analytics-card"><div class="analytics-card-top"><span>Total tokens</span><span class="analytics-icon">∑</span></div><strong>{runAnalytics.tokenUsage.total.toLocaleString('id-ID')}</strong><small>Input + output yang dilaporkan API</small></article>
+              <article class="analytics-card"><div class="analytics-card-top"><span>Input tokens</span><span class="analytics-icon">↓</span></div><strong>{runAnalytics.tokenUsage.input.toLocaleString('id-ID')}</strong><small>Prompt yang dikirim ke Gemini</small></article>
+              <article class="analytics-card"><div class="analytics-card-top"><span>Output tokens</span><span class="analytics-icon">↑</span></div><strong>{runAnalytics.tokenUsage.output.toLocaleString('id-ID')}</strong><small>Jawaban yang dihasilkan Gemini</small></article>
+            </div>
+          </article>
           <article class="panel activity-panel">
             <div class="panel-heading"><div><span class="eyebrow">LAST 7 DAYS</span><h2>Run activity</h2></div><span class="activity-peak">{runAnalytics.total ? `${runAnalytics.total} run dimuat` : 'Belum ada run'}</span></div>
             <div class="activity-chart" role="img" aria-label="Grafik aktivitas Agent Run tujuh hari terakhir">
