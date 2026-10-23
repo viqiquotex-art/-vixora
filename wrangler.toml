@@ -3,8 +3,10 @@ main = ".svelte-kit/cloudflare/_worker.js"
 compatibility_date = "2026-10-01"
 
 [vars]
-SUPABASE_URL = "https://nuofddhqznewkkryejmu.supabase.co"
-SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im51b2ZkZGhxem5ld2trcnllam11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIzNzk3NTAsImV4cCI6MjEwNzk1NTc1MH0.Wg7ClORTohR_Ps06x7aYTjFI5OdGm8MNqYAr-AfjurQ"
+# Auth and personal tasks stay on the existing VIXORA Supabase project.
+# Agent Run history uses its separate storage project in the dedicated API route.
+SUPABASE_URL = "https://gdxughluqryzlklrnzhz.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkeHVnaGx1cXJ5emxrbHJuemh6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NjI0ODAsImV4cCI6MjEwMzEzODQ4MH0.YhQaMhH6gwhLZNVem9NR0Ow32iqrgcB3YiAi-WSBKMo"
 GEMINI_FREE_TIER_ONLY_CONFIRMED = "true"
 GEMINI_MODEL = "gemini-3.6-flash"
 
