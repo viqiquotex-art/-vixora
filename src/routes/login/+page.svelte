@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { supabase } from '$lib/supabase';
 
@@ -8,6 +9,12 @@
   let busy = $state(false);
   let message = $state('');
   let error = $state('');
+
+  onMount(() => {
+    if (new URLSearchParams(window.location.search).get('confirmed') === '1') {
+      message = 'Email berhasil dikonfirmasi. Silakan masuk. Akun baru tetap memerlukan persetujuan admin.';
+    }
+  });
 
   async function resendApproval() {
     busy = true;
