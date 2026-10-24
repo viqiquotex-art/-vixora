@@ -821,7 +821,7 @@
   <main class="main">
     <header class="topbar">
       <div class="breadcrumb">VIXORA <span>/</span> {activeTab}</div>
-      <div class="top-actions"><span class="status-chip"><i></i> Build in progress</span><button class="icon-button" aria-label="Notifications">♧</button><a class="avatar small" href="/login" aria-label="Sign in or account settings" title="Sign in / account"><span>VX</span></a></div>
+      <div class="top-actions"><span class="status-chip" title="Lingkungan staging terpisah dari produksi"><i></i> STAGING</span><button class="icon-button" aria-label="Notifications">♧</button><a class="avatar small" href="/login" aria-label="Sign in or account settings" title="Sign in / account"><span>VX</span></a></div>
     </header>
 
     <div class="content">
@@ -957,20 +957,21 @@
         </section>
 
         <section class="digital-floor-toolbar" aria-label="Digital workspace controls">
-          <div class="floor-live-status"><span class="floor-live-dot"></span><div><strong>COZY OFFICE ONLINE</strong><small>Staging runtime · refresh data kapan saja</small></div></div>
-          <div class="floor-quick-stats">
-            <div class="floor-stat"><span>Agent bekerja</span><strong>{agentRuns.filter((run) => run.status === 'running').length.toString().padStart(2, '0')}</strong></div>
-            <div class="floor-stat"><span>Task berhasil</span><strong>{agentRuns.filter((run) => run.status === 'succeeded').length.toString().padStart(2, '0')}</strong></div>
-            <div class="floor-stat"><span>Riwayat dimuat</span><strong>{agentRuns.length.toString().padStart(2, '0')}</strong></div>
+          <div class="floor-live-status"><span class="floor-live-dot" aria-hidden="true"></span><div><strong>COZY AI STUDIO</strong><small>Status agent mengikuti riwayat tersimpan</small></div></div>
+          <div class="floor-quick-stats" aria-label="Ringkasan Agent Run" aria-live="polite">
+            <div class="floor-stat"><span>Agent berjalan</span><strong>{runStorageReady === true ? agentRuns.filter((run) => run.status === 'running').length : '—'}</strong><small>{runStorageReady === null ? 'Memuat riwayat…' : runStorageReady ? 'Status aktual' : 'Riwayat belum tersedia'}</small></div>
+            <div class="floor-stat"><span>Task berhasil</span><strong>{runStorageReady === true ? agentRuns.filter((run) => run.status === 'succeeded').length : '—'}</strong><small>{runStorageReady === null ? 'Memuat riwayat…' : runStorageReady ? 'Dari riwayat tersimpan' : 'Riwayat belum tersedia'}</small></div>
+            <div class="floor-stat"><span>Riwayat dimuat</span><strong>{runStorageReady === true ? agentRuns.length : '—'}</strong><small>{runStorageReady === null ? 'Memuat riwayat…' : runStorageReady ? 'Maks. 50 run terbaru' : 'Coba segarkan data'}</small></div>
           </div>
           <div class="floor-actions">
-            <button class:floor-toggle-active={workspaceMotion} class="floor-motion-button" type="button" onclick={() => workspaceMotion = !workspaceMotion} aria-pressed={workspaceMotion}>{workspaceMotion ? 'Ⅱ Pause motion' : '▶ Resume motion'}</button>
-            <button class="floor-refresh-button" type="button" onclick={() => void refreshAgentRuns()}>↻ Sync agents</button>
+            <button class="floor-create-task-button" type="button" onclick={() => activeTab = 'Task Center'}>＋ Buat tugas</button>
+            <button class:floor-toggle-active={workspaceMotion} class="floor-motion-button" type="button" onclick={() => workspaceMotion = !workspaceMotion} aria-pressed={workspaceMotion}>{workspaceMotion ? 'Ⅱ Jeda animasi' : '▶ Lanjutkan animasi'}</button>
+            <button class="floor-refresh-button" type="button" onclick={() => void refreshAgentRuns()} disabled={runStorageReady === null}>{runStorageReady === null ? 'Memuat…' : '↻ Segarkan data'}</button>
           </div>
         </section>
 
         <section class="ai-office-shell ai-office-3d-shell" aria-label="Interactive isometric AI mini office">
-          <div class="office-scene-topline"><span><i></i> MINIATURE FLOOR / 01</span><span>VIXORA LITTLE AI STUDIO</span><span class="office-signal">● 3D SCENE LIVE</span></div>
+          <div class="office-scene-topline"><span><i></i> MINIATURE FLOOR / 01</span><span>VIXORA LITTLE AI STUDIO</span><span class="office-signal">● STUDIO 3D</span></div>
           <AIMiniatureOffice
             agents={roomAgents}
             motionEnabled={workspaceMotion}
@@ -980,7 +981,7 @@
               activeTab = 'Task Center';
             }}
           />
-          <div class="office-scene-legend"><span><i class="legend-working"></i> Working</span><span><i class="legend-done"></i> Completed</span><span><i class="legend-attention"></i> Needs attention</span><span class="legend-tip">Drag untuk memutar ruang · scroll untuk zoom · klik meja untuk membuka task agent.</span></div>
+          <div class="office-scene-legend"><span><i class="legend-working"></i> Berjalan</span><span><i class="legend-done"></i> Selesai</span><span><i class="legend-attention"></i> Perlu dicek</span><span class="legend-tip">Seret untuk memutar · gulir untuk zoom · pilih meja untuk melihat agent.</span></div>
         </section>
 
         <section class="workspace-agent-roster">
